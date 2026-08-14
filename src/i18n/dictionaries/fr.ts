@@ -182,13 +182,25 @@ const fr = {
     submit: "Confirmer la commande",
     sending: "Envoi en cours...",
     noteBeforeSubmit:
-      "En confirmant, vous serez redirigé vers notre portail pour finaliser votre commande. Vous recevrez un numéro de suivi pour suivre chaque étape.",
+      "En confirmant, votre commande est enregistrée et un code de suivi unique vous est attribué pour suivre chaque étape.",
     helpTitle: "Une question avant de commencer ?",
     helpText:
       "Consultez les réponses aux questions les plus fréquentes ou contactez-nous directement.",
     helpFaq: "Voir la FAQ",
     helpContact: "Nous contacter",
     servicesHint: "Découvrez aussi nos services :",
+    result: {
+      successTitle: "Commande confirmée !",
+      successText:
+        "Votre commande a bien été enregistrée. Conservez précieusement votre code de suivi :",
+      codeLabel: "Code de suivi",
+      saveReceipt: "Sauvegarder le reçu (image)",
+      receiptSaved: "Reçu téléchargé",
+      copyCode: "Copier le code",
+      copied: "Code copié !",
+      goToTracking: "Suivre ma commande",
+      newOrder: "Nouvelle commande",
+    },
   },
 
   track: {

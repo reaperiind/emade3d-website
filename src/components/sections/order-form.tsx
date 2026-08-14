@@ -2,177 +2,347 @@
 
 import { useState, type FormEvent } from "react";
 import { useI18n } from "@/i18n/provider";
-import { portalNewOrderUrl } from "@/config/site";
+import { portalTrackingUrl } from "@/config/site";
+import { downloadOrderReceipt } from "@/lib/receipt";
+import type { Order } from "@/lib/orders-store";
 import { cn } from "@/lib/cn";
-import { CheckIcon } from "@/components/ui/icons";
+import {
+  CheckIcon,
+  CopyIcon,
+  DownloadIcon,
+  ArrowUpRightIcon,
+  PlusIcon,
+} from "@/components/ui/icons";
 
 const inputClass =
   "w-full rounded-md border border-white/12 bg-ink-900 px-4 py-3 text-sm text-white placeholder:text-steel-500 transition focus:border-accent/60 focus:outline-none";
 
+const SERVICE_MAP: Record<string, string> = {
+  IMPRESSION_3D: "Impression 3D",
+  CONCEPTION_3D: "Conception 3D",
+  CONCEPTION_AND_IMPRESSION: "Conception + Impression 3D",
+};
+
 /**
- * Order form mirroring the portal's "Nouvelle commande" page
- * (https://portal.emade3d.store/{locale}/new).
+ * Order form backed by the site's own API.
  *
- * The main site has no backend of its own (by design): on submit the customer
- * is redirected to the existing Emade3D Portal where the order is actually
- * created, tracked and confirmed.
+ * On confirm the order is sent to POST /api/orders, which stores it and
+ * returns a unique tracking code (EMD-XXXXXX). The confirmation panel then
+ * shows the code with actions to save the receipt as an image, copy the code
+ * and go to the tracking page.
  */
 export function OrderForm() {
   const { locale, t } = useI18n();
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
   const q = t.quote;
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState<Order | null>(null);
+  const [receiptSaved, setReceiptSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (sending) return;
+
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    const value = (name: string) => String(data.get(name) ?? "").trim();
+
     setSending(true);
-    window.open(portalNewOrderUrl(locale), "_blank", "noopener,noreferrer");
-    window.setTimeout(() => {
+    setError(null);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: value("firstName"),
+          lastName: value("lastName"),
+          phone: value("phone"),
+          orderDate: value("orderDate"),
+          serviceType: value("serviceType"),
+          description: value("description"),
+          locale,
+        }),
+      });
+      const json = (await res.json().catch(() => null)) as
+        | { ok?: boolean; code?: string; error?: string }
+        | null;
+      if (!res.ok || !json?.code) {
+        setError(json?.error ?? "unknown");
+        setSending(false);
+        return;
+      }
+      setSent({
+        code: json.code,
+        createdAt: new Date().toISOString(),
+        status: "new",
+        firstName: value("firstName"),
+        lastName: value("lastName"),
+        phone: value("phone"),
+        orderDate: value("orderDate"),
+        serviceType: value("serviceType"),
+        description: value("description"),
+        locale,
+      });
       setSending(false);
-      setSent(true);
-    }, 700);
+    } catch {
+      setError("network");
+      setSending(false);
+    }
+  }
+
+  function onSaveReceipt() {
+    if (!sent) return;
+    downloadOrderReceipt(sent, "Emade3D");
+    setReceiptSaved(true);
+  }
+
+  async function onCopy() {
+    if (!sent) return;
+    try {
+      await navigator.clipboard.writeText(sent.code);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* clipboard unavailable */
+    }
+  }
+
+  const serviceLabel = sent
+    ? SERVICE_MAP[sent.serviceType] ?? sent.serviceType
+    : "";
+
+  if (sent) {
+    return (
+      <div className="card rounded-xl border-white/10 p-6 sm:p-10">
+        <div className="flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
+            <CheckIcon className="h-6 w-6" />
+          </span>
+          <div>
+            <h2 className="font-display text-2xl font-semibold text-white">
+              {q.result.successTitle}
+            </h2>
+            <p className="text-muted mt-1 text-sm leading-relaxed">
+              {q.result.successText}
+            </p>
+          </div>
+        </div>
+
+        {/* Tracking code */}
+        <div className="mt-6 rounded-xl border border-accent/30 bg-accent-dim p-5 text-center">
+          <p className="text-xs font-semibold uppercase tracking-widest text-steel-400">
+            {q.result.codeLabel}
+          </p>
+          <p
+            dir="ltr"
+            className="mt-2 font-mono text-4xl font-extrabold tracking-wider text-white"
+          >
+            {sent.code}
+          </p>
+          <div className="mt-4 inline-flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={onCopy}
+              className="btn-outline-accent btn-sm"
+            >
+              <CopyIcon className="h-4 w-4" />
+              {copied ? q.result.copied : q.result.copyCode}
+            </button>
+            <a
+              href={portalTrackingUrl(locale)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-outline btn-sm"
+            >
+              <ArrowUpRightIcon className="h-4 w-4" />
+              {q.result.goToTracking}
+            </a>
+          </div>
+        </div>
+
+        {/* Receipt summary */}
+        <dl className="mt-6 grid gap-3 sm:grid-cols-2">
+          {[
+            [q.lastName, `${sent.firstName} ${sent.lastName}`],
+            [q.phone, sent.phone],
+            [q.serviceType, serviceLabel],
+            [q.orderDate, sent.orderDate ?? "—"],
+          ]
+            .filter(([, value]) => value !== "—" && value)
+            .map(([label, value]) => (
+              <div
+                key={String(label)}
+                className="rounded-lg border border-white/10 bg-ink-800 px-4 py-3"
+              >
+                <dt className="text-xs font-medium text-steel-400">
+                  {String(label)}
+                </dt>
+                <dd className="mt-0.5 text-sm font-semibold text-white">
+                  {value}
+                </dd>
+              </div>
+            ))}
+        </dl>
+
+        <div className="mt-7 flex flex-col gap-2.5 sm:flex-row">
+          <button
+            type="button"
+            onClick={onSaveReceipt}
+            className="btn-primary btn-md flex-1"
+          >
+            <DownloadIcon className="h-4 w-4" />
+            {receiptSaved ? q.result.receiptSaved : q.result.saveReceipt}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSent(null)}
+            className="btn-outline btn-md flex-1"
+          >
+            <PlusIcon className="h-4 w-4" />
+            {q.result.newOrder}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="card rounded-xl border-white/10 p-6 sm:p-10">
-      {sent ? (
-        <div className="flex items-start gap-3 rounded-lg border border-accent/30 bg-accent-dim p-5">
-          <CheckIcon className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
-          <p className="text-sm leading-relaxed text-steel-100">
-            {q.noteBeforeSubmit}
-          </p>
-        </div>
-      ) : (
-        <form onSubmit={onSubmit} className="space-y-5">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="of-firstName"
-                className="mb-1.5 block text-sm font-medium text-steel-300"
-              >
-                {q.firstName} *
-              </label>
-              <input
-                id="of-firstName"
-                name="firstName"
-                type="text"
-                required
-                autoComplete="given-name"
-                placeholder={q.firstName}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="of-lastName"
-                className="mb-1.5 block text-sm font-medium text-steel-300"
-              >
-                {q.lastName} *
-              </label>
-              <input
-                id="of-lastName"
-                name="lastName"
-                type="text"
-                required
-                autoComplete="family-name"
-                placeholder={q.lastName}
-                className={inputClass}
-              />
-            </div>
-          </div>
-
+      <form onSubmit={onSubmit} className="space-y-5">
+        <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label
-              htmlFor="of-phone"
+              htmlFor="of-firstName"
               className="mb-1.5 block text-sm font-medium text-steel-300"
             >
-              {q.phone} *
+              {q.firstName} *
             </label>
             <input
-              id="of-phone"
-              name="phone"
-              type="tel"
-              dir="ltr"
-              inputMode="tel"
+              id="of-firstName"
+              name="firstName"
+              type="text"
               required
-              autoComplete="tel"
-              placeholder="+213 ..."
-              className={cn(inputClass, "text-start")}
+              autoComplete="given-name"
+              placeholder={q.firstName}
+              className={inputClass}
             />
           </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="of-orderDate"
-                className="mb-1.5 block text-sm font-medium text-steel-300"
-              >
-                {q.orderDate}
-              </label>
-              <input
-                id="of-orderDate"
-                name="orderDate"
-                type="date"
-                defaultValue={new Date().toISOString().split("T")[0]}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="of-serviceType"
-                className="mb-1.5 block text-sm font-medium text-steel-300"
-              >
-                {q.serviceType} *
-              </label>
-              <select
-                id="of-serviceType"
-                name="serviceType"
-                required
-                defaultValue=""
-                className={cn(inputClass, "appearance-none")}
-              >
-                <option value="" disabled>
-                  {q.servicePlaceholder}
-                </option>
-                <option value="IMPRESSION_3D">{q.services.impression}</option>
-                <option value="CONCEPTION_3D">{q.services.conception}</option>
-                <option value="CONCEPTION_AND_IMPRESSION">
-                  {q.services.both}
-                </option>
-              </select>
-            </div>
-          </div>
-
           <div>
             <label
-              htmlFor="of-description"
+              htmlFor="of-lastName"
               className="mb-1.5 block text-sm font-medium text-steel-300"
             >
-              {q.description} *
+              {q.lastName} *
             </label>
-            <textarea
-              id="of-description"
-              name="description"
+            <input
+              id="of-lastName"
+              name="lastName"
+              type="text"
               required
-              rows={6}
-              placeholder={q.descriptionPlaceholder}
-              className={cn(inputClass, "resize-none")}
+              autoComplete="family-name"
+              placeholder={q.lastName}
+              className={inputClass}
             />
           </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={sending}
-            className="btn-primary btn-md w-full disabled:opacity-60"
+        <div>
+          <label
+            htmlFor="of-phone"
+            className="mb-1.5 block text-sm font-medium text-steel-300"
           >
-            {sending ? q.sending : q.submit}
-          </button>
-          <p className="text-center text-xs leading-relaxed text-steel-500">
-            {q.noteBeforeSubmit}
+            {q.phone} *
+          </label>
+          <input
+            id="of-phone"
+            name="phone"
+            type="tel"
+            dir="ltr"
+            inputMode="tel"
+            required
+            autoComplete="tel"
+            placeholder="+213 ..."
+            className={cn(inputClass, "text-start")}
+          />
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="of-orderDate"
+              className="mb-1.5 block text-sm font-medium text-steel-300"
+            >
+              {q.orderDate}
+            </label>
+            <input
+              id="of-orderDate"
+              name="orderDate"
+              type="date"
+              defaultValue={new Date().toISOString().split("T")[0]}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="of-serviceType"
+              className="mb-1.5 block text-sm font-medium text-steel-300"
+            >
+              {q.serviceType} *
+            </label>
+            <select
+              id="of-serviceType"
+              name="serviceType"
+              required
+              defaultValue=""
+              className={cn(inputClass, "appearance-none")}
+            >
+              <option value="" disabled>
+                {q.servicePlaceholder}
+              </option>
+              <option value="IMPRESSION_3D">{q.services.impression}</option>
+              <option value="CONCEPTION_3D">{q.services.conception}</option>
+              <option value="CONCEPTION_AND_IMPRESSION">
+                {q.services.both}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="of-description"
+            className="mb-1.5 block text-sm font-medium text-steel-300"
+          >
+            {q.description} *
+          </label>
+          <textarea
+            id="of-description"
+            name="description"
+            required
+            rows={6}
+            placeholder={q.descriptionPlaceholder}
+            className={cn(inputClass, "resize-none")}
+          />
+        </div>
+
+        {error && (
+          <p className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
+            {error}
           </p>
-        </form>
-      )}
+        )}
+
+        <button
+          type="submit"
+          disabled={sending}
+          className="btn-primary btn-md w-full disabled:opacity-60"
+        >
+          {sending ? q.sending : q.submit}
+        </button>
+        <p className="text-center text-xs leading-relaxed text-steel-500">
+          {q.noteBeforeSubmit}
+        </p>
+      </form>
     </div>
   );
 }

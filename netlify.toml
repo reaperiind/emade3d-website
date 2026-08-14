@@ -1,0 +1,20 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Next.js API routes under /api are handled automatically by the
+# @netlify/plugin-nextjs runtime on Netlify Functions.
+#
+# Orders are persisted with Netlify Blobs (free persistent storage).
+# Set the admin password as an environment variable in Netlify:
+#   ADMIN_PASSWORD=<your-admin-password>
+[functions]
+  directory = ".netlify/functions-internal"
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin/index.html"
+  status = 200

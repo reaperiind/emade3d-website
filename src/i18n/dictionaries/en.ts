@@ -184,13 +184,25 @@ const en: Dictionary = {
     submit: "Confirm the order",
     sending: "Sending...",
     noteBeforeSubmit:
-      "By confirming, you will be redirected to our portal to finalize your order. You will receive a tracking number to follow every step.",
+      "By confirming, your order is recorded and a unique tracking code is assigned to you to follow every step.",
     helpTitle: "A question before you start?",
     helpText:
       "Browse the answers to the most common questions or contact us directly.",
     helpFaq: "See the FAQ",
     helpContact: "Contact us",
     servicesHint: "Also discover our services:",
+    result: {
+      successTitle: "Order confirmed!",
+      successText:
+        "Your order has been recorded. Keep your tracking code safe:",
+      codeLabel: "Tracking code",
+      saveReceipt: "Save receipt (image)",
+      receiptSaved: "Receipt downloaded",
+      copyCode: "Copy code",
+      copied: "Code copied!",
+      goToTracking: "Track my order",
+      newOrder: "New order",
+    },
   },
 
   track: {

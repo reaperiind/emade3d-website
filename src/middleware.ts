@@ -8,6 +8,11 @@ import { locales, defaultLocale } from "@/i18n/config";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // The admin area is not localized.
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    return NextResponse.next();
+  }
+
   const hasLocale = locales.some(
     (loc) => pathname === `/${loc}` || pathname.startsWith(`/${loc}/`)
   );
@@ -22,6 +27,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Exclude Next.js internals, API routes and static files (they contain a dot).
-  matcher: ["/((?!_next|api|.*\\..*).*)"],
+  // Exclude Next.js internals, API routes, admin and static files.
+  matcher: ["/((?!_next|api|admin|.*\\..*).*)"],
 };
