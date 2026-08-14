@@ -93,43 +93,39 @@ export function TrackForm() {
   if (order) {
     return (
       <div className="card rounded-xl border-white/10 p-6 sm:p-10">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
-              <CheckIcon className="h-6 w-6" />
-            </span>
-            <div>
-              <h2 className="font-display text-2xl font-semibold text-white">
-                {track.statusLabel}
-              </h2>
-              <p className="text-muted mt-1 text-sm">
-                {track.statuses[order.status]}
-              </p>
-            </div>
-          </div>
+        {/* Clear, prominent status for the customer */}
+        <div className="relative rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/12 via-ink-800/40 to-ink-800 px-6 py-8 text-center sm:px-8">
           <button
             type="button"
             onClick={reset}
             aria-label={t.common.close}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-steel-400 transition hover:text-white"
+            className="absolute end-4 top-4 flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-steel-400 transition hover:text-white"
           >
             <CloseIcon className="h-4 w-4" />
           </button>
+
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent/15 text-accent ring-1 ring-accent/30">
+            <CheckIcon className="h-9 w-9" />
+          </span>
+
+          <h2 className="h-display mt-4 text-2xl font-bold text-white sm:text-3xl">
+            {track.statuses[order.status]}
+          </h2>
+
+          <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent-dim px-4 py-1.5 text-sm font-semibold text-accent">
+            <span className="h-2 w-2 rounded-full bg-accent" />
+            {track.statusLabel}
+          </span>
+
+          <p
+            dir="ltr"
+            className="mt-4 font-mono text-2xl font-extrabold tracking-widest text-white"
+          >
+            {order.code}
+          </p>
         </div>
 
         <div className="mt-5 grid gap-3">
-          <div className="flex items-center justify-between rounded-xl border border-accent/30 bg-accent-dim px-5 py-4">
-            <span className="text-sm font-medium text-steel-300">
-              {track.code}
-            </span>
-            <span
-              dir="ltr"
-              className="font-mono text-xl font-extrabold tracking-wider text-white"
-            >
-              {order.code}
-            </span>
-          </div>
-
           {[
             [track.client, `${order.firstName} ${order.lastName}`],
             [track.phone, order.phone],
