@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useI18n } from "@/i18n/provider";
-import { portalTrackingUrl } from "@/config/site";
+import { localizePath } from "@/i18n/config";
 import { downloadOrderReceipt } from "@/lib/receipt";
 import type { Order } from "@/lib/orders-store";
 import { cn } from "@/lib/cn";
@@ -149,15 +150,13 @@ export function OrderForm() {
               <CopyIcon className="h-4 w-4" />
               {copied ? q.result.copied : q.result.copyCode}
             </button>
-            <a
-              href={portalTrackingUrl(locale)}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href={`${localizePath("/suivre-ma-commande", locale)}?code=${encodeURIComponent(sent.code)}`}
               className="btn-outline btn-sm"
             >
               <ArrowUpRightIcon className="h-4 w-4" />
               {q.result.goToTracking}
-            </a>
+            </Link>
           </div>
         </div>
 

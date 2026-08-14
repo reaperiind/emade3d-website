@@ -211,9 +211,9 @@ const fr = {
     code: "Numéro de suivi",
     codePlaceholder: "EMD-XXXXXX",
     submit: "Suivre",
-    sending: "Redirection...",
+    sending: "Recherche...",
     note:
-      "Vous serez redirigé vers notre portail pour afficher l'avancement détaillé de votre commande.",
+      "Saisissez votre code de suivi pour afficher l'état de votre commande.",
     helpTitle: "Vous n'avez pas encore de commande ?",
     helpText:
       "Créez une nouvelle commande en quelques minutes ou consultez nos services.",
@@ -221,6 +221,23 @@ const fr = {
     helpFaq: "Voir la FAQ",
     helpContact: "Nous contacter",
     servicesHint: "Découvrez aussi nos services :",
+    notFound: "Aucune commande ne correspond à ce code.",
+    notFoundCode: "Vérifiez le code saisi (format EMD-XXXXXX).",
+    client: "Client",
+    phone: "Téléphone",
+    service: "Service",
+    date: "Date",
+    statusLabel: "Statut",
+    statuses: {
+      new: "Commande reçue",
+      processing: "En cours de fabrication",
+      shipped: "Expédiée",
+      done: "Terminée",
+      cancelled: "Annulée",
+    },
+    description: "Description",
+    trackingHelp:
+      "Ce code est communiqué lors de la confirmation de votre commande.",
   },
 
   about: {

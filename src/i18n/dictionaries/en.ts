@@ -212,9 +212,9 @@ const en: Dictionary = {
     code: "Tracking number",
     codePlaceholder: "EMD-XXXXXX",
     submit: "Track",
-    sending: "Redirecting...",
+    sending: "Searching...",
     note:
-      "You will be redirected to our portal to view the detailed progress of your order.",
+      "Enter your tracking code to display your order status.",
     helpTitle: "Don't have an order yet?",
     helpText:
       "Create a new order in a few minutes or browse our services.",
@@ -222,6 +222,23 @@ const en: Dictionary = {
     helpFaq: "See the FAQ",
     helpContact: "Contact us",
     servicesHint: "Also discover our services:",
+    notFound: "No order matches this code.",
+    notFoundCode: "Check the code entered (format EMD-XXXXXX).",
+    client: "Client",
+    phone: "Phone",
+    service: "Service",
+    date: "Date",
+    statusLabel: "Status",
+    statuses: {
+      new: "Order received",
+      processing: "In production",
+      shipped: "Shipped",
+      done: "Completed",
+      cancelled: "Cancelled",
+    },
+    description: "Description",
+    trackingHelp:
+      "This code is provided when your order is confirmed.",
   },
 
   about: {
