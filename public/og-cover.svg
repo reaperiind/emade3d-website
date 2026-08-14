@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF5A1F" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#FF5A1F" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="#0B0E14"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect x="60" y="60" width="1080" height="510" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="2" rx="16"/>
+  <rect x="76" y="76" width="1048" height="478" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1" rx="12"/>
+
+  <!-- mark -->
+  <g fill="none" stroke="#FF5A1F" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M170 150 240 185v70L170 290l-70-35v-70l70-35Z"/>
+    <path d="M170 150v80m0 0 70-35m-70 35-70-35M170 230v60" opacity="0.55"/>
+  </g>
+
+  <text x="240" y="215" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#FFFFFF" letter-spacing="-2">
+    Emade<tspan fill="#FF5A1F">3</tspan>D
+  </text>
+
+  <text x="240" y="265" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="500" fill="rgba(255,255,255,0.65)" letter-spacing="8">
+    DE L'IDÉE À LA PIÈCE FABRIQUÉE
+  </text>
+
+  <text x="240" y="340" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" fill="rgba(255,255,255,0.45)">
+    Conception 3D · Impression 3D · Prototypage · Outillage · Moules
+  </text>
+
+  <!-- corner registration marks -->
+  <g fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="3">
+    <path d="M95 170 V95 H170"/>
+    <path d="M1105 95 H1030 V170"/>
+    <path d="M1030 460 H1105 V535"/>
+    <path d="M170 535 H95 V460"/>
+  </g>
+</svg>
