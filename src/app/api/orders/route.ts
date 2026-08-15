@@ -37,7 +37,7 @@ function clean(v: unknown, max = 200): string {
  * Validates the delivery payload and computes the delivery fee from the
  * manually configured catalogs:
  * - pickup: free.
- * - office: the office's configured fee.
+ * - office: the destination wilaya's stop-desk (office pickup) fee.
  * - home: the destination wilaya's home fee, falling back to the global
  *   home fee when no per-wilaya fee is set.
  */
@@ -50,7 +50,6 @@ async function sanitizeDelivery(raw: unknown): Promise<DeliveryInfo | undefined>
   if (method === "pickup") return { method, fee: 0 };
 
   const option = d.option === "home" ? "home" : "office";
-  const officeId = clean(d.officeId, 60);
   const address = clean(d.address, 500);
   const wilayaId = Number(d.wilayaId) || undefined;
   const communeId =
@@ -60,22 +59,20 @@ async function sanitizeDelivery(raw: unknown): Promise<DeliveryInfo | undefined>
   const communeName = clean(d.communeName, 120) || undefined;
 
   const settings = await getSettings();
-
-  // Office delivery: price comes from the configured office fee.
-  if (option === "office") {
-    const office = settings.delivery.offices.find((o) => o.id === officeId);
-    const fee = office?.fee ?? 0;
-    return { method, option, officeId, address, fee };
-  }
-
-  // Home delivery: per-wilaya fee, with global home fee as fallback.
   const wilaya =
     wilayaId != null
       ? settings.delivery.wilayas.find((w) => w.id === wilayaId)
       : undefined;
-  const fee = wilaya?.homeFee ?? settings.delivery.homeFee;
 
-  return { method, option, officeId, address, wilayaId, communeId, communeName, fee };
+  // Office delivery: per-wilaya stop-desk (office pickup) price.
+  if (option === "office") {
+    const fee = wilaya?.stopDeskFee ?? settings.delivery.homeFee;
+    return { method, option, wilayaId, communeId, communeName, address, fee };
+  }
+
+  // Home delivery: per-wilaya fee, with global home fee as fallback.
+  const fee = wilaya?.homeFee ?? settings.delivery.homeFee;
+  return { method, option, wilayaId, communeId, communeName, address, fee };
 }
 
 // POST /api/orders — create a new order, returns the generated tracking code.

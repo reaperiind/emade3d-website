@@ -52,6 +52,11 @@ export async function POST(request: Request) {
       name: w.name,
       nameAr: w.nameAr || existing?.nameAr,
       homeFee: w.homeFee > 0 ? w.homeFee : existing?.homeFee ?? 0,
+      ...(w.stopDeskFee != null
+        ? { stopDeskFee: w.stopDeskFee }
+        : existing?.stopDeskFee != null
+          ? { stopDeskFee: existing.stopDeskFee }
+          : {}),
     });
   }
   next.wilayas = Array.from(mergedWilayas.values());

@@ -51,16 +51,20 @@ const toFee = (v: string): number | null => {
 };
 
 const HEADER = {
-  name: ["nom", "name", "wilaya", "commune", "désignation", "designation"],
+  name: ["nom", "name", "wilaya", "commune", "désignation", "designation",
+    "destination"],
   nameAr: ["nomar", "namear", "nomarabe", "sarabe", "nomar", "arabe",
     "wilayaar", "communear", "الاسمبالعربية", "arabic"],
   id: ["id", "code", "num", "number", "officeid", "matricule"],
   wilayaId: ["wilayaid", "idwilaya", "wilayacode", "codewilaya", "wilaya_id",
     "codewilaya"],
-  wilayaName: ["wilaya", "nomwilaya", "الولاية"],
+  wilayaName: ["wilaya", "nomwilaya", "الولاية", "destination"],
   communeName: ["commune", "communename", "بلدية", "البلدية"],
   fee: ["fee", "frais", "prix", "tarif", "livraison", "delivery", "cout",
-    "سعر", "سعرالتوصيل", "tariff", "homedelivery", "homedeliveryfee", "prixdelivraison"],
+    "سعر", "سعرالتوصيل", "tariff", "homedelivery", "homedeliveryfee", "prixdelivraison",
+    "tarifadomicile", "tarifadomicileda", "tarif à domicile", "domicile"],
+  stopDeskFee: ["stop-desk", "stopdesk", "tarifstopdesk", "tarifstopdeskda",
+    "tarif stop-desk", "tarifstopdeskfee", "bareme", "bureau", "stopdeskfee"],
   address: ["adresse", "address", "rue", "عنوان", "site", "position"],
 } as const;
 
@@ -129,21 +133,27 @@ function parseWilayas(rows: Row[], colMap: Record<HeaderKey, number>): Wilaya[] 
   const byId = new Map<number, number>();
   let autoId = 1;
   for (const r of rows) {
-    const name = pick(r, colMap, "name");
+    let name = pick(r, colMap, "name") || pick(r, colMap, "wilayaName");
     if (!name) continue;
+    // Support the "01- Adrar" / "01 Adrar" destination format.
+    const destMatch = name.match(/^(\d{1,3})\s*[-–—:]?\s*(.+)$/);
     let id = toId(pick(r, colMap, "id")) ?? toId(pick(r, colMap, "wilayaId"));
+    if ((id === null || id <= 0) && destMatch) id = Number(destMatch[1]);
     if (id === null || id <= 0) {
       // Auto-assign the next free id.
       while (byId.has(autoId)) autoId++;
       id = autoId;
     }
     if (byId.has(id)) continue;
+    if (destMatch) name = destMatch[2].trim();
     const fee = toFee(pick(r, colMap, "fee"));
+    const stopDeskFee = toFee(pick(r, colMap, "stopDeskFee"));
     byId.set(id, id);
     out.push({
       id,
       name,
       homeFee: fee ?? 0,
+      ...(stopDeskFee != null ? { stopDeskFee } : {}),
       nameAr: pick(r, colMap, "nameAr") || undefined,
     });
   }
@@ -268,8 +278,25 @@ export function parseDeliveryFile(buffer: ArrayBuffer): DeliveryImport {
 
     if (type === "wilayas") {
       const parsed = parseWilayas(data, colMap);
+      // Merge within the file: later sheets override, but keep a present fee
+      // when the new row has none (so an empty "Comparaison" sheet never
+      // clobbers the Économique values).
       const merged = new Map<number, Wilaya>();
-      for (const w of [...wilayas, ...parsed]) merged.set(w.id, w);
+      for (const w of wilayas) merged.set(w.id, w);
+      for (const w of parsed) {
+        const prev = merged.get(w.id);
+        merged.set(w.id, {
+          id: w.id,
+          name: w.name,
+          nameAr: w.nameAr || prev?.nameAr,
+          homeFee: w.homeFee > 0 ? w.homeFee : prev?.homeFee ?? 0,
+          ...(w.stopDeskFee != null
+            ? { stopDeskFee: w.stopDeskFee }
+            : prev?.stopDeskFee != null
+              ? { stopDeskFee: prev.stopDeskFee }
+              : {}),
+        });
+      }
       const before = wilayas.length;
       wilayas = Array.from(merged.values());
       log.push(

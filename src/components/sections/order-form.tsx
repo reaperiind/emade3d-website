@@ -32,10 +32,10 @@ const SERVICE_MAP: Record<string, string> = {
  * Order form backed by the site's own API.
  *
  * A delivery method is chosen (pickup / courier office / courier home) and the
- * delivery fee is shown live: office fees come from the configured offices;
- * home delivery uses the destination wilaya's configured fee (falling back to
- * the global home fee). On confirm the order is sent to POST /api/orders,
- * which stores it and returns the tracking code.
+ * delivery fee is shown live: office (stop-desk) delivery uses the selected
+ * wilaya's stop-desk fee; home delivery uses the destination wilaya's home fee
+ * (falling back to the global home fee). On confirm the order is sent to
+ * POST /api/orders, which stores it and returns the tracking code.
  */
 export function OrderForm() {
   const { locale, t } = useI18n();
@@ -51,32 +51,23 @@ export function OrderForm() {
   );
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("pickup");
   const [courierOption, setCourierOption] = useState<CourierOption>("office");
-  const [officeId, setOfficeId] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [wilayaId, setWilayaId] = useState<number | null>(null);
   const [communeId, setCommuneId] = useState<number | null>(null);
 
-  // Load settings (offices, wilayas, communes, currency, delivery data).
+  // Load settings (wilayas, communes, currency, delivery data).
   useEffect(() => {
     fetch("/api/settings")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const settings = json?.settings as SiteSettings | undefined;
-        if (settings) {
-          setDeliverySettings(settings);
-          const first = settings.delivery.offices[0];
-          if (first) setOfficeId(first.id);
-        }
+        if (settings) setDeliverySettings(settings);
       })
       .catch(() => undefined);
   }, []);
 
   const hasDeliveryData = Boolean(deliverySettings?.delivery.wilayas?.length);
   const currency = deliverySettings?.currency ?? "DA";
-  const offices = useMemo(
-    () => deliverySettings?.delivery.offices ?? [],
-    [deliverySettings]
-  );
   const homeFeeFallback = deliverySettings?.delivery.homeFee ?? 0;
 
   const wilayas = useMemo(
@@ -112,42 +103,30 @@ export function OrderForm() {
 
   const displayedFee = useMemo(() => {
     if (deliveryMethod === "pickup") return { fee: 0, loading: false };
-    if (courierOption === "office") {
-      const office = offices.find((o) => o.id === officeId);
-      return { fee: office?.fee ?? 0, loading: false };
-    }
-    // Home delivery: per-wilaya fee, falling back to the global home fee.
     const wilaya =
       wilayaId == null
         ? undefined
         : wilayas.find((w) => w.id === wilayaId);
+    if (courierOption === "office") {
+      // Stop-desk (office pickup) price for the selected wilaya.
+      const fee = wilaya?.stopDeskFee ?? homeFeeFallback;
+      return { fee, loading: false };
+    }
+    // Home delivery: per-wilaya fee, falling back to the global home fee.
     const fee = wilaya?.homeFee ?? homeFeeFallback;
     return { fee, loading: false };
-  }, [
-    deliveryMethod,
-    courierOption,
-    officeId,
-    offices,
-    wilayaId,
-    wilayas,
-    homeFeeFallback,
-  ]);
+  }, [deliveryMethod, courierOption, wilayaId, wilayas, homeFeeFallback]);
 
   function buildDeliveryPayload() {
     if (deliveryMethod === "pickup") return { method: "pickup" as const };
     return {
       method: "courier" as const,
       option: courierOption,
-      ...(courierOption === "office" ? { officeId } : {}),
-      ...(courierOption === "home"
-        ? {
-            ...(hasDeliveryData && wilayaId != null
-              ? { wilayaId, ...(communeId != null ? { communeId } : {}) }
-              : {}),
-            ...(communeLabel ? { communeName: communeLabel } : {}),
-            address: deliveryAddress,
-          }
+      ...(hasDeliveryData && wilayaId != null
+        ? { wilayaId, ...(communeId != null ? { communeId } : {}) }
         : {}),
+      ...(communeLabel ? { communeName: communeLabel } : {}),
+      ...(courierOption === "home" ? { address: deliveryAddress } : {}),
     };
   }
 
@@ -498,112 +477,90 @@ export function OrderForm() {
                 </div>
               </div>
 
-              {courierOption === "office" ? (
-                <div>
-                  <label
-                    htmlFor="of-office"
-                    className="mb-1.5 block text-sm font-medium text-steel-300"
-                  >
-                    {q.deliveryOffice}
-                  </label>
-                  <select
-                    id="of-office"
-                    value={officeId}
-                    onChange={(e) => setOfficeId(e.target.value)}
-                    required
-                    className={cn(inputClass, "appearance-none")}
-                  >
-                    <option value="" disabled>
-                      {q.deliveryOfficePlaceholder}
-                    </option>
-                    {offices.map((office) => (
-                      <option key={office.id} value={office.id}>
-                        {office.name} ·{" "}
-                        {office.fee === 0 ? q.deliveryFree : `${office.fee} ${currency}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
+              {hasDeliveryData ? (
                 <div className="space-y-4">
                   {/* Wilaya + commune selection (delivery data available) */}
-                  {hasDeliveryData && (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <label
-                          htmlFor="of-wilaya"
-                          className="mb-1.5 block text-sm font-medium text-steel-300"
-                        >
-                          {q.deliveryWilaya} *
-                        </label>
-                        <select
-                          id="of-wilaya"
-                          required
-                          value={wilayaId ?? ""}
-                          onChange={(e) => {
-                            setWilayaId(e.target.value ? Number(e.target.value) : null);
-                            setCommuneId(null);
-                          }}
-                          className={cn(inputClass, "appearance-none")}
-                        >
-                          <option value="" disabled>
-                            {q.deliverySelectWilaya}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label
+                        htmlFor="of-wilaya"
+                        className="mb-1.5 block text-sm font-medium text-steel-300"
+                      >
+                        {q.deliveryWilaya} *
+                      </label>
+                      <select
+                        id="of-wilaya"
+                        required
+                        value={wilayaId ?? ""}
+                        onChange={(e) => {
+                          setWilayaId(e.target.value ? Number(e.target.value) : null);
+                          setCommuneId(null);
+                        }}
+                        className={cn(inputClass, "appearance-none")}
+                      >
+                        <option value="" disabled>
+                          {q.deliverySelectWilaya}
+                        </option>
+                        {wilayas.map((w) => (
+                          <option key={w.id} value={w.id}>
+                            {w.name}
                           </option>
-                          {wilayas.map((w) => (
-                            <option key={w.id} value={w.id}>
-                              {w.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="of-commune"
-                          className="mb-1.5 block text-sm font-medium text-steel-300"
-                        >
-                          {q.deliveryCommune} *
-                        </label>
-                        <select
-                          id="of-commune"
-                          required
-                          value={communeId ?? ""}
-                          onChange={(e) =>
-                            setCommuneId(e.target.value ? Number(e.target.value) : null)
-                          }
-                          disabled={wilayaId == null}
-                          className={cn(inputClass, "appearance-none")}
-                        >
-                          <option value="" disabled>
-                            {q.deliverySelectCommune}
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="of-commune"
+                        className="mb-1.5 block text-sm font-medium text-steel-300"
+                      >
+                        {q.deliveryCommune}
+                      </label>
+                      <select
+                        id="of-commune"
+                        value={communeId ?? ""}
+                        onChange={(e) =>
+                          setCommuneId(e.target.value ? Number(e.target.value) : null)
+                        }
+                        disabled={wilayaId == null}
+                        className={cn(inputClass, "appearance-none")}
+                      >
+                        <option value="" disabled>
+                          {q.deliverySelectCommune}
+                        </option>
+                        {communeOptions.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
                           </option>
-                          {communeOptions.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Home delivery only: customer address */}
+                  {courierOption === "home" && (
+                    <div>
+                      <label
+                        htmlFor="of-address"
+                        className="mb-1.5 block text-sm font-medium text-steel-300"
+                      >
+                        {q.deliveryAddress} *
+                      </label>
+                      <textarea
+                        id="of-address"
+                        required
+                        rows={2}
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        placeholder={q.deliveryAddressPlaceholder}
+                        className={cn(inputClass, "resize-none")}
+                      />
                     </div>
                   )}
-
-                  <div>
-                    <label
-                      htmlFor="of-address"
-                      className="mb-1.5 block text-sm font-medium text-steel-300"
-                    >
-                      {q.deliveryAddress} *
-                    </label>
-                    <textarea
-                      id="of-address"
-                      required
-                      rows={2}
-                      value={deliveryAddress}
-                      onChange={(e) => setDeliveryAddress(e.target.value)}
-                      placeholder={q.deliveryAddressPlaceholder}
-                      className={cn(inputClass, "resize-none")}
-                    />
-                  </div>
                 </div>
+              ) : (
+                <p className="rounded-lg bg-ink-800/60 px-3 py-3 text-xs text-steel-400">
+                  Les données de livraison ne sont pas encore configurées.
+                </p>
               )}
             </>
           )}

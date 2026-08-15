@@ -38,23 +38,19 @@ export function TrackForm() {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState(false);
   const [initialCode, setInitialCode] = useState<string | null>(null);
-  const [offices, setOffices] = useState<
-    { id: string; name: string; address: string }[]
-  >([]);
   const [wilayas, setWilayas] = useState<{ id: number; name: string }[]>([]);
   const [communes, setCommunes] = useState<
     { id: number; wilayaId: number; name: string }[]
   >([]);
   const [pickupNote, setPickupNote] = useState("");
 
-  // Load the courier offices, wilayas, communes + pickup note so the tracking
-  // page can show the delivery office / wilaya / commune details.
+  // Load the courier wilayas, communes + pickup note so the tracking page can
+  // show the delivery wilaya / commune details.
   useEffect(() => {
     fetch("/api/settings")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const delivery = json?.settings?.delivery;
-        if (Array.isArray(delivery?.offices)) setOffices(delivery.offices);
         if (Array.isArray(delivery?.wilayas)) setWilayas(delivery.wilayas);
         if (Array.isArray(delivery?.communes)) setCommunes(delivery.communes);
         if (typeof delivery?.pickupNote === "string") setPickupNote(delivery.pickupNote);
@@ -136,10 +132,6 @@ export function TrackForm() {
     const price = order.price;
     const showPrice = typeof price === "number" && Number.isFinite(price);
     const isCourier = delivery?.method === "courier";
-    const office =
-      isCourier && delivery?.option === "office"
-        ? offices.find((o) => o.id === delivery.officeId)
-        : undefined;
     const wilaya =
       delivery?.wilayaId != null
         ? wilayas.find((w) => w.id === delivery.wilayaId)
@@ -270,16 +262,9 @@ export function TrackForm() {
             )}
 
             {isCourier && delivery.option === "office" && (
-              <div className="mt-2 space-y-1">
-                <p className="text-sm font-semibold text-white">
-                  {office?.name ?? track.deliveryOfficeName}
-                </p>
-                {office?.address && (
-                  <p className="text-sm leading-relaxed text-steel-200">
-                    {office.address}
-                  </p>
-                )}
-              </div>
+              <p className="mt-2 text-sm leading-relaxed text-steel-200">
+                {wilayaName ?? track.deliveryOfficeName}
+              </p>
             )}
 
             {isCourier && (

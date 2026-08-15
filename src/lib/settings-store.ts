@@ -24,6 +24,8 @@ export interface Wilaya {
   nameAr?: string;
   /** Home delivery fee in DA for this wilaya. */
   homeFee: number;
+  /** Stop-desk (office pickup) fee in DA for this wilaya. */
+  stopDeskFee?: number;
 }
 
 export interface Commune {

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
-  CogIcon,
   LogoMark,
   LogOutIcon,
   PlusIcon,
@@ -88,7 +87,7 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState<"orders" | "settings">("orders");
+  const [tab, setTab] = useState<"orders" | "settings" | "media">("orders");
 
   useEffect(() => {
     const saved = window.localStorage.getItem(TOKEN_KEY);
@@ -287,27 +286,37 @@ export default function AdminPage() {
       </header>
 
       <div className="container-site px-4 py-8 sm:px-6">
-        {/* Tabs */}
-        <div className="flex gap-2">
-          <TabButton
-            active={tab === "orders"}
-            onClick={() => setTab("orders")}
-            icon={<CogIcon className="h-4 w-4" />}
-          >
-            Commandes
-          </TabButton>
-          <TabButton
-            active={tab === "settings"}
-            onClick={() => setTab("settings")}
-            icon={<CogIcon className="h-4 w-4" />}
-          >
-            Paramètres
-          </TabButton>
+        {/* Stats */}
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard label="Toutes" value={stats.total} />
+          <StatCard label="En attente" value={stats.pending} accent />
+          <StatCard label="En cours" value={stats.inProgress} />
+          <StatCard label="Finalisées" value={stats.finished} />
         </div>
 
-        {tab === "settings" ? (
-          <SettingsPanel token={token} />
-        ) : (
+        {/* Site navigation (dropdown) */}
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <label
+            htmlFor="admin-nav"
+            className="text-sm font-semibold text-steel-300"
+          >
+            Page :
+          </label>
+          <select
+            id="admin-nav"
+            value={tab}
+            onChange={(e) =>
+              setTab(e.target.value as "orders" | "settings" | "media")
+            }
+            className="w-52 rounded-md border border-white/12 bg-ink-900 px-3 py-2 text-sm text-white focus:border-accent/60 focus:outline-none"
+          >
+            <option value="orders">📦 Commandes</option>
+            <option value="settings">⚙️ Paramètres</option>
+            <option value="media">🎬 Media</option>
+          </select>
+        </div>
+
+        {tab === "orders" && (
           <OrdersPanel
             orders={orders}
             loading={loading}
@@ -319,6 +328,8 @@ export default function AdminPage() {
             onDelete={onDelete}
           />
         )}
+        {tab === "settings" && <SettingsPanel token={token} />}
+        {tab === "media" && <MediaPanel />}
       </div>
     </div>
   );
@@ -379,36 +390,6 @@ function LoginForm({
   );
 }
 
-function TabButton({
-  active,
-  onClick,
-  icon,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "rounded-lg px-4 py-2 text-sm font-semibold transition",
-        active
-          ? "bg-accent text-white"
-          : "bg-ink-800 text-steel-200 hover:bg-ink-700"
-      )}
-    >
-      <span className="flex items-center gap-1.5">
-        {icon}
-        {children}
-      </span>
-    </button>
-  );
-}
-
 function OrdersPanel({
   orders,
   loading,
@@ -429,14 +410,7 @@ function OrdersPanel({
   onDelete: (code: string) => void;
 }) {
   return (
-    <div className="mt-6 space-y-6">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Toutes" value={stats.total} />
-        <StatCard label="En attente" value={stats.pending} accent />
-        <StatCard label="En cours" value={stats.inProgress} />
-        <StatCard label="Finalisées" value={stats.finished} />
-      </div>
-
+    <div className="space-y-6">
       {loading ? (
         <p className="text-muted py-10 text-center">Chargement…</p>
       ) : orders.length === 0 ? (
@@ -656,6 +630,22 @@ function OrderCard({
   );
 }
 
+function MediaPanel() {
+  return (
+    <div className="mt-6 space-y-6">
+      <div className="card rounded-xl border-white/10 p-5 sm:p-6">
+        <h2 className="font-display text-lg font-semibold text-white">
+          🎬 Media
+        </h2>
+        <p className="text-muted mt-1 text-sm leading-relaxed">
+          Cette page est vide pour le moment. Les médias (photos, vidéos,
+          galeries) seront ajoutés plus tard.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function StatCard({
   label,
   value,
@@ -711,71 +701,6 @@ function SettingsPanel({ token }: { token: string }) {
       })
       .catch(() => undefined);
   }, []);
-
-  function update<K extends keyof AdminSettings>(key: K, value: AdminSettings[K]) {
-    setSettings((prev) => (prev ? { ...prev, [key]: value } : prev));
-    setSaved(false);
-  }
-
-  function updateDelivery<K extends keyof AdminSettings["delivery"]>(
-    key: K,
-    value: AdminSettings["delivery"][K]
-  ) {
-    setSettings((prev) =>
-      prev ? { ...prev, delivery: { ...prev.delivery, [key]: value } } : prev
-    );
-    setSaved(false);
-  }
-
-  function updateOffice(index: number, patch: Partial<Office>) {
-    setSettings((prev) =>
-      prev
-        ? {
-            ...prev,
-            delivery: {
-              ...prev.delivery,
-              offices: prev.delivery.offices.map((o, i) =>
-                i === index ? { ...o, ...patch } : o
-              ),
-            },
-          }
-        : prev
-    );
-    setSaved(false);
-  }
-
-  function addOffice() {
-    setSettings((prev) =>
-      prev
-        ? {
-            ...prev,
-            delivery: {
-              ...prev.delivery,
-              offices: [
-                ...prev.delivery.offices,
-                { id: `office-${Date.now()}`, name: "", address: "", fee: 0 },
-              ],
-            },
-          }
-        : prev
-    );
-    setSaved(false);
-  }
-
-  function removeOffice(index: number) {
-    setSettings((prev) =>
-      prev
-        ? {
-            ...prev,
-            delivery: {
-              ...prev.delivery,
-              offices: prev.delivery.offices.filter((_, i) => i !== index),
-            },
-          }
-        : prev
-    );
-    setSaved(false);
-  }
 
   function updateWilaya(index: number, patch: Partial<Wilaya>) {
     setSettings((prev) =>
@@ -1011,9 +936,9 @@ function SettingsPanel({ token }: { token: string }) {
           Données de livraison
         </h2>
         <p className="text-muted mt-1 text-sm leading-relaxed">
-          Saisissez manuellement les wilayas, les communes et les bureaux, ou
-          importez-les depuis un fichier Excel. Le prix à domicile est défini
-          par wilaya (utilisé si saisi, sinon le tarif de secours ci-dessous).
+          Saisissez manuellement les wilayas et les communes, ou importez-les
+          depuis un fichier Excel. Chaque wilaya a un prix à domicile et un
+          prix bureau (stop-desk), tous deux utilisés par la page commande.
         </p>
 
         {/* Excel import */}
@@ -1023,9 +948,10 @@ function SettingsPanel({ token }: { token: string }) {
           </p>
           <p className="text-muted mt-1 text-xs leading-relaxed">
             Le fichier peut contenir des feuilles ou colonnes nommées&nbsp;:
-            wilayas (nom, prix), communes (commune + wilaya), bureaux (nom,
-            adresse, frais). Les colonnes sont détectées automatiquement
-            (français, arabe ou anglais).
+            wilayas (nom, prix à domicile, prix bureau), communes (commune +
+            wilaya). Format Guepex pris en charge (« Destination », « Tarif à
+            domicile », « Tarif stop-desk »). Les colonnes sont détectées
+            automatiquement (français, arabe ou anglais).
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <input
@@ -1056,7 +982,7 @@ function SettingsPanel({ token }: { token: string }) {
         <div className="mt-6">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-steel-200">
-              Wilayas ({wilayas.length}) — frais de livraison à domicile
+              Wilayas ({wilayas.length}) — prix domicile & bureau
             </p>
             <button type="button" onClick={addWilaya} className="btn-outline btn-sm">
               <PlusIcon className="h-4 w-4" />
@@ -1065,15 +991,15 @@ function SettingsPanel({ token }: { token: string }) {
           </div>
           {hasCommuneWithoutHomeFee && (
             <p className="mt-2 flex items-center gap-2 rounded-md border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-200">
-              Certaines wilayas n&apos;ont pas de prix : le tarif de secours
-              (ci-dessous) sera utilisé pour elles.
+              Certaines wilayas n&apos;ont pas de prix : le tarif général sera
+              utilisé pour elles.
             </p>
           )}
           <div className="mt-3 space-y-2.5">
             {wilayas.map((w, index) => (
               <div
                 key={w.id}
-                className="grid gap-2.5 rounded-lg border border-white/10 bg-ink-800/60 p-3 sm:grid-cols-[120px_1fr_1.2fr_140px_auto]"
+                className="grid gap-2.5 rounded-lg border border-white/10 bg-ink-800/60 p-3 sm:grid-cols-[100px_1.2fr_1.2fr_110px_110px_auto]"
               >
                 <div>
                   <label className="mb-1 block text-[11px] font-medium text-steel-400">
@@ -1128,6 +1054,24 @@ function SettingsPanel({ token }: { token: string }) {
                     className={input}
                   />
                 </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-steel-400">
+                    Prix bureau
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={w.stopDeskFee ?? ""}
+                    onChange={(e) =>
+                      updateWilaya(index, {
+                        stopDeskFee: parseFloat(e.target.value) || undefined,
+                      })
+                    }
+                    placeholder="0"
+                    className={input}
+                  />
+                </div>
                 <button
                   type="button"
                   aria-label="Supprimer la wilaya"
@@ -1140,8 +1084,8 @@ function SettingsPanel({ token }: { token: string }) {
             ))}
             {wilayas.length === 0 && (
               <p className="rounded-lg bg-ink-800/60 px-3 py-3 text-xs text-steel-400">
-                Aucune wilaya : le retrait et les bureaux resteront les seules
-                options, et le tarif à domicile utilisera le prix de secours.
+                Aucune wilaya : la livraison ne sera pas proposée tant que le
+                catalogue n&apos;est pas rempli (manuellement ou via Excel).
               </p>
             )}
           </div>
@@ -1241,147 +1185,6 @@ function SettingsPanel({ token }: { token: string }) {
           onClick={onSave}
           disabled={saving}
           className="btn-primary btn-md mt-6"
-        >
-          {saving ? "Enregistrement…" : "Enregistrer"}
-        </button>
-      </div>
-
-      {/* Livraison & devis */}
-      <div className="card rounded-xl border-white/10 p-5 sm:p-6">
-        <h2 className="font-display text-lg font-semibold text-white">
-          Livraison & devis
-        </h2>
-        <p className="text-muted mt-1 text-sm leading-relaxed">
-          Paramètres généraux : devise, retrait sur place, tarif de secours et
-          bureaux de livraison.
-        </p>
-
-        <div className="mt-5 space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-steel-400">
-                Devise affichée (ex. DA, €, DZD)
-              </label>
-              <input
-                value={settings.currency}
-                onChange={(e) => update("currency", e.target.value)}
-                className={input}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-steel-400">
-                Tarif de secours à domicile (DA)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="any"
-                value={settings.delivery.homeFee}
-                onChange={(e) =>
-                  updateDelivery("homeFee", parseFloat(e.target.value) || 0)
-                }
-                className={input}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <label className="flex items-center gap-2.5 text-sm font-medium text-steel-200">
-              <input
-                type="checkbox"
-                checked={settings.delivery.pickupAvailable}
-                onChange={(e) =>
-                  updateDelivery("pickupAvailable", e.target.checked)
-                }
-                className="h-4 w-4 accent-[#FF5A1F]"
-              />
-              Retrait sur place disponible
-            </label>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-steel-400">
-                Note de retrait (adresse / horaires)
-              </label>
-              <textarea
-                rows={2}
-                value={settings.delivery.pickupNote}
-                onChange={(e) => updateDelivery("pickupNote", e.target.value)}
-                className={cn(input, "resize-none")}
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-steel-200">
-                Bureaux de livraison ({settings.delivery.offices.length})
-              </p>
-              <button type="button" onClick={addOffice} className="btn-outline btn-sm">
-                <PlusIcon className="h-4 w-4" />
-                Ajouter
-              </button>
-            </div>
-            <div className="mt-3 space-y-3">
-              {settings.delivery.offices.map((office, index) => (
-                <div
-                  key={office.id}
-                  className="grid gap-3 rounded-xl border border-white/10 bg-ink-800/60 p-3 sm:grid-cols-[1fr_1.2fr_90px_auto]"
-                >
-                  <div>
-                    <label className="mb-1 block text-[11px] font-medium text-steel-400">
-                      Nom
-                    </label>
-                    <input
-                      value={office.name}
-                      onChange={(e) => updateOffice(index, { name: e.target.value })}
-                      placeholder="Bureau Alger"
-                      className={input}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[11px] font-medium text-steel-400">
-                      Adresse
-                    </label>
-                    <input
-                      value={office.address}
-                      onChange={(e) => updateOffice(index, { address: e.target.value })}
-                      placeholder="Rue, ville…"
-                      className={input}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[11px] font-medium text-steel-400">
-                      Frais
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="any"
-                      value={office.fee}
-                      onChange={(e) =>
-                        updateOffice(index, { fee: parseFloat(e.target.value) || 0 })
-                      }
-                      className={input}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    aria-label="Supprimer le bureau"
-                    onClick={() => removeOffice(index)}
-                    className="mt-6 flex h-9 w-9 items-center justify-center self-start rounded-md border border-white/10 text-steel-400 transition hover:border-red-400/40 hover:text-red-300"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saving}
-          className="btn-primary btn-md mt-5"
         >
           {saving ? "Enregistrement…" : "Enregistrer"}
         </button>

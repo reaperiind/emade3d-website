@@ -42,6 +42,9 @@ export async function PUT(request: Request) {
       name,
       ...(w.nameAr ? { nameAr: String(w.nameAr).slice(0, 120) } : {}),
       homeFee: Math.max(0, Number(w.homeFee) || 0),
+      ...(w.stopDeskFee != null && Number(w.stopDeskFee) > 0
+        ? { stopDeskFee: Number(w.stopDeskFee) }
+        : {}),
     };
   };
 
