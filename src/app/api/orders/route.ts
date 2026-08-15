@@ -7,7 +7,6 @@ import {
 import { generateTrackingCode } from "@/lib/order-code";
 import { isAuthorized } from "@/lib/admin-auth";
 import { getSettings } from "@/lib/settings-store";
-import { quoteDeliveryFee } from "@/lib/courier";
 import type { DeliveryInfo } from "@/lib/order-flows";
 
 export const runtime = "nodejs";
@@ -35,11 +34,12 @@ function clean(v: unknown, max = 200): string {
 }
 
 /**
- * Validates the delivery payload and computes the delivery fee.
- *
- * When the courier (Guepex) is configured & enabled, the price is quoted live
- * from the courier API (per office, or per wilaya+commune for home delivery);
- * otherwise it falls back to the manually configured fees.
+ * Validates the delivery payload and computes the delivery fee from the
+ * manually configured catalogs:
+ * - pickup: free.
+ * - office: the office's configured fee.
+ * - home: the destination wilaya's home fee, falling back to the global
+ *   home fee when no per-wilaya fee is set.
  */
 async function sanitizeDelivery(raw: unknown): Promise<DeliveryInfo | undefined> {
   if (!raw || typeof raw !== "object") return undefined;
@@ -60,40 +60,20 @@ async function sanitizeDelivery(raw: unknown): Promise<DeliveryInfo | undefined>
   const communeName = clean(d.communeName, 120) || undefined;
 
   const settings = await getSettings();
-  const courier = settings.delivery.courier;
 
-  // Office delivery: price comes from the imported / configured office fee
-  // (centers carry their own fee when imported from Guepex).
+  // Office delivery: price comes from the configured office fee.
   if (option === "office") {
     const office = settings.delivery.offices.find((o) => o.id === officeId);
     const fee = office?.fee ?? 0;
     return { method, option, officeId, address, fee };
   }
 
-  // Home delivery: manual fallback from settings.
-  let fee = settings.delivery.homeFee || 0;
-
-  // Live courier pricing for home (per wilaya + commune) when possible.
-  const courierOn = Boolean(
-    courier?.enabled &&
-      courier.apiId &&
-      courier.apiToken &&
-      courier.fromWilayaId &&
-      wilayaId
-  );
-  if (courierOn) {
-    try {
-      const quote = await quoteDeliveryFee({
-        fromWilayaId: courier!.fromWilayaId as number,
-        toWilayaId: wilayaId as number,
-        communeId,
-        deliveryType: "home",
-      });
-      if (quote !== null && quote > 0) fee = quote;
-    } catch {
-      // courier unreachable — keep the manual fallback
-    }
-  }
+  // Home delivery: per-wilaya fee, with global home fee as fallback.
+  const wilaya =
+    wilayaId != null
+      ? settings.delivery.wilayas.find((w) => w.id === wilayaId)
+      : undefined;
+  const fee = wilaya?.homeFee ?? settings.delivery.homeFee;
 
   return { method, option, officeId, address, wilayaId, communeId, communeName, fee };
 }

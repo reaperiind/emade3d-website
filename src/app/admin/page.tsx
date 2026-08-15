@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   CogIcon,
   LogoMark,
@@ -11,7 +11,7 @@ import {
 import type { Order, OrderStatus } from "@/lib/orders-store";
 import { statusesFor } from "@/lib/order-flows";
 import type { HistoryEntry } from "@/lib/order-flows";
-import type { Commune, CourierConfig, Office, Wilaya } from "@/lib/settings-store";
+import type { Commune, Office, Wilaya } from "@/lib/settings-store";
 import { cn } from "@/lib/cn";
 
 const TOKEN_KEY = "emade3d-admin-token";
@@ -67,16 +67,10 @@ function fromLocalInput(value: string): string {
 }
 
 /**
- * Admin-side settings: the public GET hides courier credentials, but the
- * settings panel needs to edit them. apiId / apiToken are optional here so a
- * blank field means "keep the stored value".
+ * Admin-side settings. The public GET has no courier credentials anymore —
+ * delivery data (wilayas / communes / offices / fees) is managed manually or
+ * imported from an Excel file.
  */
-interface AdminCourier extends Omit<CourierConfig, "apiId" | "apiToken"> {
-  apiId?: string;
-  apiToken?: string;
-  hasCredentials?: boolean;
-}
-
 interface AdminSettings {
   currency: string;
   delivery: {
@@ -86,7 +80,6 @@ interface AdminSettings {
     offices: Office[];
     wilayas?: Wilaya[];
     communes?: Commune[];
-    courier?: AdminCourier;
   };
 }
 
@@ -249,15 +242,6 @@ export default function AdminPage() {
     patchOrder(code, { history });
   }
 
-  function onShipmentCreated(
-    code: string,
-    shipment: { tracking: string; id?: string; createdAt: string }
-  ) {
-    setOrders((prev) =>
-      prev.map((o) => (o.code === code ? { ...o, shipment } : o))
-    );
-  }
-
   async function onDelete(code: string) {
     if (!window.confirm(`Supprimer la commande ${code} ?`)) return;
     try {
@@ -332,7 +316,6 @@ export default function AdminPage() {
             onPrice={setPrice}
             onDeliveryFee={setDeliveryFee}
             onHistoryAt={setHistoryAt}
-            onShipment={onShipmentCreated}
             onDelete={onDelete}
           />
         )}
@@ -434,7 +417,6 @@ function OrdersPanel({
   onPrice,
   onDeliveryFee,
   onHistoryAt,
-  onShipment,
   onDelete,
 }: {
   orders: Order[];
@@ -444,10 +426,6 @@ function OrdersPanel({
   onPrice: (code: string, raw: string) => void;
   onDeliveryFee: (code: string, raw: string) => void;
   onHistoryAt: (code: string, index: number, value: string) => void;
-  onShipment: (
-    code: string,
-    shipment: { tracking: string; id?: string; createdAt: string }
-  ) => void;
   onDelete: (code: string) => void;
 }) {
   return (
@@ -475,7 +453,6 @@ function OrdersPanel({
               onPrice={onPrice}
               onDeliveryFee={onDeliveryFee}
               onHistoryAt={onHistoryAt}
-              onShipment={onShipment}
               onDelete={onDelete}
             />
           ))}
@@ -491,7 +468,6 @@ function OrderCard({
   onPrice,
   onDeliveryFee,
   onHistoryAt,
-  onShipment,
   onDelete,
 }: {
   order: Order;
@@ -499,23 +475,10 @@ function OrderCard({
   onPrice: (code: string, raw: string) => void;
   onDeliveryFee: (code: string, raw: string) => void;
   onHistoryAt: (code: string, index: number, value: string) => void;
-  onShipment: (
-    code: string,
-    shipment: { tracking: string; id?: string; createdAt: string }
-  ) => void;
   onDelete: (code: string) => void;
 }) {
   const options = statusesFor(order.serviceType);
   const isCourier = order.delivery?.method === "courier";
-  const [shipOpen, setShipOpen] = useState(false);
-  const [shipWeight, setShipWeight] = useState("1");
-  const [shipLength, setShipLength] = useState("");
-  const [shipWidth, setShipWidth] = useState("");
-  const [shipHeight, setShipHeight] = useState("");
-  const [shipInsurance, setShipInsurance] = useState(false);
-  const [shipDeclared, setShipDeclared] = useState("");
-  const [shipSending, setShipSending] = useState(false);
-  const [shipError, setShipError] = useState<string | null>(null);
   const [priceDraft, setPriceDraft] = useState<string>(() =>
     order.price == null ? "" : String(order.price)
   );
@@ -534,44 +497,6 @@ function OrderCard({
     if (isCourier) onDeliveryFee(order.code, feeDraft);
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2500);
-  }
-
-  async function createShipment() {
-    setShipSending(true);
-    setShipError(null);
-    try {
-      const res = await fetch("/api/courier/shipments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${window.localStorage.getItem(TOKEN_KEY) ?? ""}`,
-        },
-        body: JSON.stringify({
-          code: order.code,
-          weight: parseFloat(shipWeight) || 0,
-          length: parseFloat(shipLength) || 0,
-          width: parseFloat(shipWidth) || 0,
-          height: parseFloat(shipHeight) || 0,
-          doInsurance: shipInsurance,
-          declaredValue: parseFloat(shipDeclared) || 0,
-        }),
-      });
-      const json = (await res.json().catch(() => null)) as {
-        ok?: boolean;
-        shipment?: { tracking: string; id?: string; createdAt: string };
-        error?: string;
-      } | null;
-      if (res.ok && json?.shipment) {
-        onShipment(order.code, json.shipment);
-        setShipOpen(false);
-      } else {
-        setShipError(json?.error ?? "shipment_failed");
-      }
-    } catch {
-      setShipError("network");
-    } finally {
-      setShipSending(false);
-    }
   }
 
   return (
@@ -680,122 +605,6 @@ function OrderCard({
         </p>
       )}
 
-      {/* Guepex shipment */}
-      {isCourier && (
-        <div className="mt-3">
-          {order.shipment?.tracking ? (
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm">
-              <span className="text-emerald-300">Shène Guepex créée</span>
-              <a
-                href={`https://guepex.app/tracking/${encodeURIComponent(
-                  order.shipment.tracking
-                )}`}
-                target="_blank"
-                rel="noreferrer"
-                dir="ltr"
-                className="font-mono font-bold text-emerald-200 hover:underline"
-              >
-                {order.shipment.tracking}
-              </a>
-            </div>
-          ) : shipOpen ? (
-            <div className="rounded-lg border border-white/10 bg-ink-800/60 p-3">
-              <p className="mb-2 text-xs font-semibold text-steel-300">
-                Créer la shène Guepex
-              </p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={shipWeight}
-                  onChange={(e) => setShipWeight(e.target.value)}
-                  placeholder="Poids (kg)"
-                  className="w-full rounded-md border border-white/12 bg-ink-900 px-2.5 py-1.5 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={shipLength}
-                  onChange={(e) => setShipLength(e.target.value)}
-                  placeholder="Long. (cm)"
-                  className="w-full rounded-md border border-white/12 bg-ink-900 px-2.5 py-1.5 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={shipWidth}
-                  onChange={(e) => setShipWidth(e.target.value)}
-                  placeholder="Larg. (cm)"
-                  className="w-full rounded-md border border-white/12 bg-ink-900 px-2.5 py-1.5 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={shipHeight}
-                  onChange={(e) => setShipHeight(e.target.value)}
-                  placeholder="Haut. (cm)"
-                  className="w-full rounded-md border border-white/12 bg-ink-900 px-2.5 py-1.5 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none"
-                />
-              </div>
-              <label className="mt-2 flex items-center gap-2 text-xs text-steel-300">
-                <input
-                  type="checkbox"
-                  checked={shipInsurance}
-                  onChange={(e) => setShipInsurance(e.target.checked)}
-                  className="h-3.5 w-3.5 accent-[#FF5A1F]"
-                />
-                Assurance
-              </label>
-              {shipInsurance && (
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={shipDeclared}
-                  onChange={(e) => setShipDeclared(e.target.value)}
-                  placeholder="Valeur déclarée (DA)"
-                  className="mt-2 w-full rounded-md border border-white/12 bg-ink-900 px-2.5 py-1.5 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none"
-                />
-              )}
-              {shipError && <p className="mt-2 text-xs text-red-300">{shipError}</p>}
-              <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={createShipment}
-                  disabled={shipSending}
-                  className="btn-primary btn-sm disabled:opacity-60"
-                >
-                  {shipSending ? "Création…" : "Créer"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShipOpen(false);
-                    setShipError(null);
-                  }}
-                  className="btn-outline btn-sm"
-                >
-                  Annuler
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShipOpen(true)}
-              className="btn-outline btn-sm"
-            >
-              <PlusIcon className="h-4 w-4" />
-              Créer la shène Guepex
-            </button>
-          )}
-        </div>
-      )}
-
       {/* History (editable timestamps) */}
       <div className="mt-4">
         <p className="text-xs font-medium uppercase tracking-widest text-steel-400">
@@ -884,10 +693,13 @@ function SettingsPanel({ token }: { token: string }) {
   const [error, setError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [importMsg, setImportMsg] = useState<string | null>(null);
-  const [testing, setTesting] = useState(false);
-  const [testMsg, setTestMsg] = useState<{ ok: boolean; text: string } | null>(
-    null
+  const [importMsg, setImportMsg] = useState<{
+    ok: boolean;
+    text: string;
+  } | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [communeWilayaFilter, setCommuneWilayaFilter] = useState<number | "all">(
+    "all"
   );
 
   useEffect(() => {
@@ -911,28 +723,6 @@ function SettingsPanel({ token }: { token: string }) {
   ) {
     setSettings((prev) =>
       prev ? { ...prev, delivery: { ...prev.delivery, [key]: value } } : prev
-    );
-    setSaved(false);
-  }
-
-  function updateCourier(patch: Partial<AdminCourier>) {
-    setSettings((prev) =>
-      prev
-        ? {
-            ...prev,
-            delivery: {
-              ...prev.delivery,
-              courier: {
-                provider: "guepex",
-                name: "Guepex",
-                enabled: false,
-                fromWilayaId: null,
-                ...(prev.delivery.courier ?? {}),
-                ...patch,
-              },
-            },
-          }
-        : prev
     );
     setSaved(false);
   }
@@ -987,6 +777,146 @@ function SettingsPanel({ token }: { token: string }) {
     setSaved(false);
   }
 
+  function updateWilaya(index: number, patch: Partial<Wilaya>) {
+    setSettings((prev) =>
+      prev
+        ? {
+            ...prev,
+            delivery: {
+              ...prev.delivery,
+              wilayas: (prev.delivery.wilayas ?? []).map((w, i) =>
+                i === index ? { ...w, ...patch } : w
+              ),
+            },
+          }
+        : prev
+    );
+    setSaved(false);
+  }
+
+  function removeWilaya(index: number) {
+    const prev = settings;
+    if (!prev) return;
+    if (prev.delivery.wilayas == null) return;
+    const removed = prev.delivery.wilayas[index];
+    if (!removed) return;
+    if (
+      !window.confirm(
+        `Supprimer la wilaya ${removed.name} et ses communes ?`
+      )
+    )
+      return;
+    const communes = (prev.delivery.communes ?? []).filter(
+      (c) => c.wilayaId !== removed.id
+    );
+    setSettings(() => ({
+      ...prev,
+      delivery: {
+        ...prev.delivery,
+        wilayas: prev.delivery.wilayas!.filter((_, i) => i !== index),
+        communes,
+      },
+    }));
+    setSaved(false);
+  }
+
+  /** Auto-id: max wilaya id + 1. */
+  function addWilaya() {
+    setSettings((prev) =>
+      prev
+        ? {
+            ...prev,
+            delivery: {
+              ...prev.delivery,
+              wilayas: [
+                ...(prev.delivery.wilayas ?? []),
+                {
+                  id:
+                    (prev.delivery.wilayas ?? []).length > 0
+                      ? Math.max(...(prev.delivery.wilayas ?? []).map((w) => w.id)) +
+                        1
+                      : 1,
+                  name: "",
+                  homeFee: 0,
+                },
+              ],
+            },
+          }
+        : prev
+    );
+    setSaved(false);
+  }
+
+  function updateCommune(index: number, patch: Partial<Commune>) {
+    setSettings((prev) =>
+      prev
+        ? {
+            ...prev,
+            delivery: {
+              ...prev.delivery,
+              communes: (prev.delivery.communes ?? []).map((c, i) =>
+                i === index ? { ...c, ...patch } : c
+              ),
+            },
+          }
+        : prev
+    );
+    setSaved(false);
+  }
+
+  function addCommune() {
+    if (!settings) return;
+    const wilayas = settings.delivery.wilayas ?? [];
+    const targetWilaya =
+      communeWilayaFilter === "all"
+        ? wilayas.length === 1
+          ? wilayas[0]
+          : null
+        : wilayas.find((w) => w.id === communeWilayaFilter) ?? null;
+    if (targetWilaya == null) return; // pick a wilaya filter first when >1
+    const existingIds = (settings.delivery.communes ?? [])
+      .filter((c) => c.wilayaId === targetWilaya.id)
+      .map((c) => c.id);
+    const nextId =
+      existingIds.length > 0
+        ? Math.max(...existingIds) + 1
+        : targetWilaya.id * 10000 + 1;
+    setSettings((prev) =>
+      prev
+        ? {
+            ...prev,
+            delivery: {
+              ...prev.delivery,
+              communes: [
+                ...(prev.delivery.communes ?? []),
+                {
+                  id: nextId,
+                  wilayaId: targetWilaya.id,
+                  name: "",
+                },
+              ],
+            },
+          }
+        : prev
+    );
+    setSaved(false);
+  }
+
+  function removeCommune(index: number) {
+    setSettings((prev) =>
+      prev
+        ? {
+            ...prev,
+            delivery: {
+              ...prev.delivery,
+              communes: (prev.delivery.communes ?? []).filter((_, i) => i !== index),
+            },
+          }
+        : prev
+    );
+    setSaved(false);
+  }
+
   async function onSave() {
     if (!settings) return;
     setSaving(true);
@@ -1015,73 +945,41 @@ function SettingsPanel({ token }: { token: string }) {
     }
   }
 
-  async function onImport() {
+  async function onImportFile(file: File) {
     if (!token) return;
     setImporting(true);
     setImportMsg(null);
     try {
-      const res = await fetch("/api/courier/import", {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/delivery/import", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
+        body: fd,
       });
       const json = (await res.json().catch(() => null)) as {
         ok?: boolean;
-        counts?: { wilayas: number; communes: number; centers: number };
+        counts?: { wilayas: number; communes: number; offices: number };
+        total?: { wilayas: number; communes: number; offices: number };
+        log?: string[];
         error?: string;
       } | null;
       if (res.ok && json?.ok && json?.counts) {
-        setImportMsg(
-          `Importé : ${json.counts.wilayas} wilayas, ${json.counts.communes} communes, ${json.counts.centers} bureaux.`
-        );
+        setImportMsg({
+          ok: true,
+          text: `Importé : ${json.counts.wilayas} wilayas, ${json.counts.communes} communes, ${json.counts.offices} bureaux. Totals : ${json.total?.wilayas} / ${json.total?.communes} / ${json.total?.offices}.${json.log?.length ? ` ${json.log.join(" ")}` : ""}`,
+        });
         const sres = await fetch("/api/settings");
         const sjson = await sres.json();
         if (sjson.settings) setSettings(sjson.settings);
       } else {
-        setImportMsg(`Erreur : ${json?.error ?? "inconnue"}`);
+        setImportMsg({ ok: false, text: `Erreur : ${json?.error ?? "inconnue"}` });
       }
     } catch {
-      setImportMsg("Erreur réseau.");
+      setImportMsg({ ok: false, text: "Erreur réseau." });
     } finally {
       setImporting(false);
-    }
-  }
-
-  async function onTest() {
-    if (!token) return;
-    setTesting(true);
-    setTestMsg(null);
-    try {
-      const res = await fetch("/api/courier/test", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          apiId: courier?.apiId ?? "",
-          apiToken: courier?.apiToken ?? "",
-        }),
-      });
-      const json = (await res.json().catch(() => null)) as {
-        ok?: boolean;
-        counts?: { wilayas: number; communes: number; centers: number };
-        error?: string;
-      } | null;
-      if (res.ok && json?.ok) {
-        setTestMsg({
-          ok: true,
-          text:
-            json.counts != null
-              ? `Connexion réussie : ${json.counts.wilayas} wilayas, ${json.counts.communes} communes, ${json.counts.centers} bureaux.`
-              : "Connexion réussie.",
-        });
-      } else {
-        setTestMsg({ ok: false, text: `Échec : ${json?.error ?? "inconnue"}` });
-      }
-    } catch {
-      setTestMsg({ ok: false, text: "Erreur réseau." });
-    } finally {
-      setTesting(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
@@ -1095,168 +993,257 @@ function SettingsPanel({ token }: { token: string }) {
 
   const input =
     "w-full rounded-md border border-white/12 bg-ink-900 px-3 py-2 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none";
-  const courier = settings.delivery.courier;
-  const hasCredentials = Boolean(courier?.hasCredentials);
   const wilayas = settings.delivery.wilayas ?? [];
+  const communes = settings.delivery.communes ?? [];
+  const visibleCommunes =
+    communeWilayaFilter === "all"
+      ? communes
+      : communes.filter((c) => c.wilayaId === communeWilayaFilter);
+
+  const hasCommuneWithoutHomeFee =
+    wilayas.length > 0 && wilayas.some((w) => !w.homeFee);
 
   return (
     <div className="mt-6 space-y-6">
-      {/* Service de livraison (Guepex) */}
+      {/* Données de livraison (manuelles) */}
       <div className="card rounded-xl border-white/10 p-5 sm:p-6">
         <h2 className="font-display text-lg font-semibold text-white">
-          Service de livraison
+          Données de livraison
         </h2>
         <p className="text-muted mt-1 text-sm leading-relaxed">
-          Connectez le site à l&apos;API Guepex (identifiants depuis votre
-          tableau de bord Guepex). Les wilayas, communes et bureaux sont ensuite
-          importés puis proposés aux clients, avec des prix calculés par
-          l&apos;API. Le token n&apos;est jamais affiché au client.
+          Saisissez manuellement les wilayas, les communes et les bureaux, ou
+          importez-les depuis un fichier Excel. Le prix à domicile est défini
+          par wilaya (utilisé si saisi, sinon le tarif de secours ci-dessous).
         </p>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-steel-400">
-              Société de livraison
-            </label>
+        {/* Excel import */}
+        <div className="mt-4 rounded-lg border border-dashed border-white/15 bg-ink-900/40 p-4">
+          <p className="text-sm font-medium text-steel-200">
+            Importer depuis Excel (.xlsx / .xls / .csv)
+          </p>
+          <p className="text-muted mt-1 text-xs leading-relaxed">
+            Le fichier peut contenir des feuilles ou colonnes nommées&nbsp;:
+            wilayas (nom, prix), communes (commune + wilaya), bureaux (nom,
+            adresse, frais). Les colonnes sont détectées automatiquement
+            (français, arabe ou anglais).
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
             <input
-              value={courier?.name ?? "Guepex"}
-              onChange={(e) => updateCourier({ name: e.target.value })}
-              className={input}
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onImportFile(f);
+              }}
+              className="block w-full max-w-sm text-sm text-steel-300 file:mr-3 file:rounded-md file:border-none file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white file:cursor-pointer hover:file:bg-accent/90"
             />
+            {importing && <span className="text-sm text-steel-400">Import…</span>}
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-steel-400">
-              API ID
-            </label>
-            <input
-              value={courier?.apiId ?? ""}
-              onChange={(e) => updateCourier({ apiId: e.target.value })}
-              placeholder={
-                hasCredentials
-                  ? "•••••• (laisser vide pour conserver)"
-                  : "API ID"
-              }
-              autoComplete="off"
-              className={input}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-steel-400">
-              API TOKEN
-            </label>
-            <input
-              type="password"
-              value={courier?.apiToken ?? ""}
-              onChange={(e) => updateCourier({ apiToken: e.target.value })}
-              placeholder={
-                hasCredentials
-                  ? "•••••• (laisser vide pour conserver)"
-                  : "API TOKEN"
-              }
-              autoComplete="off"
-              className={input}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-steel-400">
-              Wilaya d&apos;expédition (origine)
-            </label>
-            <select
-              value={courier?.fromWilayaId ?? ""}
-              onChange={(e) =>
-                updateCourier({
-                  fromWilayaId: e.target.value ? Number(e.target.value) : null,
-                })
-              }
-              className={cn(input, "appearance-none")}
+          {importMsg && (
+            <p
+              className={cn(
+                "mt-2 text-sm",
+                importMsg.ok ? "text-emerald-300" : "text-red-300"
+              )}
             >
-              <option value="">Choisissez la wilaya d&apos;origine</option>
-              {wilayas.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
+              {importMsg.text}
+            </p>
+          )}
+        </div>
+
+        {/* Wilayas */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-steel-200">
+              Wilayas ({wilayas.length}) — frais de livraison à domicile
+            </p>
+            <button type="button" onClick={addWilaya} className="btn-outline btn-sm">
+              <PlusIcon className="h-4 w-4" />
+              Ajouter
+            </button>
+          </div>
+          {hasCommuneWithoutHomeFee && (
+            <p className="mt-2 flex items-center gap-2 rounded-md border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-200">
+              Certaines wilayas n&apos;ont pas de prix : le tarif de secours
+              (ci-dessous) sera utilisé pour elles.
+            </p>
+          )}
+          <div className="mt-3 space-y-2.5">
+            {wilayas.map((w, index) => (
+              <div
+                key={w.id}
+                className="grid gap-2.5 rounded-lg border border-white/10 bg-ink-800/60 p-3 sm:grid-cols-[120px_1fr_1.2fr_140px_auto]"
+              >
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-steel-400">
+                    Id
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={w.id}
+                    onChange={(e) =>
+                      updateWilaya(index, { id: Number(e.target.value) || 0 })
+                    }
+                    className={input}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-steel-400">
+                    Nom
+                  </label>
+                  <input
+                    value={w.name}
+                    onChange={(e) => updateWilaya(index, { name: e.target.value })}
+                    placeholder="Alger"
+                    className={input}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-steel-400">
+                    Nom arabe (optionnel)
+                  </label>
+                  <input
+                    value={w.nameAr ?? ""}
+                    onChange={(e) => updateWilaya(index, { nameAr: e.target.value })}
+                    placeholder="الجزائر"
+                    dir="rtl"
+                    className={input}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-steel-400">
+                    Prix domicile
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={w.homeFee}
+                    onChange={(e) =>
+                      updateWilaya(index, { homeFee: parseFloat(e.target.value) || 0 })
+                    }
+                    placeholder="0"
+                    className={input}
+                  />
+                </div>
+                <button
+                  type="button"
+                  aria-label="Supprimer la wilaya"
+                  onClick={() => removeWilaya(index)}
+                  className="mt-5 flex h-8 w-8 items-center justify-center self-start rounded-md border border-white/10 text-steel-400 transition hover:border-red-400/40 hover:text-red-300"
+                >
+                  <TrashIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+            {wilayas.length === 0 && (
+              <p className="rounded-lg bg-ink-800/60 px-3 py-3 text-xs text-steel-400">
+                Aucune wilaya : le retrait et les bureaux resteront les seules
+                options, et le tarif à domicile utilisera le prix de secours.
+              </p>
+            )}
           </div>
         </div>
 
-        <label className="mt-4 flex items-center gap-2.5 text-sm font-medium text-steel-200">
-          <input
-            type="checkbox"
-            checked={Boolean(courier?.enabled)}
-            onChange={(e) => updateCourier({ enabled: e.target.checked })}
-            className="h-4 w-4 accent-[#FF5A1F]"
-          />
-          Activer l&apos;intégration Guepex (communes + prix calculés)
-        </label>
-
-        {courier?.lastImportedAt && (
-          <p className="mt-3 text-xs text-steel-400">
-            Dernier import :{" "}
-            {new Date(courier.lastImportedAt).toLocaleString("fr-FR")}
+        {/* Communes */}
+        <div className="mt-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-steel-200">
+              Communes ({communes.length})
+            </p>
+            <div className="flex items-center gap-2">
+              <select
+                value={communeWilayaFilter}
+                onChange={(e) =>
+                  setCommuneWilayaFilter(
+                    e.target.value === "all" ? "all" : Number(e.target.value)
+                  )
+                }
+                className={cn(input, "w-56 appearance-none")}
+              >
+                <option value="all">Toutes les wilayas</option>
+                {wilayas.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={addCommune}
+                disabled={wilayas.length === 0}
+                className="btn-outline btn-sm disabled:opacity-50"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Ajouter
+              </button>
+            </div>
+          </div>
+          <p className="text-muted mt-1 text-xs">
+            Sélectionnez une wilaya pour gérer ses communes puis « Ajouter ».
           </p>
-        )}
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={onTest}
-            disabled={testing}
-            className="btn-outline-accent btn-md disabled:opacity-60"
-          >
-            {testing ? "Test en cours…" : "Test de connexion"}
-          </button>
-          <button
-            type="button"
-            onClick={onImport}
-            disabled={importing}
-            className="btn-primary btn-md disabled:opacity-60"
-          >
-            {importing ? "Import…" : "Importer wilayas / communes / bureaux"}
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={saving}
-            className="btn-outline btn-md"
-          >
-            {saving ? "Enregistrement…" : "Enregistrer"}
-          </button>
+          <div className="mt-3 space-y-2">
+            {visibleCommunes.map((c, index) => {
+              const globalIndex = communes.findIndex((x) => x.id === c.id && x.wilayaId === c.wilayaId);
+              const wilayaName = wilayas.find((w) => w.id === c.wilayaId)?.name ?? "—";
+              return (
+                <div
+                  key={`${c.wilayaId}-${c.id}`}
+                  className="grid grid-cols-[120px_1fr_1.2fr_auto] items-center gap-2.5 rounded-lg border border-white/10 bg-ink-800/60 p-3"
+                >
+                  <span className="text-xs text-steel-500">{wilayaName}</span>
+                  <div>
+                    <input
+                      value={c.name}
+                      onChange={(e) =>
+                        updateCommune(globalIndex, { name: e.target.value })
+                      }
+                      placeholder="Bab Ezzouar"
+                      className={input}
+                    />
+                  </div>
+                  <div>
+                    <input
+                      value={c.nameAr ?? ""}
+                      onChange={(e) =>
+                        updateCommune(globalIndex, { nameAr: e.target.value })
+                      }
+                      placeholder="باب الزوار"
+                      dir="rtl"
+                      className={input}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Supprimer la commune"
+                    onClick={() => removeCommune(globalIndex)}
+                    className="flex h-8 w-8 items-center justify-center rounded-md border border-white/10 text-steel-400 transition hover:border-red-400/40 hover:text-red-300"
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              );
+            })}
+            {visibleCommunes.length === 0 && (
+              <p className="rounded-lg bg-ink-800/60 px-3 py-3 text-xs text-steel-400">
+                {communeWilayaFilter === "all"
+                  ? "Aucune commune : les clients pourront quand même choisir une wilaya pour la livraison à domicile."
+                  : "Aucune commune pour cette wilaya."}
+              </p>
+            )}
+          </div>
         </div>
-        {testMsg && (
-          <p
-            className={cn(
-              "mt-3 rounded-md border px-4 py-2.5 text-sm",
-              testMsg.ok
-                ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
-                : "border-red-500/30 bg-red-500/10 text-red-300"
-            )}
-          >
-            {testMsg.text}
-          </p>
-        )}
-        {importMsg && (
-          <p
-            className={cn(
-              "mt-3 text-sm",
-              importMsg.startsWith("Erreur")
-                ? "text-red-300"
-                : "text-emerald-300"
-            )}
-          >
-            {importMsg}
-          </p>
-        )}
-        {error && (
-          <p className="mt-3 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
-            Impossible d&apos;enregistrer les paramètres.
-          </p>
-        )}
-        {saved && (
-          <p className="mt-3 rounded-md border border-emerald-400/30 bg-emerald-400/10 px-4 py-2.5 text-sm text-emerald-300">
-            Paramètres enregistrés.
-          </p>
-        )}
+
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving}
+          className="btn-primary btn-md mt-6"
+        >
+          {saving ? "Enregistrement…" : "Enregistrer"}
+        </button>
       </div>
 
       {/* Livraison & devis */}
@@ -1265,8 +1252,8 @@ function SettingsPanel({ token }: { token: string }) {
           Livraison & devis
         </h2>
         <p className="text-muted mt-1 text-sm leading-relaxed">
-          Ces informations restent les valeurs de secours quand l&apos;API
-          Guepex est indisponible.
+          Paramètres généraux : devise, retrait sur place, tarif de secours et
+          bureaux de livraison.
         </p>
 
         <div className="mt-5 space-y-5">
@@ -1283,7 +1270,7 @@ function SettingsPanel({ token }: { token: string }) {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-steel-400">
-                Frais de livraison à domicile (secours)
+                Tarif de secours à domicile (DA)
               </label>
               <input
                 type="number"
@@ -1326,13 +1313,9 @@ function SettingsPanel({ token }: { token: string }) {
           <div>
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-steel-200">
-                Bureaux de livraison (importés ou manuels)
+                Bureaux de livraison ({settings.delivery.offices.length})
               </p>
-              <button
-                type="button"
-                onClick={addOffice}
-                className="btn-outline btn-sm"
-              >
+              <button type="button" onClick={addOffice} className="btn-outline btn-sm">
                 <PlusIcon className="h-4 w-4" />
                 Ajouter
               </button>
@@ -1349,9 +1332,7 @@ function SettingsPanel({ token }: { token: string }) {
                     </label>
                     <input
                       value={office.name}
-                      onChange={(e) =>
-                        updateOffice(index, { name: e.target.value })
-                      }
+                      onChange={(e) => updateOffice(index, { name: e.target.value })}
                       placeholder="Bureau Alger"
                       className={input}
                     />
@@ -1362,9 +1343,7 @@ function SettingsPanel({ token }: { token: string }) {
                     </label>
                     <input
                       value={office.address}
-                      onChange={(e) =>
-                        updateOffice(index, { address: e.target.value })
-                      }
+                      onChange={(e) => updateOffice(index, { address: e.target.value })}
                       placeholder="Rue, ville…"
                       className={input}
                     />
@@ -1379,9 +1358,7 @@ function SettingsPanel({ token }: { token: string }) {
                       step="any"
                       value={office.fee}
                       onChange={(e) =>
-                        updateOffice(index, {
-                          fee: parseFloat(e.target.value) || 0,
-                        })
+                        updateOffice(index, { fee: parseFloat(e.target.value) || 0 })
                       }
                       className={input}
                     />
@@ -1409,6 +1386,17 @@ function SettingsPanel({ token }: { token: string }) {
           {saving ? "Enregistrement…" : "Enregistrer"}
         </button>
       </div>
+
+      {error && (
+        <p className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
+          Impossible d&apos;enregistrer les paramètres.
+        </p>
+      )}
+      {saved && (
+        <p className="rounded-md border border-emerald-400/30 bg-emerald-400/10 px-4 py-2.5 text-sm text-emerald-300">
+          Paramètres enregistrés.
+        </p>
+      )}
     </div>
   );
 }

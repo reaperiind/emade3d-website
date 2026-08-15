@@ -299,23 +299,6 @@ export function TrackForm() {
                 </span>
               </div>
             )}
-
-            {order.shipment?.tracking && (
-              <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3 text-sm">
-                <span className="text-steel-400">{track.shipmentTracking}</span>
-                <a
-                  href={`https://guepex.app/tracking/${encodeURIComponent(
-                    order.shipment.tracking
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  dir="ltr"
-                  className="font-mono font-bold text-accent hover:underline"
-                >
-                  {order.shipment.tracking}
-                </a>
-              </div>
-            )}
           </div>
         </div>
 

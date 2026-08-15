@@ -2,13 +2,11 @@
  * Site-wide settings persisted in Netlify Blobs ("settings").
  *
  * Holds the delivery configuration used by the order form and the tracking
- * page: pickup option, courier offices (id / name / address / fee), home
- * delivery fee, currency, plus the courier (Guepex) credentials and the
- * location data imported from the courier API (wilayas, communes, offices).
+ * page: pickup option, delivery offices (id / name / address / fee), delivery
+ * wilayas and communes, per-wilaya home delivery fees and the currency.
  *
- * Security: the courier API token is stored here (the blob store is private
- * to the site) and is NEVER returned by the public endpoints — use
- * `sanitizeSettings()` before serving settings to a client.
+ * All delivery data is entered manually by the admin (or imported from an
+ * Excel file) — there is no external courier API integration.
  */
 
 import { getStore, type Store } from "@netlify/blobs";
@@ -18,14 +16,14 @@ export interface Office {
   name: string;
   address: string;
   fee: number;
-  /** Courier center id when imported from Guepex. */
-  centerId?: string;
 }
 
 export interface Wilaya {
   id: number;
   name: string;
   nameAr?: string;
+  /** Home delivery fee in DA for this wilaya. */
+  homeFee: number;
 }
 
 export interface Commune {
@@ -35,51 +33,25 @@ export interface Commune {
   nameAr?: string;
 }
 
-export type CourierProvider = "guepex";
-
-export interface CourierConfig {
-  provider: CourierProvider;
-  /** Display name, e.g. "Guepex". */
-  name: string;
-  apiId: string;
-  apiToken: string;
-  enabled: boolean;
-  /** Origin wilaya of the site (where shipments are sent from). */
-  fromWilayaId: number | null;
-  lastImportedAt?: string;
-}
-
 export interface DeliverySettings {
   /** Whether pickup at the site is available. */
   pickupAvailable: boolean;
-  /** Delivery offices offered to the customer (manual or imported). */
+  /** Delivery offices offered to the customer. */
   offices: Office[];
-  /** Fallback fee for home delivery (used when the courier API fails). */
+  /** Fallback home delivery fee (used when the wilaya has no fee set). */
   homeFee: number;
   /** Message shown next to pickup, e.g. address/hours. */
   pickupNote: string;
-  /** Courier (Guepex) connection, credentials + imported data. */
-  courier?: CourierConfig;
-  /** Wilayas imported from the courier. */
-  wilayas?: Wilaya[];
-  /** Communes imported from the courier. */
-  communes?: Commune[];
+  /** Delivery wilayas. */
+  wilayas: Wilaya[];
+  /** Delivery communes, grouped by wilaya. */
+  communes: Commune[];
 }
 
 export interface SiteSettings {
   delivery: DeliverySettings;
   /** Display currency, e.g. "DA", "DZD", "€". */
   currency: string;
-}
-
-/** Courier block safe for public consumption (no apiId / apiToken). */
-export interface PublicCourierConfig {
-  provider: CourierProvider;
-  name: string;
-  enabled: boolean;
-  fromWilayaId: number | null;
-  lastImportedAt?: string;
-  hasCredentials: boolean;
 }
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -96,6 +68,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
       },
     ],
     homeFee: 1000,
+    wilayas: [],
+    communes: [],
   },
 };
 
@@ -146,62 +120,29 @@ export async function saveSettings(settings: SiteSettings): Promise<void> {
 
 /** Ensures unknown/missing keys fall back to defaults. */
 function mergeSettings(settings: SiteSettings): SiteSettings {
+  const anySettings = settings as Partial<SiteSettings> & {
+    delivery?: Partial<DeliverySettings>;
+  };
   return {
-    currency: settings.currency || DEFAULT_SETTINGS.currency,
+    currency: anySettings.currency || DEFAULT_SETTINGS.currency,
     delivery: {
       pickupAvailable:
-        settings.delivery?.pickupAvailable ?? DEFAULT_SETTINGS.delivery.pickupAvailable,
+        anySettings.delivery?.pickupAvailable ??
+        DEFAULT_SETTINGS.delivery.pickupAvailable,
       pickupNote:
-        settings.delivery?.pickupNote ?? DEFAULT_SETTINGS.delivery.pickupNote,
-      homeFee: settings.delivery?.homeFee ?? DEFAULT_SETTINGS.delivery.homeFee,
+        anySettings.delivery?.pickupNote ?? DEFAULT_SETTINGS.delivery.pickupNote,
+      homeFee: anySettings.delivery?.homeFee ?? DEFAULT_SETTINGS.delivery.homeFee,
       offices:
-        Array.isArray(settings.delivery?.offices) && settings.delivery.offices.length > 0
-          ? settings.delivery.offices
+        Array.isArray(anySettings.delivery?.offices) &&
+        anySettings.delivery!.offices.length > 0
+          ? anySettings.delivery!.offices
           : DEFAULT_SETTINGS.delivery.offices,
-      ...(settings.delivery?.courier && hasCourierFields(settings.delivery.courier)
-        ? { courier: settings.delivery.courier }
-        : {}),
-      ...(Array.isArray(settings.delivery?.wilayas)
-        ? { wilayas: settings.delivery.wilayas }
-        : {}),
-      ...(Array.isArray(settings.delivery?.communes)
-        ? { communes: settings.delivery.communes }
-        : {}),
+      wilayas: Array.isArray(anySettings.delivery?.wilayas)
+        ? anySettings.delivery!.wilayas
+        : [],
+      communes: Array.isArray(anySettings.delivery?.communes)
+        ? anySettings.delivery!.communes
+        : [],
     },
   };
-}
-
-function hasCourierFields(c: CourierConfig): boolean {
-  return typeof c === "object" && c !== null && Boolean(c.apiId || c.apiToken || c.name);
-}
-
-/**
- * Removes the courier credentials so the settings can be served to the
- * public / admin client without exposing the API id or token.
- */
-export function sanitizeSettings(settings: SiteSettings): SiteSettings {
-  const c = settings.delivery.courier;
-  const courier: PublicCourierConfig | undefined = c
-    ? {
-        provider: c.provider,
-        name: c.name,
-        enabled: c.enabled,
-        fromWilayaId: c.fromWilayaId,
-        lastImportedAt: c.lastImportedAt,
-        hasCredentials: Boolean(c.apiId && c.apiToken),
-      }
-    : undefined;
-
-  return {
-    currency: settings.currency,
-    delivery: {
-      pickupAvailable: settings.delivery.pickupAvailable,
-      pickupNote: settings.delivery.pickupNote,
-      homeFee: settings.delivery.homeFee,
-      offices: settings.delivery.offices,
-      wilayas: settings.delivery.wilayas,
-      communes: settings.delivery.communes,
-      courier,
-    },
-  } as unknown as SiteSettings;
 }

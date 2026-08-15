@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useI18n } from "@/i18n/provider";
 import { localizePath } from "@/i18n/config";
@@ -32,10 +32,10 @@ const SERVICE_MAP: Record<string, string> = {
  * Order form backed by the site's own API.
  *
  * A delivery method is chosen (pickup / courier office / courier home) and the
- * delivery fee is shown live: office fees come from the imported/configured
- * centers; home delivery quotes Guepex per wilaya + commune when the courier
- * is enabled, otherwise it uses the configured home fee. On confirm the order
- * is sent to POST /api/orders, which stores it and returns the tracking code.
+ * delivery fee is shown live: office fees come from the configured offices;
+ * home delivery uses the destination wilaya's configured fee (falling back to
+ * the global home fee). On confirm the order is sent to POST /api/orders,
+ * which stores it and returns the tracking code.
  */
 export function OrderForm() {
   const { locale, t } = useI18n();
@@ -55,10 +55,8 @@ export function OrderForm() {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [wilayaId, setWilayaId] = useState<number | null>(null);
   const [communeId, setCommuneId] = useState<number | null>(null);
-  const [quoteFee, setQuoteFee] = useState<number | null>(null);
-  const [quoteLoading, setQuoteLoading] = useState(false);
 
-  // Load settings (offices, wilayas, communes, currency, courier state).
+  // Load settings (offices, wilayas, communes, currency, delivery data).
   useEffect(() => {
     fetch("/api/settings")
       .then((res) => (res.ok ? res.json() : null))
@@ -73,11 +71,7 @@ export function OrderForm() {
       .catch(() => undefined);
   }, []);
 
-  const courierConfigured = Boolean(
-    deliverySettings?.delivery.courier?.enabled &&
-      (deliverySettings.delivery.courier as { hasCredentials?: boolean })
-        .hasCredentials
-  );
+  const hasDeliveryData = Boolean(deliverySettings?.delivery.wilayas?.length);
   const currency = deliverySettings?.currency ?? "DA";
   const offices = useMemo(
     () => deliverySettings?.delivery.offices ?? [],
@@ -116,55 +110,26 @@ export function OrderForm() {
     [communes, communeId]
   );
 
-  const fetchQuote = useCallback(async () => {
-    if (!courierConfigured || courierOption !== "home" || communeId == null) {
-      setQuoteFee(null);
-      return;
-    }
-    setQuoteLoading(true);
-    try {
-      const res = await fetch("/api/courier/quote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          deliveryType: "home",
-          wilayaId,
-          communeId,
-        }),
-      });
-      const json = (await res.json().catch(() => null)) as { fee?: number } | null;
-      setQuoteFee(typeof json?.fee === "number" ? json.fee : null);
-    } catch {
-      setQuoteFee(null);
-    } finally {
-      setQuoteLoading(false);
-    }
-  }, [courierConfigured, courierOption, communeId, wilayaId]);
-
-  useEffect(() => {
-    fetchQuote();
-  }, [fetchQuote]);
-
   const displayedFee = useMemo(() => {
     if (deliveryMethod === "pickup") return { fee: 0, loading: false };
     if (courierOption === "office") {
       const office = offices.find((o) => o.id === officeId);
       return { fee: office?.fee ?? 0, loading: false };
     }
-    if (courierConfigured) {
-      if (communeId == null) return { fee: null, loading: quoteLoading };
-      return { fee: quoteFee, loading: quoteLoading };
-    }
-    return { fee: homeFeeFallback, loading: false };
+    // Home delivery: per-wilaya fee, falling back to the global home fee.
+    const wilaya =
+      wilayaId == null
+        ? undefined
+        : wilayas.find((w) => w.id === wilayaId);
+    const fee = wilaya?.homeFee ?? homeFeeFallback;
+    return { fee, loading: false };
   }, [
     deliveryMethod,
     courierOption,
-    courierConfigured,
     officeId,
     offices,
-    communeId,
-    quoteFee,
-    quoteLoading,
+    wilayaId,
+    wilayas,
     homeFeeFallback,
   ]);
 
@@ -176,7 +141,7 @@ export function OrderForm() {
       ...(courierOption === "office" ? { officeId } : {}),
       ...(courierOption === "home"
         ? {
-            ...(courierConfigured && wilayaId != null
+            ...(hasDeliveryData && wilayaId != null
               ? { wilayaId, ...(communeId != null ? { communeId } : {}) }
               : {}),
             ...(communeLabel ? { communeName: communeLabel } : {}),
@@ -522,10 +487,7 @@ export function OrderForm() {
                 <div className="grid grid-cols-2 gap-3">
                   <OptionRadio
                     active={courierOption === "office"}
-                    onClick={() => {
-                      setCourierOption("office");
-                      setQuoteFee(null);
-                    }}
+                    onClick={() => setCourierOption("office")}
                     label={q.deliveryOffice}
                   />
                   <OptionRadio
@@ -547,10 +509,7 @@ export function OrderForm() {
                   <select
                     id="of-office"
                     value={officeId}
-                    onChange={(e) => {
-                      setOfficeId(e.target.value);
-                      setQuoteFee(null);
-                    }}
+                    onChange={(e) => setOfficeId(e.target.value)}
                     required
                     className={cn(inputClass, "appearance-none")}
                   >
@@ -567,8 +526,8 @@ export function OrderForm() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Wilaya + commune selection (courier configured) */}
-                  {courierConfigured && (
+                  {/* Wilaya + commune selection (delivery data available) */}
+                  {hasDeliveryData && (
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <label
@@ -584,7 +543,6 @@ export function OrderForm() {
                           onChange={(e) => {
                             setWilayaId(e.target.value ? Number(e.target.value) : null);
                             setCommuneId(null);
-                            setQuoteFee(null);
                           }}
                           className={cn(inputClass, "appearance-none")}
                         >
