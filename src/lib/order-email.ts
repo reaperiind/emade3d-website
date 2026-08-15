@@ -23,7 +23,12 @@ const PORT = Number(process.env.EMAIL_PORT ?? 465);
 const USER = process.env.EMAIL_USER ?? "";
 const PASS = process.env.EMAIL_PASS ?? "";
 const TO_LIST = (process.env.EMAIL_TO ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-const APP_URL = process.env.APP_URL ?? "https://portal.emade3d.store";
+const APP_URL = (process.env.APP_URL ?? "https://portal.emade3d.store").replace(
+  /\/+(fr|en|ar)?\/?$/,
+  ""
+);
+/** Admin panel URL used in notification links. */
+const ADMIN_URL = `${APP_URL}/admin`;
 
 const SERVICE_LABELS: Record<string, string> = {
   IMPRESSION_3D: "Impression 3D",
@@ -78,7 +83,7 @@ export async function notifyNewOrder(order: Order): Promise<void> {
     "",
     text,
     "",
-    `Consulter dans l'admin : ${APP_URL}`,
+    `Consulter dans l'admin : ${ADMIN_URL}`,
   ].join("\n");
 
   try {
