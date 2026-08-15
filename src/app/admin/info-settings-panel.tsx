@@ -231,6 +231,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
         <div className="grid gap-3 sm:grid-cols-2">
           {socialField("Facebook", "facebook")}
           {socialField("Instagram", "instagram")}
+          {socialField("TikTok", "tiktok")}
           {socialField("LinkedIn", "linkedin")}
           {socialField("YouTube", "youtube")}
           {socialField("X (Twitter)", "x")}

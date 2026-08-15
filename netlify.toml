@@ -13,8 +13,3 @@
 #   ADMIN_PASSWORD=<your-admin-password>
 [functions]
   directory = ".netlify/functions-internal"
-
-[[redirects]]
-  from = "/admin"
-  to = "/admin/index.html"
-  status = 200

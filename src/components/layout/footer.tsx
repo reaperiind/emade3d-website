@@ -17,6 +17,7 @@ import {
   ArrowUpRightIcon,
   FacebookIcon,
   InstagramIcon,
+  TikTokIcon,
   LinkedinIcon,
   YoutubeIcon,
   XIcon,
@@ -38,6 +39,8 @@ function SocialIcon({ label }: { label: keyof SocialLinks }) {
       return <FacebookIcon className="h-4 w-4" />;
     case "instagram":
       return <InstagramIcon className="h-4 w-4" />;
+    case "tiktok":
+      return <TikTokIcon className="h-4 w-4" />;
     case "linkedin":
       return <LinkedinIcon className="h-4 w-4" />;
     case "youtube":
@@ -50,6 +53,7 @@ function SocialIcon({ label }: { label: keyof SocialLinks }) {
 const SOCIAL_KEYS: (keyof SocialLinks)[] = [
   "facebook",
   "instagram",
+  "tiktok",
   "linkedin",
   "youtube",
   "x",

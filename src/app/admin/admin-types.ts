@@ -28,6 +28,7 @@ export interface AdminSettings {
   social?: {
     facebook: string;
     instagram: string;
+    tiktok: string;
     linkedin: string;
     youtube: string;
     x: string;

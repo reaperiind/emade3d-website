@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   projectCategories,
   type CategoryId,
@@ -25,15 +25,6 @@ const MEDIA_URL = (key: string) => `/api/media/${key}`;
 type LocalizedRecord = { fr: string; en: string; ar: string };
 
 const EMPTY_LANG: LocalizedRecord = { fr: "", en: "", ar: "" };
-const EMPTY_TEXT: Record<string, LocalizedText> = {
-  summary: { fr: "", en: "", ar: "" },
-  problem: { fr: "", en: "", ar: "" },
-  solution: { fr: "", en: "", ar: "" },
-  method: { fr: "", en: "", ar: "" },
-  result: { fr: "", en: "", ar: "" },
-  client: { fr: "", en: "", ar: "" },
-  duration: { fr: "", en: "", ar: "" },
-};
 
 function slugify(s: string): string {
   return s
@@ -309,22 +300,12 @@ function ProjectEditor({
       </h2>
 
       <LangTextField
-        label="Titre"
+        label="Titre (FR, EN, AR)"
         value={project.title as LocalizedRecord}
         onChange={(title) => onChange({ ...project, title: title as LocalizedText })}
       />
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <div>
-          <label className={labelClass}>Lien (slug) — laisser vide pour auto</label>
-          <input
-            value={project.slug}
-            onChange={(e) => onChange({ ...project, slug: e.target.value })}
-            dir="ltr"
-            placeholder={slugify(project.title.fr ?? "") || "mon-projet"}
-            className={cn(inputClass, "font-mono text-xs")}
-          />
-        </div>
         <div>
           <label className={labelClass}>Catégorie</label>
           <select
@@ -341,65 +322,18 @@ function ProjectEditor({
             ))}
           </select>
         </div>
-        <div>
-          <label className={labelClass}>Année</label>
-          <input
-            value={project.year}
-            onChange={(e) => onChange({ ...project, year: e.target.value })}
-            className={inputClass}
-          />
-        </div>
-        <div className="flex items-end pb-1">
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+        {project.slug ? (
+          <div>
+            <label className={labelClass}>Lien (slug)</label>
             <input
-              type="checkbox"
-              checked={Boolean(project.featured)}
-              onChange={(e) =>
-                onChange({ ...project, featured: e.target.checked })
-              }
-              className="h-4 w-4 rounded border-slate-300 text-accent focus:ring-accent"
+              value={project.slug}
+              onChange={(e) => onChange({ ...project, slug: e.target.value })}
+              dir="ltr"
+              placeholder={slugify(project.title.fr ?? "") || "mon-projet"}
+              className={cn(inputClass, "font-mono text-xs")}
             />
-            Mettre en avant (page d&apos;accueil)
-          </label>
-        </div>
-      </div>
-
-      <div className="mt-5 space-y-3">
-        <LangTextArea
-          label="Résumé (carte)"
-          value={project.summary as LocalizedRecord}
-          onChange={(summary) => onChange({ ...project, summary })}
-        />
-        <LangTextArea
-          label="Le problème"
-          value={project.problem as LocalizedRecord}
-          onChange={(problem) => onChange({ ...project, problem })}
-        />
-        <LangTextArea
-          label="La solution"
-          value={project.solution as LocalizedRecord}
-          onChange={(solution) => onChange({ ...project, solution })}
-        />
-        <LangTextArea
-          label="Méthode de fabrication"
-          value={project.method as LocalizedRecord}
-          onChange={(method) => onChange({ ...project, method })}
-        />
-        <LangTextArea
-          label="Le résultat"
-          value={project.result as LocalizedRecord}
-          onChange={(result) => onChange({ ...project, result })}
-        />
-        <LangTextField
-          label="Client"
-          value={project.client as LocalizedRecord}
-          onChange={(client) => onChange({ ...project, client })}
-        />
-        <LangTextField
-          label="Durée"
-          value={project.duration as LocalizedRecord}
-          onChange={(duration) => onChange({ ...project, duration })}
-        />
+          </div>
+        ) : null}
       </div>
 
       <ImageManager project={project} onChange={onChange} />
@@ -443,27 +377,6 @@ function LangTextField({
   );
 }
 
-function LangTextArea({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: LocalizedRecord;
-  onChange: (v: LocalizedRecord) => void;
-}) {
-  return (
-    <div>
-      <label className={labelClass}>{label}</label>
-      <div className="grid gap-2 sm:grid-cols-3">
-        <LangArea lang="fr" value={value.fr} onChange={(v) => onChange({ ...value, fr: v })} />
-        <LangArea lang="en" value={value.en} onChange={(v) => onChange({ ...value, en: v })} dir="ltr" />
-        <LangArea lang="ar" value={value.ar} onChange={(v) => onChange({ ...value, ar: v })} dir="rtl" />
-      </div>
-    </div>
-  );
-}
-
 function LangInput({
   lang,
   value,
@@ -482,29 +395,6 @@ function LangInput({
       dir={dir}
       placeholder={lang}
       className={inputClass}
-    />
-  );
-}
-
-function LangArea({
-  lang,
-  value,
-  onChange,
-  dir,
-}: {
-  lang: string;
-  value: string;
-  onChange: (v: string) => void;
-  dir?: string;
-}) {
-  return (
-    <textarea
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      dir={dir}
-      rows={3}
-      placeholder={lang}
-      className={cn(inputClass, "resize-y")}
     />
   );
 }

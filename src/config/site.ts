@@ -61,6 +61,7 @@ export const site = {
   social: {
     facebook: "https://facebook.com/emade3d",
     instagram: "https://instagram.com/emade3d",
+    tiktok: "",
     linkedin: "https://linkedin.com/company/emade3d",
     youtube: "",
     x: "",

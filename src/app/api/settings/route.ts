@@ -137,6 +137,7 @@ function cleanSocial(
   return {
     facebook: s("facebook"),
     instagram: s("instagram"),
+    tiktok: s("tiktok"),
     linkedin: s("linkedin"),
     youtube: s("youtube"),
     x: s("x"),

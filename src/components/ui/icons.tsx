@@ -338,3 +338,12 @@ export function XIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function TikTokIcon(props: IconProps) {
+  return (
+    <svg {...socialProps} {...props}>
+      <path d="M14.5 4v10.6a3.4 3.4 0 1 1-3-3.37" />
+      <path d="M14.5 6.6c.7 1.8 2.3 3 4.5 3.2" />
+    </svg>
+  );
+}
