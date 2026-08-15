@@ -79,11 +79,20 @@ export function OrderForm() {
         .hasCredentials
   );
   const currency = deliverySettings?.currency ?? "DA";
-  const offices = deliverySettings?.delivery.offices ?? [];
+  const offices = useMemo(
+    () => deliverySettings?.delivery.offices ?? [],
+    [deliverySettings]
+  );
   const homeFeeFallback = deliverySettings?.delivery.homeFee ?? 0;
 
-  const wilayas = deliverySettings?.delivery.wilayas ?? [];
-  const communes = deliverySettings?.delivery.communes ?? [];
+  const wilayas = useMemo(
+    () => deliverySettings?.delivery.wilayas ?? [],
+    [deliverySettings]
+  );
+  const communes = useMemo(
+    () => deliverySettings?.delivery.communes ?? [],
+    [deliverySettings]
+  );
   const communeOptions = useMemo(
     () =>
       wilayaId == null
