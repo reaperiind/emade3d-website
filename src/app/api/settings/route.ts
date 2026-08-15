@@ -6,6 +6,8 @@ import {
   type Wilaya,
   type Commune,
   type Office,
+  type ContactInfo,
+  type SocialLinks,
 } from "@/lib/settings-store";
 import { isAuthorized } from "@/lib/admin-auth";
 
@@ -94,8 +96,49 @@ export async function PUT(request: Request) {
         ? incoming.communes.map(cleanCommune).filter((c): c is Commune => c !== null)
         : existing.delivery.communes,
     },
+    contact: cleanContact(body.contact, existing.contact),
+    social: cleanSocial(body.social, existing.social),
   };
 
   await saveSettings(sanitized);
   return NextResponse.json({ ok: true, settings: sanitized });
+}
+
+function cleanContact(
+  value: Partial<ContactInfo> | undefined,
+  fallback: ContactInfo
+): ContactInfo {
+  const v = value ?? {};
+  const s = (key: keyof ContactInfo, max: number) =>
+    String(v[key] ?? fallback[key] ?? "").slice(0, max);
+  return {
+    phone: s("phone", 40),
+    phoneHref: s("phoneHref", 120),
+    whatsapp: s("whatsapp", 40),
+    whatsappHref: s("whatsappHref", 200),
+    email: s("email", 120),
+    address_fr: s("address_fr", 300),
+    address_en: s("address_en", 300),
+    address_ar: s("address_ar", 300),
+    mapEmbed: s("mapEmbed", 1000),
+    hours_fr: s("hours_fr", 200),
+    hours_en: s("hours_en", 200),
+    hours_ar: s("hours_ar", 200),
+  };
+}
+
+function cleanSocial(
+  value: Partial<SocialLinks> | undefined,
+  fallback: SocialLinks
+): SocialLinks {
+  const v = value ?? {};
+  const s = (key: keyof SocialLinks) =>
+    String(v[key] ?? fallback[key] ?? "").slice(0, 300);
+  return {
+    facebook: s("facebook"),
+    instagram: s("instagram"),
+    linkedin: s("linkedin"),
+    youtube: s("youtube"),
+    x: s("x"),
+  };
 }

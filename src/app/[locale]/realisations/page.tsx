@@ -20,7 +20,7 @@ export function generateMetadata({
   });
 }
 
-export default function RealisationsPage({
+export default async function RealisationsPage({
   params,
 }: {
   params: { locale: Locale };

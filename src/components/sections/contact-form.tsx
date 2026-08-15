@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useI18n } from "@/i18n/provider";
 import { site } from "@/config/site";
 import { cn } from "@/lib/cn";
@@ -13,6 +13,22 @@ export function ContactForm() {
   const { locale, t } = useI18n();
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [email, setEmail] = useState(site.contact.email);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/settings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (!cancelled && json?.settings?.contact?.email) {
+          setEmail(json.settings.contact.email);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,7 +57,7 @@ export function ContactForm() {
       .join("\n");
 
     setSending(true);
-    window.location.href = `mailto:${site.contact.email}?subject=${encodeURIComponent(
+    window.location.href = `mailto:${email}?subject=${encodeURIComponent(
       subject
     )}&body=${encodeURIComponent(body)}`;
     setTimeout(() => {

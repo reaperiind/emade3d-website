@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/provider";
-import { projects, projectCategories, type CategoryId } from "@/data/projects";
+import { projectCategories, type CategoryId, type Project } from "@/data/projects";
 import { localized } from "@/lib/localize";
 import { ProjectCard } from "@/components/sections/realisations-grid";
 import { cn } from "@/lib/cn";
@@ -13,9 +13,25 @@ type Filter = CategoryId | "all";
 export function PortfolioBrowser() {
   const { locale, t } = useI18n();
   const [active, setActive] = useState<Filter>("all");
+  const [projects, setProjects] = useState<Project[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/projects")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (!cancelled && Array.isArray(json?.projects)) {
+          setProjects(json.projects);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filtered =
-    active === "all" ? projects : projects.filter((p) => p.category === active);
+    active === "all" ? (projects ?? []) : (projects ?? []).filter((p) => p.category === active);
 
   const pills: { id: Filter; label: string }[] = [
     { id: "all", label: t.common.allCategories },
@@ -46,7 +62,9 @@ export function PortfolioBrowser() {
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {projects === null ? (
+        <p className="text-muted mt-16 text-center">{t.realisations.loading ?? "…"}</p>
+      ) : filtered.length === 0 ? (
         <p className="text-muted mt-16 text-center">{t.realisations.empty}</p>
       ) : (
         <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">

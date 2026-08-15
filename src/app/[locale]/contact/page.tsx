@@ -4,6 +4,7 @@ import type { Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { buildMetadata } from "@/lib/seo";
 import { site } from "@/config/site";
+import { getSettings } from "@/lib/settings-store";
 import { PageHero } from "@/components/sections/page-hero";
 import { ContactForm } from "@/components/sections/contact-form";
 import { Reveal } from "@/components/ui/reveal";
@@ -15,6 +16,8 @@ import {
   ClockIcon,
   ArrowRightIcon,
 } from "@/components/ui/icons";
+
+export const dynamic = "force-dynamic";
 
 export function generateMetadata({
   params,
@@ -30,14 +33,15 @@ export function generateMetadata({
   });
 }
 
-export default function ContactPage({
+export default async function ContactPage({
   params,
 }: {
   params: { locale: Locale };
 }) {
   const { locale } = params;
   const dict = getDictionary(locale);
-  const c = site.contact;
+  const settings = await getSettings();
+  const c = settings.contact;
 
   const address =
     locale === "ar" ? c.address_ar : locale === "en" ? c.address_en : c.address_fr;

@@ -5,6 +5,10 @@
  * page: pickup option, delivery offices (id / name / address / fee), delivery
  * wilayas and communes, per-wilaya home delivery fees and the currency.
  *
+ * Also holds the site contact information (phone, email, address, hours) and
+ * social links, editable from the admin "Informations" page and rendered
+ * dynamically across the site (footer, contact page, FAQ, contact form).
+ *
  * All delivery data is entered manually by the admin (or imported from an
  * Excel file) — there is no external courier API integration.
  */
@@ -50,11 +54,62 @@ export interface DeliverySettings {
   communes: Commune[];
 }
 
+/** Contact information shown across the site (footer, contact page, FAQ…). */
+export interface ContactInfo {
+  phone: string;
+  phoneHref: string;
+  whatsapp: string;
+  whatsappHref: string;
+  email: string;
+  address_fr: string;
+  address_en: string;
+  address_ar: string;
+  mapEmbed: string;
+  hours_fr: string;
+  hours_en: string;
+  hours_ar: string;
+}
+
+/** Social media links shown in the footer. */
+export interface SocialLinks {
+  facebook: string;
+  instagram: string;
+  linkedin: string;
+  youtube: string;
+  x: string;
+}
+
 export interface SiteSettings {
   delivery: DeliverySettings;
   /** Display currency, e.g. "DA", "DZD", "€". */
   currency: string;
+  contact: ContactInfo;
+  social: SocialLinks;
 }
+
+const DEFAULT_CONTACT: ContactInfo = {
+  phone: "+213 555 00 00 00",
+  phoneHref: "tel:+213555000000",
+  whatsapp: "+213 555 00 00 00",
+  whatsappHref: "https://wa.me/213555000000",
+  email: "contact@emade3d.com",
+  address_fr: "Zone Industrielle, Alger, Algérie",
+  address_en: "Industrial Zone, Algiers, Algeria",
+  address_ar: "المنطقة الصناعية، الجزائر، الجزائر",
+  mapEmbed:
+    "https://maps.google.com/maps?q=Alger%2C+Alg%C3%A9rie&t=&z=12&ie=UTF8&iwloc=&output=embed",
+  hours_fr: "Lun – Sam : 08h30 – 18h00",
+  hours_en: "Mon – Sat: 8:30 AM – 6:00 PM",
+  hours_ar: "الاثنين – السبت: 08:30 – 18:00",
+};
+
+const DEFAULT_SOCIAL: SocialLinks = {
+  facebook: "https://facebook.com/emade3d",
+  instagram: "https://instagram.com/emade3d",
+  linkedin: "https://linkedin.com/company/emade3d",
+  youtube: "",
+  x: "",
+};
 
 export const DEFAULT_SETTINGS: SiteSettings = {
   currency: "DA",
@@ -73,6 +128,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     wilayas: [],
     communes: [],
   },
+  contact: DEFAULT_CONTACT,
+  social: DEFAULT_SOCIAL,
 };
 
 const STORE_NAME = "settings";
@@ -124,6 +181,19 @@ export async function saveSettings(settings: SiteSettings): Promise<void> {
 function mergeSettings(settings: SiteSettings): SiteSettings {
   const anySettings = settings as Partial<SiteSettings> & {
     delivery?: Partial<DeliverySettings>;
+    contact?: Partial<ContactInfo>;
+    social?: Partial<SocialLinks>;
+  };
+  const pick = <T extends object>(base: T, patch?: Partial<T>): T => {
+    const out = { ...base };
+    if (patch) {
+      for (const key of Object.keys(base) as (keyof T)[]) {
+        const value = patch[key];
+        if (value !== undefined)
+          (out as Record<string, unknown>)[key as string] = value;
+      }
+    }
+    return out;
   };
   return {
     currency: anySettings.currency || DEFAULT_SETTINGS.currency,
@@ -146,5 +216,7 @@ function mergeSettings(settings: SiteSettings): SiteSettings {
         ? anySettings.delivery!.communes
         : [],
     },
+    contact: pick(DEFAULT_SETTINGS.contact, anySettings.contact),
+    social: pick(DEFAULT_SETTINGS.social, anySettings.social),
   };
 }

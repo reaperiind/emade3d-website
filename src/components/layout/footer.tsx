@@ -1,10 +1,12 @@
 ﻿"use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/i18n/provider";
 import { site } from "@/config/site";
 import { services } from "@/data/services";
 import { localized } from "@/lib/localize";
+import type { ContactInfo, SocialLinks } from "@/lib/settings-store";
 import { Logo } from "@/components/ui/logo";
 import {
   PhoneIcon,
@@ -30,13 +32,43 @@ const NAV = [
   { key: "contact", href: "/contact" },
 ] as const;
 
-const SOCIALS = [
-  { label: "Facebook", href: site.social.facebook, Icon: FacebookIcon },
-  { label: "Instagram", href: site.social.instagram, Icon: InstagramIcon },
-  { label: "LinkedIn", href: site.social.linkedin, Icon: LinkedinIcon },
-  { label: "YouTube", href: site.social.youtube, Icon: YoutubeIcon },
-  { label: "X", href: site.social.x, Icon: XIcon },
+function SocialIcon({ label }: { label: keyof SocialLinks }) {
+  switch (label) {
+    case "facebook":
+      return <FacebookIcon className="h-4 w-4" />;
+    case "instagram":
+      return <InstagramIcon className="h-4 w-4" />;
+    case "linkedin":
+      return <LinkedinIcon className="h-4 w-4" />;
+    case "youtube":
+      return <YoutubeIcon className="h-4 w-4" />;
+    default:
+      return <XIcon className="h-4 w-4" />;
+  }
+}
+
+const SOCIAL_KEYS: (keyof SocialLinks)[] = [
+  "facebook",
+  "instagram",
+  "linkedin",
+  "youtube",
+  "x",
 ];
+
+const DEFAULT_CONTACT: ContactInfo = {
+  phone: site.contact.phone,
+  phoneHref: site.contact.phoneHref,
+  whatsapp: site.contact.whatsapp,
+  whatsappHref: site.contact.whatsappHref,
+  email: site.contact.email,
+  address_fr: site.contact.address_fr,
+  address_en: site.contact.address_en,
+  address_ar: site.contact.address_ar,
+  mapEmbed: site.contact.mapEmbed,
+  hours_fr: site.contact.hours_fr,
+  hours_en: site.contact.hours_en,
+  hours_ar: site.contact.hours_ar,
+};
 
 function FooterTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -48,7 +80,24 @@ function FooterTitle({ children }: { children: React.ReactNode }) {
 
 export function Footer() {
   const { locale, t } = useI18n();
-  const contact = site.contact;
+  const [contact, setContact] = useState<ContactInfo>(DEFAULT_CONTACT);
+  const [social, setSocial] = useState<Partial<SocialLinks>>({ ...site.social });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/settings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (cancelled || !json?.settings) return;
+        const s = json.settings;
+        if (s.contact) setContact({ ...DEFAULT_CONTACT, ...s.contact });
+        if (s.social) setSocial({ ...site.social, ...s.social });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const address =
     locale === "ar"
@@ -74,17 +123,17 @@ export function Footer() {
             <p className="text-muted mt-5 max-w-sm text-sm leading-relaxed">
               {t.footer.description}
             </p>
-            <div className="mt-6 flex items-center gap-2.5">
-              {SOCIALS.filter((s) => s.href).map((s) => (
+<div className="mt-6 flex items-center gap-2.5">
+              {SOCIAL_KEYS.filter((k) => social[k]).map((k) => (
                 <a
-                  key={s.label}
-                  href={s.href}
+                  key={k}
+                  href={social[k]}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={s.label}
+                  aria-label={k}
                   className="flex h-9 w-9 items-center justify-center rounded-md border border-white/12 text-steel-300 transition-all duration-200 hover:border-accent/50 hover:text-accent"
                 >
-                  <s.Icon className="h-4 w-4" />
+                  <SocialIcon label={k} />
                 </a>
               ))}
             </div>

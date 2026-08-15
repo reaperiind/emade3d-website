@@ -5,10 +5,10 @@ import type { Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { buildMetadata } from "@/lib/seo";
 import { localized } from "@/lib/localize";
+import { getProjects } from "@/lib/projects-store";
 import {
-  projects,
-  getProjectBySlug,
   getCategoryMeta,
+  type CategoryId,
 } from "@/data/projects";
 import { ProjectVisual } from "@/components/visual/project-visual";
 import { CtaSection } from "@/components/sections/cta-section";
@@ -23,18 +23,19 @@ import {
   RulerCompassIcon,
 } from "@/components/ui/icons";
 
-export function generateStaticParams() {
-  return projects.map((project) => ({ slug: project.slug }));
-}
+export const dynamic = "force-dynamic";
 
-export function generateMetadata({
+const MEDIA_URL = (key: string) => `/api/media/${key}`;
+
+export async function generateMetadata({
   params,
 }: {
   params: { locale: Locale; slug: string };
-}): Metadata {
+}): Promise<Metadata> {
   const { locale, slug } = params;
   const dict = getDictionary(locale);
-  const project = getProjectBySlug(slug);
+  const projects = await getProjects();
+  const project = projects.find((p) => p.slug === slug);
   if (!project) return {};
 
   return buildMetadata({
@@ -49,21 +50,23 @@ export function generateMetadata({
 
 const META_ICONS = [RulerCompassIcon, CogIcon, WrenchIcon, CheckIcon];
 
-export default function ProjectDetailPage({
+export default async function ProjectDetailPage({
   params,
 }: {
   params: { locale: Locale; slug: string };
 }) {
   const { locale, slug } = params;
   const dict = getDictionary(locale);
-  const project = getProjectBySlug(slug);
+  const projects = await getProjects();
+  const project = projects.find((p) => p.slug === slug);
 
   if (!project) notFound();
 
-  const cat = getCategoryMeta(project.category)!;
+  const cat = getCategoryMeta(project.category as CategoryId)!;
   const index = projects.findIndex((p) => p.slug === slug);
   const prev = projects[index - 1] ?? projects[projects.length - 1];
   const next = projects[(index + 1) % projects.length];
+  const cover = project.images?.[0];
 
   const sections = [
     { title: dict.realisations.problem, text: localized(project.problem, locale) },
@@ -122,8 +125,23 @@ export default function ProjectDetailPage({
                 <ProjectVisual
                   visual={cat.visual}
                   label={localized(project.title, locale)}
+                  imageSrc={cover ? MEDIA_URL(cover) : null}
                   className="aspect-[4/3]"
                 />
+                {project.images && project.images.length > 1 && (
+                  <div className="mt-4 grid grid-cols-3 gap-2.5">
+                    {project.images.slice(1).map((key) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        key={key}
+                        src={MEDIA_URL(key)}
+                        alt={localized(project.title, locale)}
+                        loading="lazy"
+                        className="aspect-[4/3] w-full rounded-lg border border-white/10 bg-ink-800 object-cover"
+                      />
+                    ))}
+                  </div>
+                )}
                 <dl className="mt-6 grid grid-cols-2 gap-3">
                   <div className="card p-4">
                     <dt className="text-[11px] uppercase tracking-widest text-steel-500">

@@ -188,12 +188,32 @@ export function ProjectVisual({
   visual,
   className,
   label,
+  imageSrc,
 }: {
   visual: ProjectVisualKey;
   className?: string;
   label?: string;
+  imageSrc?: string | null;
 }) {
   const Art = ART[visual] ?? PrinterArt;
+  if (imageSrc) {
+    return (
+      <div
+        className={cn(
+          "relative w-full overflow-hidden rounded-xl border border-white/10 bg-ink-800",
+          className
+        )}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imageSrc}
+          alt={label ?? ""}
+          className="h-full w-full object-cover"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
   return (
     <Poster className={className} label={label}>
       <Art />

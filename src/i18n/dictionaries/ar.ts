@@ -144,6 +144,7 @@ const ar: Dictionary = {
     method: "طريقة التصنيع",
     result: "النتيجة",
     empty: "لا توجد مشاريع في هذا التصنيف حالياً.",
+    loading: "جاري تحميل المشاريع…",
   },
 
   process: {

@@ -142,6 +142,7 @@ const fr = {
     method: "Méthode de fabrication",
     result: "Le résultat",
     empty: "Aucun projet dans cette catégorie pour le moment.",
+    loading: "Chargement des projets…",
   },
 
   process: {

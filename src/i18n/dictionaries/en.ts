@@ -144,6 +144,7 @@ const en: Dictionary = {
     method: "Manufacturing method",
     result: "The result",
     empty: "No project in this category yet.",
+    loading: "Loading projects…",
   },
 
   process: {

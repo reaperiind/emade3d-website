@@ -4,13 +4,15 @@ import { getDictionary } from "@/i18n/get-dictionary";
 import { buildMetadata } from "@/lib/seo";
 import { localized } from "@/lib/localize";
 import { faqItems } from "@/data/faq";
-import { site } from "@/config/site";
+import { getSettings } from "@/lib/settings-store";
 import { PageHero } from "@/components/sections/page-hero";
 import { FaqAccordion } from "@/components/sections/faq-accordion";
 import { CtaSection } from "@/components/sections/cta-section";
 import { Reveal } from "@/components/ui/reveal";
 import { WhatsAppIcon, MailIcon } from "@/components/ui/icons";
 import { ButtonLink } from "@/components/ui/buttons";
+
+export const dynamic = "force-dynamic";
 
 export function generateMetadata({
   params,
@@ -26,9 +28,14 @@ export function generateMetadata({
   });
 }
 
-export default function FaqPage({ params }: { params: { locale: Locale } }) {
+export default async function FaqPage({
+  params,
+}: {
+  params: { locale: Locale };
+}) {
   const { locale } = params;
   const dict = getDictionary(locale);
+  const { whatsappHref } = (await getSettings()).contact;
 
   const faqSchema = {
     "@context": "https://schema.org",
@@ -71,7 +78,7 @@ export default function FaqPage({ params }: { params: { locale: Locale } }) {
                   {dict.faq.cta}
                 </ButtonLink>
                 <ButtonLink
-                  href={site.contact.whatsappHref}
+                  href={whatsappHref}
                   external
                   className="btn-outline btn-md w-full sm:w-auto"
                 >

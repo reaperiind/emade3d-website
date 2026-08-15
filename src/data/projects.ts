@@ -73,6 +73,8 @@ export type Project = {
   duration: LocalizedText;
   year: string;
   featured?: boolean;
+  /** Media keys referencing images stored in the media blob store. */
+  images?: string[];
 };
 
 /**
