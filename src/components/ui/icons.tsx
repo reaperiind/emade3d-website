@@ -268,6 +268,15 @@ export function DownloadIcon(props: IconProps) {
   );
 }
 
+export function UploadIcon(props: IconProps) {
+  return (
+    <svg {...stroke} {...props}>
+      <path d="M12 16V5m0 0 4 4m-4-4-4 4" />
+      <path d="M3 16v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2" />
+    </svg>
+  );
+}
+
 export function TrashIcon(props: IconProps) {
   return (
     <svg {...stroke} {...props}>

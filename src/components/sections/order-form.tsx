@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useI18n } from "@/i18n/provider";
 import { localizePath } from "@/i18n/config";
@@ -8,6 +8,7 @@ import { downloadOrderReceipt } from "@/lib/receipt";
 import type { Order } from "@/lib/orders-store";
 import type { CourierOption, DeliveryMethod } from "@/lib/order-flows";
 import type { SiteSettings } from "@/lib/settings-store";
+import { MAX_FILE_BYTES, MAX_FILES_PER_ORDER } from "@/lib/order-files-store";
 import { cn } from "@/lib/cn";
 import {
   CheckIcon,
@@ -17,7 +18,24 @@ import {
   PlusIcon,
   MapPinIcon,
   BoxIcon,
+  UploadIcon,
+  CloseIcon,
 } from "@/components/ui/icons";
+
+const ACCEPT = [
+  ".stl",
+  ".obj",
+  ".step",
+  ".stp",
+  ".iges",
+  ".igs",
+  ".3mf",
+  ".sldprt",
+  ".pdf",
+  ".zip",
+].join(",");
+
+const FILE_EXT_RE = /\.(stl|obj|step|stp|iges|igs|3mf|sldprt|pdf|zip)$/i;
 
 const inputClass =
   "w-full rounded-md border border-white/12 bg-ink-900 px-4 py-3 text-sm text-white placeholder:text-steel-500 transition focus:border-accent/60 focus:outline-none";
@@ -45,6 +63,9 @@ export function OrderForm() {
   const [sent, setSent] = useState<Order | null>(null);
   const [receiptSaved, setReceiptSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [deliverySettings, setDeliverySettings] = useState<SiteSettings | null>(
     null
@@ -100,6 +121,55 @@ export function OrderForm() {
     };
   }
 
+  function onPickFiles(list: FileList | null) {
+    if (!list || list.length === 0) return;
+    setNote(null);
+    const files = Array.from(list);
+    const valid: File[] = [];
+    for (const file of files) {
+      if (file.size > MAX_FILE_BYTES) {
+        setNote(q.filesTooLarge);
+        continue;
+      }
+      if (!FILE_EXT_RE.test(file.name)) {
+        setNote(q.filesInvalid);
+        continue;
+      }
+      valid.push(file);
+    }
+    const next = [...selectedFiles, ...valid].slice(0, MAX_FILES_PER_ORDER);
+    if (selectedFiles.length + valid.length > MAX_FILES_PER_ORDER) {
+      setNote(q.filesLimit);
+    }
+    setSelectedFiles(next);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function removeFile(index: number) {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function formatBytes(bytes: number): string {
+    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+    if (bytes >= 1024) return `${Math.round(bytes / 1024)} Ko`;
+    return `${bytes} o`;
+  }
+
+  async function uploadFiles(
+    files: File[]
+  ): Promise<{ key: string; name: string; size: number }[]> {
+    const form = new FormData();
+    for (const file of files) form.append("files", file);
+    const res = await fetch("/api/order-files", { method: "POST", body: form });
+    const json = (await res.json().catch(() => null)) as
+      | { ok?: boolean; files?: { key: string; name: string; size: number }[] }
+      | null;
+    if (!res.ok || !json?.ok || !json.files) {
+      throw new Error("upload_failed");
+    }
+    return json.files;
+  }
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (sending) return;
@@ -111,6 +181,16 @@ export function OrderForm() {
     setSending(true);
     setError(null);
     try {
+      let uploadedFiles: { key: string; name: string; size: number }[] = [];
+      if (selectedFiles.length > 0) {
+        try {
+          uploadedFiles = await uploadFiles(selectedFiles);
+        } catch {
+          setError("upload_failed");
+          setSending(false);
+          return;
+        }
+      }
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -123,6 +203,7 @@ export function OrderForm() {
           description: value("description"),
           locale,
           delivery: buildDeliveryPayload(),
+          files: uploadedFiles,
         }),
       });
       const json = (await res.json().catch(() => null)) as
@@ -147,6 +228,7 @@ export function OrderForm() {
         description: value("description"),
         locale,
         delivery: buildDeliveryPayload(),
+        files: uploadedFiles,
       });
       setSending(false);
     } catch {
@@ -512,9 +594,67 @@ export function OrderForm() {
           </div>
         </div>
 
+        {/* Design files (optional) */}
+        <div className="space-y-3 rounded-xl border border-white/10 bg-ink-900/50 p-4 sm:p-5">
+          <p className="text-sm font-semibold text-white">{q.filesTitle}</p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPT}
+            multiple
+            className="hidden"
+            onChange={(e) => onPickFiles(e.target.files)}
+          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="btn-outline-accent btn-sm"
+            >
+              <UploadIcon className="h-4 w-4" />
+              {q.filesChoose}
+            </button>
+          </div>
+          {selectedFiles.length > 0 && (
+            <ul className="space-y-2">
+              {selectedFiles.map((file, index) => (
+                <li
+                  key={`${file.name}-${index}`}
+                  className="flex items-center justify-between gap-3 rounded-lg bg-ink-800 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-white">
+                      {file.name}
+                    </p>
+                    <p className="text-xs text-steel-400">
+                      {formatBytes(file.size)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(index)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-steel-400 transition hover:bg-ink-700 hover:text-white"
+                    aria-label={q.filesRemove}
+                  >
+                    <CloseIcon className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-xs leading-relaxed text-steel-500">
+            {q.filesHint}
+          </p>
+        </div>
+
         {error && (
           <p className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
             {error}
+          </p>
+        )}
+        {note && (
+          <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-300">
+            {note}
           </p>
         )}
 

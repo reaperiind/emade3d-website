@@ -99,3 +99,13 @@ export interface HistoryEntry {
   status: OrderStatus;
   at: string;
 }
+
+/** A design/3D file attached to an order by the customer. */
+export interface OrderFile {
+  /** Storage key in the "order-files" blob store. */
+  key: string;
+  /** Original file name, shown in the admin panel. */
+  name: string;
+  /** File size in bytes. */
+  size: number;
+}

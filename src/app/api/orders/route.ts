@@ -7,6 +7,7 @@ import {
 import { generateTrackingCode } from "@/lib/order-code";
 import { isAuthorized } from "@/lib/admin-auth";
 import { getSettings } from "@/lib/settings-store";
+import { sanitizeOrderFile } from "@/lib/order-files-store";
 import type { DeliveryInfo } from "@/lib/order-flows";
 
 export const runtime = "nodejs";
@@ -27,6 +28,7 @@ interface OrderPayload {
   description?: string;
   locale?: string;
   delivery?: DeliveryInfo;
+  files?: unknown;
 }
 
 function clean(v: unknown, max = 200): string {
@@ -117,6 +119,16 @@ export async function POST(request: Request) {
   }
 
   const delivery = await sanitizeDelivery(payload.delivery);
+
+  const files = Array.isArray(payload.files)
+    ? payload.files
+        .map(sanitizeOrderFile)
+        .filter((f): f is NonNullable<ReturnType<typeof sanitizeOrderFile>> =>
+          f !== null
+        )
+        .slice(0, 5)
+    : undefined;
+
   const settings = await getSettings();
   const now = new Date().toISOString();
 
@@ -134,6 +146,7 @@ export async function POST(request: Request) {
     locale,
     currency: settings.currency,
     delivery,
+    files,
   };
 
   try {

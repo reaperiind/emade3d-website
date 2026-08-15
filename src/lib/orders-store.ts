@@ -11,10 +11,11 @@ import {
   isStatusInFlow,
   type DeliveryInfo,
   type HistoryEntry,
+  type OrderFile,
   type OrderStatus,
 } from "@/lib/order-flows";
 
-export type { OrderStatus, HistoryEntry, DeliveryInfo } from "@/lib/order-flows";
+export type { OrderStatus, HistoryEntry, DeliveryInfo, OrderFile } from "@/lib/order-flows";
 
 export interface Order {
   /** Unique tracking code, e.g. "EMD-K7M3B2". */
@@ -38,6 +39,8 @@ export interface Order {
   shipment?: ShipmentInfo;
   /** How the customer wants to receive the order. */
   delivery?: DeliveryInfo;
+  /** Design files attached by the customer when placing the order. */
+  files?: OrderFile[];
 }
 
 /** Courier parcel created for an order. */
@@ -147,6 +150,8 @@ export interface OrderPatch {
   currency?: string;
   delivery?: DeliveryInfo;
   shipment?: ShipmentInfo | null;
+  /** Attached design files (admin may add/remove them). */
+  files?: OrderFile[];
   /** Status change is appended to the history at this time (ISO) — default now. */
   at?: string;
 }
@@ -175,6 +180,7 @@ export async function updateOrder(
   if (patch.price !== undefined) updated.price = patch.price;
   if (patch.currency !== undefined) updated.currency = patch.currency;
   if (patch.delivery) updated.delivery = patch.delivery;
+  if (patch.files !== undefined) updated.files = patch.files;
   if (patch.shipment !== undefined) {
     updated.shipment = patch.shipment ?? undefined;
   }

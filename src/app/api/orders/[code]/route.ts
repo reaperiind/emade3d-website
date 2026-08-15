@@ -7,6 +7,10 @@ import {
 } from "@/lib/orders-store";
 import { isAuthorized } from "@/lib/admin-auth";
 import {
+  deleteOrderFiles,
+  sanitizeOrderFile,
+} from "@/lib/order-files-store";
+import {
   statusesFor,
   isStatusInFlow,
   type OrderStatus,
@@ -87,6 +91,19 @@ export async function PATCH(request: Request, { params }: Ctx) {
     patch.delivery = delivery;
   }
 
+  if (body.files !== undefined && body.files !== null) {
+    const files = Array.isArray(body.files)
+      ? body.files
+          .map(sanitizeOrderFile)
+          .filter(
+            (f): f is NonNullable<ReturnType<typeof sanitizeOrderFile>> =>
+              f !== null
+          )
+          .slice(0, 5)
+      : [];
+    patch.files = files;
+  }
+
   const updated = await updateOrder(code, patch);
   return NextResponse.json({ ok: true, order: updated });
 }
@@ -107,6 +124,10 @@ export async function DELETE(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const code = decodeURIComponent(params.code);
+  const order = await getOrder(code);
+  if (order?.files?.length) {
+    await deleteOrderFiles(order.files.map((f) => f.key));
+  }
   await deleteOrder(code);
   return NextResponse.json({ ok: true });
 }

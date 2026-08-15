@@ -193,6 +193,13 @@ export default function AdminPage() {
     patchOrder(code, { history });
   }
 
+  function setFiles(code: string, files: Order["files"]) {
+    setOrders((prev) =>
+      prev.map((o) => (o.code === code ? { ...o, files } : o))
+    );
+    patchOrder(code, { files });
+  }
+
   async function onDelete(code: string) {
     if (!window.confirm(`Supprimer la commande ${code} ?`)) return;
     try {
@@ -299,11 +306,13 @@ export default function AdminPage() {
             <OrdersPanel
               orders={orders}
               loading={loading}
+              token={token}
               onStatus={setStatus}
               onPrice={setPrice}
               onDeliveryFee={setDeliveryFee}
               onHistoryAt={setHistoryAt}
               onDelete={onDelete}
+              onFilesChange={setFiles}
             />
           )}
           {nav === "settings" && <DeliverySettingsPanel token={token} />}

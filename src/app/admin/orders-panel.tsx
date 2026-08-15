@@ -4,7 +4,12 @@ import { useCallback, useState } from "react";
 import type { Order, OrderStatus } from "@/lib/orders-store";
 import { statusesFor } from "@/lib/order-flows";
 import { cn } from "@/lib/cn";
-import { TrashIcon } from "@/components/ui/icons";
+import { localizePath } from "@/i18n/config";
+import {
+  TrashIcon,
+  WhatsAppIcon,
+  DownloadIcon,
+} from "@/components/ui/icons";
 import {
   inputClass,
   panelCard,
@@ -51,6 +56,79 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: "border-red-300 bg-red-50 text-red-600",
 };
 
+const WA_LABELS: Record<string, Record<string, string>> = {
+  fr: {
+    SUBMITTED: "reçue",
+    UNDER_REVIEW: "en étude",
+    QUOTE_SENT: "devis envoyé",
+    CONFIRMED: "confirmée",
+    IN_PRODUCTION: "en fabrication",
+    IN_DESIGN: "en conception",
+    DESIGN_APPROVAL: "en validation du design",
+    QUALITY_CHECK: "en contrôle qualité",
+    READY: "prête",
+    DELIVERED: "livrée",
+    CLOSED: "clôturée",
+  },
+  en: {
+    SUBMITTED: "received",
+    UNDER_REVIEW: "under review",
+    QUOTE_SENT: "quote sent",
+    CONFIRMED: "confirmed",
+    IN_PRODUCTION: "in production",
+    IN_DESIGN: "in design",
+    DESIGN_APPROVAL: "design approval",
+    QUALITY_CHECK: "quality check",
+    READY: "ready",
+    DELIVERED: "delivered",
+    CLOSED: "closed",
+  },
+  ar: {
+    SUBMITTED: "تم استلامها",
+    UNDER_REVIEW: "قيد الدراسة",
+    QUOTE_SENT: "تم إرسال العرض",
+    CONFIRMED: "مؤكدة",
+    IN_PRODUCTION: "قيد التصنيع",
+    IN_DESIGN: "قيد التصميم",
+    DESIGN_APPROVAL: "قيد اعتماد التصميم",
+    QUALITY_CHECK: "قيد مراقبة الجودة",
+    READY: "جاهزة",
+    DELIVERED: "تم التسليم",
+    CLOSED: "مغلقة",
+  },
+};
+
+const WA_TEMPLATES: Record<string, (o: Order) => string> = {
+  fr: (o) =>
+    `Bonjour ${o.firstName} ${o.lastName},\nvotre commande ${o.code} est passée au statut « ${WA_LABELS.fr[o.status] ?? o.status} ».\nVous pouvez la suivre ici : `,
+  en: (o) =>
+    `Hello ${o.firstName} ${o.lastName},\nyour order ${o.code} is now ${WA_LABELS.en[o.status] ?? o.status}.\nTrack it here: `,
+  ar: (o) =>
+    `مرحباً ${o.firstName} ${o.lastName}،\nأصبحت حالة طلبكم ${o.code} « ${WA_LABELS.ar[o.status] ?? o.status} ».\nيمكنكم متابعته هنا: `,
+};
+
+function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} Ko`;
+  return `${bytes} o`;
+}
+
+function waLink(order: Order): string {
+  const digits = (order.phone ?? "").replace(/\D/g, "");
+  const number = digits.startsWith("213")
+    ? digits
+    : digits.startsWith("0")
+      ? `213${digits.slice(1)}`
+      : digits;
+  if (!number) return "";
+  const locale = order.locale === "ar" || order.locale === "en" ? order.locale : "fr";
+  const base =
+    typeof window !== "undefined" ? window.location.origin : "https://emade3d.dz";
+  const path = `${localizePath("/suivre-ma-commande", locale)}?code=${encodeURIComponent(order.code)}`;
+  const text = `${(WA_TEMPLATES[locale] ?? WA_TEMPLATES.fr)(order)}${base}${path}`;
+  return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+}
+
 function toLocalInput(iso: string): string {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -66,19 +144,23 @@ function fromLocalInput(value: string): string {
 export function OrdersPanel({
   orders,
   loading,
+  token,
   onStatus,
   onPrice,
   onDeliveryFee,
   onHistoryAt,
   onDelete,
+  onFilesChange,
 }: {
   orders: Order[];
   loading: boolean;
+  token: string;
   onStatus: (code: string, status: OrderStatus) => void;
   onPrice: (code: string, raw: string) => void;
   onDeliveryFee: (code: string, raw: string) => void;
   onHistoryAt: (code: string, index: number, value: string) => void;
   onDelete: (code: string) => void;
+  onFilesChange: (code: string, files: Order["files"]) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -96,11 +178,13 @@ export function OrdersPanel({
             <OrderCard
               key={order.code}
               order={order}
+              token={token}
               onStatus={onStatus}
               onPrice={onPrice}
               onDeliveryFee={onDeliveryFee}
               onHistoryAt={onHistoryAt}
               onDelete={onDelete}
+              onFilesChange={onFilesChange}
             />
           ))}
         </ul>
@@ -111,18 +195,22 @@ export function OrdersPanel({
 
 function OrderCard({
   order,
+  token,
   onStatus,
   onPrice,
   onDeliveryFee,
   onHistoryAt,
   onDelete,
+  onFilesChange,
 }: {
   order: Order;
+  token: string;
   onStatus: (code: string, status: OrderStatus) => void;
   onPrice: (code: string, raw: string) => void;
   onDeliveryFee: (code: string, raw: string) => void;
   onHistoryAt: (code: string, index: number, value: string) => void;
   onDelete: (code: string) => void;
+  onFilesChange: (code: string, files: Order["files"]) => void;
 }) {
   const options = statusesFor(order.serviceType);
   const isCourier = order.delivery?.method === "courier";
@@ -133,6 +221,7 @@ function OrderCard({
     String(order.delivery?.fee ?? 0)
   );
   const [savedFlash, setSavedFlash] = useState(false);
+  const waHref = waLink(order);
   const hasUnsaved =
     priceDraft.trim() === ""
       ? order.price != null
@@ -144,6 +233,35 @@ function OrderCard({
     if (isCourier) onDeliveryFee(order.code, feeDraft);
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2500);
+  }
+
+  async function downloadFile(key: string) {
+    const res = await fetch(`/api/order-files/${encodeURIComponent(key)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    const meta = res.headers.get("Content-Disposition");
+    const blob = await res.blob();
+    const nameMatch = meta?.match(/filename\*=UTF-8''([^;]+)/i);
+    const rawName = nameMatch ? decodeURIComponent(nameMatch[1]) : key;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = rawName;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function deleteFile(key: string) {
+    const res = await fetch(`/api/order-files/${encodeURIComponent(key)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    onFilesChange(
+      order.code,
+      (order.files ?? []).filter((f) => f.key !== key)
+    );
   }
 
   return (
@@ -189,6 +307,17 @@ function OrderCard({
               </option>
             ))}
           </select>
+          {waHref && (
+            <a
+              href={waHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-green-200 text-green-600 transition hover:border-green-300 hover:bg-green-50"
+              title="Contacter sur WhatsApp"
+            >
+              <WhatsAppIcon className="h-4 w-4" />
+            </a>
+          )}
           <button
             type="button"
             aria-label={`Supprimer ${order.code}`}
@@ -253,6 +382,50 @@ function OrderCard({
         <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-sm leading-relaxed text-slate-700">
           {order.description}
         </p>
+      )}
+
+      {/* Attached design files */}
+      {order.files && order.files.length > 0 && (
+        <div className="mt-3">
+          <p className="text-xs font-medium uppercase tracking-widest text-slate-400">
+            Fichiers du projet
+          </p>
+          <ul className="mt-2 space-y-2">
+            {order.files.map((file) => (
+              <li
+                key={file.key}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-slate-800">
+                    {file.name}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {formatBytes(file.size)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => downloadFile(file.key)}
+                    className="flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 transition hover:border-accent hover:text-accent"
+                  >
+                    <DownloadIcon className="h-3.5 w-3.5" />
+                    Télécharger
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Supprimer ${file.name}`}
+                    onClick={() => deleteFile(file.key)}
+                    className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-400 transition hover:border-red-300 hover:text-red-500"
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {/* History (editable timestamps) */}
