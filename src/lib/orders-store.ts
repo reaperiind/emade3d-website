@@ -7,32 +7,47 @@
  */
 
 import { getStore, type Store } from "@netlify/blobs";
+import {
+  isStatusInFlow,
+  type DeliveryInfo,
+  type HistoryEntry,
+  type OrderStatus,
+} from "@/lib/order-flows";
 
-export const ORDER_STATUSES = [
-  "new",
-  "processing",
-  "shipped",
-  "done",
-  "cancelled",
-] as const;
-
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
+export type { OrderStatus, HistoryEntry, DeliveryInfo } from "@/lib/order-flows";
 
 export interface Order {
   /** Unique tracking code, e.g. "EMD-K7M3B2". */
   code: string;
   createdAt: string;
   status: OrderStatus;
+  serviceType: string;
   firstName: string;
   lastName: string;
   phone: string;
   orderDate?: string;
-  serviceType: string;
   description: string;
   locale: string;
+  /** Steps the order has passed through, in chronological order. */
+  history: HistoryEntry[];
+  /** Manual price set by the admin (shown to the customer from QUOTE_SENT). */
+  price?: number | null;
+  /** Currency shown next to the price (snapshot of the site settings). */
+  currency?: string;
+  /** How the customer wants to receive the order. */
+  delivery?: DeliveryInfo;
 }
 
 const STORE_NAME = "orders";
+
+/** Legacy statuses (pre-workflow) mapped to their workflow equivalent. */
+const LEGACY_MAP: Record<string, OrderStatus> = {
+  new: "SUBMITTED",
+  processing: "CONFIRMED",
+  shipped: "READY",
+  done: "DELIVERED",
+  cancelled: "CLOSED",
+};
 
 /**
  * Local (dev) fallback. Stored on globalThis because in "next dev" every route
@@ -66,6 +81,18 @@ function resolveStore(): Store | null {
   }
 }
 
+/** Upgrades an order written before the workflow change, if needed. */
+function normalizeOrder(raw: Order): Order {
+  const status = isStatusInFlow(raw.serviceType, raw.status)
+    ? raw.status
+    : (LEGACY_MAP[raw.status] ?? "SUBMITTED");
+  const history: HistoryEntry[] =
+    Array.isArray(raw.history) && raw.history.length > 0
+      ? raw.history
+      : [{ status, at: raw.createdAt }];
+  return { ...raw, status, history };
+}
+
 export async function createOrder(order: Order): Promise<void> {
   const store = resolveStore();
   if (store) {
@@ -82,33 +109,63 @@ export async function getAllOrders(): Promise<Order[]> {
     const orders: Order[] = [];
     for (const { key } of blobs) {
       const raw = await store.get(key, { type: "text" });
-      if (raw) orders.push(JSON.parse(raw) as Order);
+      if (raw) orders.push(normalizeOrder(JSON.parse(raw) as Order));
     }
     return orders.sort((a, b) =>
       a.createdAt.localeCompare(b.createdAt)
     );
   }
-  return Array.from(getMemory().values()).sort((a, b) =>
-    a.createdAt.localeCompare(b.createdAt)
-  );
+  return Array.from(getMemory().values())
+    .map(normalizeOrder)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
 export async function getOrder(code: string): Promise<Order | null> {
   const store = resolveStore();
   if (store) {
     const raw = await store.get(code, { type: "text" });
-    return raw ? (JSON.parse(raw) as Order) : null;
+    return raw ? normalizeOrder(JSON.parse(raw) as Order) : null;
   }
-  return getMemory().get(code) ?? null;
+  const mem = getMemory().get(code);
+  return mem ? normalizeOrder(mem) : null;
 }
 
-export async function updateOrderStatus(
+export interface OrderPatch {
+  status?: OrderStatus;
+  /** Replace the whole history (used when editing timestamps in the admin). */
+  history?: HistoryEntry[];
+  price?: number | null;
+  currency?: string;
+  delivery?: DeliveryInfo;
+  /** Status change is appended to the history at this time (ISO) — default now. */
+  at?: string;
+}
+
+export async function updateOrder(
   code: string,
-  status: OrderStatus
+  patch: OrderPatch
 ): Promise<Order | null> {
   const existing = await getOrder(code);
   if (!existing) return null;
-  const updated = { ...existing, status };
+
+  const updated: Order = { ...existing };
+  if (patch.status) {
+    updated.status = patch.status;
+    const at = patch.at ?? new Date().toISOString();
+    updated.history = [
+      ...existing.history,
+      { status: patch.status, at },
+    ];
+  }
+  if (patch.history) {
+    updated.history = patch.history;
+    const last = updated.history[updated.history.length - 1];
+    if (last) updated.status = last.status;
+  }
+  if (patch.price !== undefined) updated.price = patch.price;
+  if (patch.currency !== undefined) updated.currency = patch.currency;
+  if (patch.delivery) updated.delivery = patch.delivery;
+
   const store = resolveStore();
   if (store) {
     await store.set(code, JSON.stringify(updated));
@@ -116,6 +173,14 @@ export async function updateOrderStatus(
     getMemory().set(code, updated);
   }
   return updated;
+}
+
+/** Kept as an alias for the status-only update used by simple flows. */
+export async function updateOrderStatus(
+  code: string,
+  status: OrderStatus
+): Promise<Order | null> {
+  return updateOrder(code, { status });
 }
 
 export async function deleteOrder(code: string): Promise<void> {

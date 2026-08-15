@@ -6,6 +6,8 @@ import {
 } from "@/lib/orders-store";
 import { generateTrackingCode } from "@/lib/order-code";
 import { isAuthorized } from "@/lib/admin-auth";
+import { getSettings } from "@/lib/settings-store";
+import type { DeliveryInfo } from "@/lib/order-flows";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,10 +26,35 @@ interface OrderPayload {
   serviceType?: string;
   description?: string;
   locale?: string;
+  delivery?: DeliveryInfo;
 }
 
 function clean(v: unknown, max = 200): string {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
+}
+
+/**
+ * Validates the delivery payload and computes the delivery fee from the
+ * current site settings (courier office fees / home fee, pickup = 0).
+ */
+async function sanitizeDelivery(raw: unknown): Promise<DeliveryInfo | undefined> {
+  if (!raw || typeof raw !== "object") return undefined;
+  const d = raw as Record<string, unknown>;
+  const method =
+    d.method === "courier" ? "courier" : d.method === "pickup" ? "pickup" : undefined;
+  if (!method) return undefined;
+  if (method === "pickup") return { method, fee: 0 };
+
+  const option = d.option === "home" ? "home" : "office";
+  const officeId = clean(d.officeId, 60);
+  const address = clean(d.address, 500);
+  const settings = await getSettings();
+  let fee = settings.delivery.homeFee || 0;
+  if (option === "office") {
+    const office = settings.delivery.offices.find((o) => o.id === officeId);
+    fee = office?.fee ?? 0;
+  }
+  return { method, option, officeId, address, fee };
 }
 
 // POST /api/orders — create a new order, returns the generated tracking code.
@@ -71,10 +98,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "code_exhausted" }, { status: 500 });
   }
 
+  const delivery = await sanitizeDelivery(payload.delivery);
+  const settings = await getSettings();
+  const now = new Date().toISOString();
+
   const order: Order = {
     code,
-    createdAt: new Date().toISOString(),
-    status: "new",
+    createdAt: now,
+    status: "SUBMITTED",
+    history: [{ status: "SUBMITTED", at: now }],
     firstName,
     lastName,
     phone,
@@ -82,6 +114,8 @@ export async function POST(request: Request) {
     serviceType,
     description,
     locale,
+    currency: settings.currency,
+    delivery,
   };
 
   try {

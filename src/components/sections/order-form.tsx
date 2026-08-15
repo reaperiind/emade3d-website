@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useI18n } from "@/i18n/provider";
 import { localizePath } from "@/i18n/config";
 import { downloadOrderReceipt } from "@/lib/receipt";
 import type { Order } from "@/lib/orders-store";
+import type { CourierOption, DeliveryMethod } from "@/lib/order-flows";
+import type { SiteSettings } from "@/lib/settings-store";
 import { cn } from "@/lib/cn";
 import {
   CheckIcon,
@@ -13,6 +15,8 @@ import {
   DownloadIcon,
   ArrowUpRightIcon,
   PlusIcon,
+  MapPinIcon,
+  BoxIcon,
 } from "@/components/ui/icons";
 
 const inputClass =
@@ -30,7 +34,9 @@ const SERVICE_MAP: Record<string, string> = {
  * On confirm the order is sent to POST /api/orders, which stores it and
  * returns a unique tracking code (EMD-XXXXXX). The confirmation panel then
  * shows the code with actions to save the receipt as an image, copy the code
- * and go to the tracking page.
+ * and go to the tracking page. A delivery method (pickup / courier office /
+ * courier home) is chosen and the delivery fee is computed from the site
+ * settings.
  */
 export function OrderForm() {
   const { locale, t } = useI18n();
@@ -40,6 +46,51 @@ export function OrderForm() {
   const [sent, setSent] = useState<Order | null>(null);
   const [receiptSaved, setReceiptSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const [deliverySettings, setDeliverySettings] = useState<SiteSettings | null>(
+    null
+  );
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("pickup");
+  const [courierOption, setCourierOption] = useState<CourierOption>("office");
+  const [officeId, setOfficeId] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+
+  // Load delivery settings (offices, fees, currency) for the fee computation.
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const settings = json?.settings as SiteSettings | undefined;
+        if (settings) {
+          setDeliverySettings(settings);
+          const first = settings.delivery.offices[0];
+          if (first) setOfficeId(first.id);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const currency = deliverySettings?.currency ?? "DA";
+
+  const deliveryFee = useMemo(() => {
+    if (deliveryMethod === "pickup") return 0;
+    if (courierOption === "home")
+      return deliverySettings?.delivery.homeFee ?? 0;
+    const office = deliverySettings?.delivery.offices.find(
+      (o) => o.id === officeId
+    );
+    return office?.fee ?? 0;
+  }, [deliveryMethod, courierOption, officeId, deliverySettings]);
+
+  function buildDeliveryPayload() {
+    if (deliveryMethod === "pickup") return { method: "pickup" as const };
+    return {
+      method: "courier" as const,
+      option: courierOption,
+      ...(courierOption === "office" ? { officeId } : {}),
+      ...(courierOption === "home" ? { address: deliveryAddress } : {}),
+    };
+  }
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -63,6 +114,7 @@ export function OrderForm() {
           serviceType: value("serviceType"),
           description: value("description"),
           locale,
+          delivery: buildDeliveryPayload(),
         }),
       });
       const json = (await res.json().catch(() => null)) as
@@ -73,10 +125,12 @@ export function OrderForm() {
         setSending(false);
         return;
       }
+      const now = new Date().toISOString();
       setSent({
         code: json.code,
-        createdAt: new Date().toISOString(),
-        status: "new",
+        createdAt: now,
+        status: "SUBMITTED",
+        history: [{ status: "SUBMITTED", at: now }],
         firstName: value("firstName"),
         lastName: value("lastName"),
         phone: value("phone"),
@@ -84,6 +138,7 @@ export function OrderForm() {
         serviceType: value("serviceType"),
         description: value("description"),
         locale,
+        delivery: buildDeliveryPayload(),
       });
       setSending(false);
     } catch {
@@ -167,6 +222,14 @@ export function OrderForm() {
             [q.phone, sent.phone],
             [q.serviceType, serviceLabel],
             [q.orderDate, sent.orderDate ?? "—"],
+            [
+              q.delivery,
+              sent.delivery?.method === "courier"
+                ? sent.delivery.option === "home"
+                  ? q.deliveryHome
+                  : q.deliveryOffice
+                : q.deliveryPickup,
+            ],
           ]
             .filter(([, value]) => value !== "—" && value)
             .map(([label, value]) => (
@@ -325,6 +388,104 @@ export function OrderForm() {
           />
         </div>
 
+        {/* Delivery method */}
+        <div className="space-y-4 rounded-xl border border-white/10 bg-ink-900/50 p-4 sm:p-5">
+          <p className="text-sm font-semibold text-white">{q.delivery}</p>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <DeliveryCard
+              active={deliveryMethod === "pickup"}
+              onClick={() => setDeliveryMethod("pickup")}
+              icon={<MapPinIcon className="h-5 w-5" />}
+              title={q.deliveryPickup}
+              desc={q.deliveryPickupDesc}
+              meta={q.deliveryFree}
+            />
+            <DeliveryCard
+              active={deliveryMethod === "courier"}
+              onClick={() => setDeliveryMethod("courier")}
+              icon={<BoxIcon className="h-5 w-5" />}
+              title={q.deliveryCourier}
+              desc={q.deliveryCourierDesc}
+              meta={`${deliveryFee} ${currency}`}
+            />
+          </div>
+
+          {deliveryMethod === "courier" && (
+            <>
+              <div>
+                <p className="mb-1.5 text-sm font-medium text-steel-300">
+                  {q.deliveryOption}
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <OptionRadio
+                    active={courierOption === "office"}
+                    onClick={() => setCourierOption("office")}
+                    label={q.deliveryOffice}
+                  />
+                  <OptionRadio
+                    active={courierOption === "home"}
+                    onClick={() => setCourierOption("home")}
+                    label={q.deliveryHome}
+                  />
+                </div>
+              </div>
+
+              {courierOption === "office" ? (
+                <div>
+                  <label
+                    htmlFor="of-office"
+                    className="mb-1.5 block text-sm font-medium text-steel-300"
+                  >
+                    {q.deliveryOffice}
+                  </label>
+                  <select
+                    id="of-office"
+                    value={officeId}
+                    onChange={(e) => setOfficeId(e.target.value)}
+                    required
+                    className={cn(inputClass, "appearance-none")}
+                  >
+                    <option value="" disabled>
+                      {q.deliveryOfficePlaceholder}
+                    </option>
+                    {deliverySettings?.delivery.offices.map((office) => (
+                      <option key={office.id} value={office.id}>
+                        {office.name} · {office.fee} {currency}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label
+                    htmlFor="of-address"
+                    className="mb-1.5 block text-sm font-medium text-steel-300"
+                  >
+                    {q.deliveryAddress} *
+                  </label>
+                  <textarea
+                    id="of-address"
+                    required
+                    rows={2}
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    placeholder={q.deliveryAddressPlaceholder}
+                    className={cn(inputClass, "resize-none")}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="flex items-center justify-between rounded-lg bg-ink-800 px-4 py-3 text-sm">
+            <span className="text-steel-400">{q.deliveryFee}</span>
+            <span className="font-semibold text-white">
+              {deliveryFee === 0 ? q.deliveryFree : `${deliveryFee} ${currency}`}
+            </span>
+          </div>
+        </div>
+
         {error && (
           <p className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
             {error}
@@ -343,5 +504,90 @@ export function OrderForm() {
         </p>
       </form>
     </div>
+  );
+}
+
+function DeliveryCard({
+  active,
+  onClick,
+  icon,
+  title,
+  desc,
+  meta,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  meta: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-xl border p-4 text-start transition",
+        active
+          ? "border-accent/60 bg-accent-dim"
+          : "border-white/10 bg-ink-800 hover:border-white/20"
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-lg",
+          active ? "bg-accent/20 text-accent" : "bg-ink-700 text-steel-300"
+        )}
+      >
+        {icon}
+      </span>
+      <span className="mt-3 block text-sm font-semibold text-white">
+        {title}
+      </span>
+      <span className="mt-1 block text-xs leading-relaxed text-steel-400">
+        {desc}
+      </span>
+      <span
+        className={cn(
+          "mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold",
+          active ? "bg-accent/20 text-accent" : "bg-ink-700 text-steel-300"
+        )}
+      >
+        {meta}
+      </span>
+    </button>
+  );
+}
+
+function OptionRadio({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-2 rounded-lg border px-3.5 py-2.5 text-sm font-medium transition",
+        active
+          ? "border-accent/60 bg-accent-dim text-white"
+          : "border-white/10 bg-ink-800 text-steel-300 hover:border-white/20"
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-4 w-4 items-center justify-center rounded-full border",
+          active ? "border-accent" : "border-steel-500"
+        )}
+      >
+        {active && <span className="h-2 w-2 rounded-full bg-accent" />}
+      </span>
+      {label}
+    </button>
   );
 }

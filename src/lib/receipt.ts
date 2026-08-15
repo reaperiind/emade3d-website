@@ -11,8 +11,32 @@ const INK = "#0B0E14";
  * PNG. Uses the native Canvas API so no extra dependency is required.
  */
 export function downloadOrderReceipt(order: Order, siteName?: string) {
+  const rows: Array<[string, string]> = [
+    ["Client", `${order.firstName} ${order.lastName}`],
+    ["Téléphone", order.phone],
+    ["Service", order.serviceType.replace(/_/g, " ")],
+    ["Date", order.orderDate ?? new Date(order.createdAt).toLocaleDateString("fr-FR")],
+    ["Référence", new Date(order.createdAt).toLocaleString("fr-FR")],
+  ];
+  if (typeof order.price === "number" && Number.isFinite(order.price)) {
+    rows.push(["Prix", `${order.price} ${order.currency ?? ""}`]);
+  }
+  if (order.delivery) {
+    const deliveryLabel =
+      order.delivery.method === "pickup"
+        ? "Retrait sur place"
+        : order.delivery.option === "home"
+          ? "Livraison à domicile"
+          : "Livraison au bureau du coursier";
+    rows.push(["Livraison", deliveryLabel]);
+    if (order.delivery.fee && order.delivery.fee > 0) {
+      rows.push(["Frais de livraison", `${order.delivery.fee} ${order.currency ?? ""}`]);
+    }
+  }
+
+  const extraRows = Math.max(0, rows.length - 5);
+  const H = 470 + extraRows * 46;
   const W = 600;
-  const H = 470;
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
@@ -44,13 +68,6 @@ export function downloadOrderReceipt(order: Order, siteName?: string) {
   const valueX = 230;
 
   ctx.textBaseline = "alphabetic";
-  const rows: Array<[string, string]> = [
-    ["Client", `${order.firstName} ${order.lastName}`],
-    ["Téléphone", order.phone],
-    ["Service", order.serviceType.replace(/_/g, " ")],
-    ["Date", order.orderDate ?? new Date(order.createdAt).toLocaleDateString("fr-FR")],
-    ["Référence", new Date(order.createdAt).toLocaleString("fr-FR")],
-  ];
 
   let y = bodyStart;
   for (const [label, value] of rows) {
