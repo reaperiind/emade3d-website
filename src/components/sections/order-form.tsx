@@ -53,9 +53,8 @@ export function OrderForm() {
   const [courierOption, setCourierOption] = useState<CourierOption>("office");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [wilayaId, setWilayaId] = useState<number | null>(null);
-  const [communeId, setCommuneId] = useState<number | null>(null);
 
-  // Load settings (wilayas, communes, currency, delivery data).
+  // Load settings (wilayas, currency, delivery data).
   useEffect(() => {
     fetch("/api/settings")
       .then((res) => (res.ok ? res.json() : null))
@@ -73,32 +72,6 @@ export function OrderForm() {
   const wilayas = useMemo(
     () => deliverySettings?.delivery.wilayas ?? [],
     [deliverySettings]
-  );
-  const communes = useMemo(
-    () => deliverySettings?.delivery.communes ?? [],
-    [deliverySettings]
-  );
-  const communeOptions = useMemo(
-    () =>
-      wilayaId == null
-        ? []
-        : communes.filter((c) => c.wilayaId === wilayaId),
-    [communes, wilayaId]
-  );
-
-  const wilayaLabel = useMemo(
-    () =>
-      wilayaId == null
-        ? null
-        : wilayas.find((w) => w.id === wilayaId)?.name ?? null,
-    [wilayas, wilayaId]
-  );
-  const communeLabel = useMemo(
-    () =>
-      communeId == null
-        ? null
-        : communes.find((c) => c.id === communeId)?.name ?? null,
-    [communes, communeId]
   );
 
   const displayedFee = useMemo(() => {
@@ -122,10 +95,7 @@ export function OrderForm() {
     return {
       method: "courier" as const,
       option: courierOption,
-      ...(hasDeliveryData && wilayaId != null
-        ? { wilayaId, ...(communeId != null ? { communeId } : {}) }
-        : {}),
-      ...(communeLabel ? { communeName: communeLabel } : {}),
+      ...(hasDeliveryData && wilayaId != null ? { wilayaId } : {}),
       ...(courierOption === "home" ? { address: deliveryAddress } : {}),
     };
   }
@@ -479,61 +449,32 @@ export function OrderForm() {
 
               {hasDeliveryData ? (
                 <div className="space-y-4">
-                  {/* Wilaya + commune selection (delivery data available) */}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label
-                        htmlFor="of-wilaya"
-                        className="mb-1.5 block text-sm font-medium text-steel-300"
-                      >
-                        {q.deliveryWilaya} *
-                      </label>
-                      <select
-                        id="of-wilaya"
-                        required
-                        value={wilayaId ?? ""}
-                        onChange={(e) => {
-                          setWilayaId(e.target.value ? Number(e.target.value) : null);
-                          setCommuneId(null);
-                        }}
-                        className={cn(inputClass, "appearance-none")}
-                      >
-                        <option value="" disabled>
-                          {q.deliverySelectWilaya}
+                  {/* Wilaya selection (delivery data available) */}
+                  <div>
+                    <label
+                      htmlFor="of-wilaya"
+                      className="mb-1.5 block text-sm font-medium text-steel-300"
+                    >
+                      {q.deliveryWilaya} *
+                    </label>
+                    <select
+                      id="of-wilaya"
+                      required
+                      value={wilayaId ?? ""}
+                      onChange={(e) => {
+                        setWilayaId(e.target.value ? Number(e.target.value) : null);
+                      }}
+                      className={cn(inputClass, "appearance-none")}
+                    >
+                      <option value="" disabled>
+                        {q.deliverySelectWilaya}
+                      </option>
+                      {wilayas.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
                         </option>
-                        {wilayas.map((w) => (
-                          <option key={w.id} value={w.id}>
-                            {w.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="of-commune"
-                        className="mb-1.5 block text-sm font-medium text-steel-300"
-                      >
-                        {q.deliveryCommune}
-                      </label>
-                      <select
-                        id="of-commune"
-                        value={communeId ?? ""}
-                        onChange={(e) =>
-                          setCommuneId(e.target.value ? Number(e.target.value) : null)
-                        }
-                        disabled={wilayaId == null}
-                        className={cn(inputClass, "appearance-none")}
-                      >
-                        <option value="" disabled>
-                          {q.deliverySelectCommune}
-                        </option>
-                        {communeOptions.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Home delivery only: customer address */}
