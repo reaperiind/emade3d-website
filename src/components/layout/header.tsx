@@ -102,8 +102,10 @@ export function Header() {
 
       {/* Mobile menu */}
       <div
+        role="dialog"
+        aria-modal="true"
         className={cn(
-          "fixed inset-x-0 top-16 bottom-0 z-40 flex flex-col overflow-y-auto bg-ink-950/98 backdrop-blur-xl transition-all duration-300 lg:hidden",
+          "absolute inset-x-0 top-full z-40 h-[calc(100dvh-4rem)] overflow-y-auto bg-ink-950/98 backdrop-blur-xl transition-all duration-300 lg:hidden",
           menuOpen
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0"
