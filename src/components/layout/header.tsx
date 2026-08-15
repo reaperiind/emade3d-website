@@ -105,7 +105,7 @@ export function Header() {
         role="dialog"
         aria-modal="true"
         className={cn(
-          "absolute inset-x-0 top-full z-40 h-[calc(100dvh-4rem)] overflow-y-auto bg-ink-950/98 backdrop-blur-xl transition-all duration-300 lg:hidden",
+          "absolute inset-x-0 top-full z-40 h-[calc(100dvh-4rem)] overflow-y-auto bg-ink-950 backdrop-blur-xl transition-all duration-300 lg:hidden",
           menuOpen
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0"
