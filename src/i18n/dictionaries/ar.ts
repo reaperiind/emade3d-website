@@ -193,6 +193,11 @@ const ar: Dictionary = {
     deliveryAddressPlaceholder: "العنوان الكامل (الشارع، المدينة، الرمز البريدي)...",
     deliveryFee: "رسوم التوصيل",
     deliveryFree: "مجاناً",
+    deliveryWilaya: "الولاية",
+    deliveryCommune: "البلدية",
+    deliverySelectWilaya: "اختر ولاية",
+    deliverySelectCommune: "اختر بلدية",
+    deliveryPriceLoading: "جارٍ حساب السعر…",
     submit: "تأكيد الطلب",
     sending: "جارٍ الإرسال...",
     noteBeforeSubmit:
@@ -268,6 +273,7 @@ const ar: Dictionary = {
     deliveryOfficeName: "مكتب التوصيل",
     deliveryFee: "رسوم التوصيل",
     total: "الإجمالي",
+    shipmentTracking: "تتبع الشحنة (Guepex)",
     historyTitle: "سجل الطلب",
     historySubtitle:
       "كل مرحلة اجتازها طلبكم، مع التاريخ والوقت.",

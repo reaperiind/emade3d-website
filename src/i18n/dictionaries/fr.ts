@@ -194,6 +194,11 @@ const fr = {
     deliveryAddressPlaceholder: "Adresse complète (rue, ville, code postal)...",
     deliveryFee: "Frais de livraison",
     deliveryFree: "Gratuit",
+    deliveryWilaya: "Wilaya",
+    deliveryCommune: "Commune",
+    deliverySelectWilaya: "Choisissez une wilaya",
+    deliverySelectCommune: "Choisissez une commune",
+    deliveryPriceLoading: "Calcul du prix…",
     submit: "Confirmer la commande",
     sending: "Envoi en cours...",
     noteBeforeSubmit:
@@ -273,6 +278,7 @@ const fr = {
     deliveryOfficeName: "Bureau de livraison",
     deliveryFee: "Frais de livraison",
     total: "Total",
+    shipmentTracking: "Suivi de la livraison (Guepex)",
     historyTitle: "Historique de la commande",
     historySubtitle:
       "Chaque étape franchie par votre commande, avec la date et l'heure.",

@@ -84,6 +84,12 @@ export interface DeliveryInfo {
   officeId?: string;
   /** Delivery address (when option === "home"). */
   address?: string;
+  /** Destination wilaya (courier home delivery). */
+  wilayaId?: number;
+  /** Destination commune (courier home delivery). */
+  communeId?: number;
+  /** Destination commune name (courier home delivery). */
+  communeName?: string;
   /** Delivery fee computed at order time (currency units). */
   fee?: number;
 }

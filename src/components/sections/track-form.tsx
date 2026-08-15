@@ -41,18 +41,23 @@ export function TrackForm() {
   const [offices, setOffices] = useState<
     { id: string; name: string; address: string }[]
   >([]);
+  const [wilayas, setWilayas] = useState<{ id: number; name: string }[]>([]);
+  const [communes, setCommunes] = useState<
+    { id: number; wilayaId: number; name: string }[]
+  >([]);
   const [pickupNote, setPickupNote] = useState("");
 
-  // Load the courier offices + pickup note so the tracking page can show the
-  // delivery office name/address and the pickup location details.
+  // Load the courier offices, wilayas, communes + pickup note so the tracking
+  // page can show the delivery office / wilaya / commune details.
   useEffect(() => {
     fetch("/api/settings")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        const list = json?.settings?.delivery?.offices;
-        if (Array.isArray(list)) setOffices(list);
-        const note = json?.settings?.delivery?.pickupNote;
-        if (typeof note === "string") setPickupNote(note);
+        const delivery = json?.settings?.delivery;
+        if (Array.isArray(delivery?.offices)) setOffices(delivery.offices);
+        if (Array.isArray(delivery?.wilayas)) setWilayas(delivery.wilayas);
+        if (Array.isArray(delivery?.communes)) setCommunes(delivery.communes);
+        if (typeof delivery?.pickupNote === "string") setPickupNote(delivery.pickupNote);
       })
       .catch(() => undefined);
   }, []);
@@ -135,6 +140,17 @@ export function TrackForm() {
       isCourier && delivery?.option === "office"
         ? offices.find((o) => o.id === delivery.officeId)
         : undefined;
+    const wilaya =
+      delivery?.wilayaId != null
+        ? wilayas.find((w) => w.id === delivery.wilayaId)
+        : undefined;
+    const commune =
+      delivery?.communeId != null
+        ? communes.find((c) => c.id === delivery.communeId)
+        : undefined;
+
+    const wilayaName = wilaya?.name;
+    const communeName = commune?.name ?? delivery?.communeName;
 
     return (
       <div className="card rounded-xl border-white/10 p-6 sm:p-10">
@@ -248,6 +264,8 @@ export function TrackForm() {
             {isCourier && delivery.option === "home" && delivery.address && (
               <p className="mt-2 text-sm leading-relaxed text-steel-200">
                 {delivery.address}
+                {wilayaName && ` / ${wilayaName}`}
+                {communeName && ` / ${communeName}`}
               </p>
             )}
 
@@ -279,6 +297,23 @@ export function TrackForm() {
                 <span className="font-bold text-accent">
                   {(price ?? 0) + deliveryFee} {order.currency ?? ""}
                 </span>
+              </div>
+            )}
+
+            {order.shipment?.tracking && (
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3 text-sm">
+                <span className="text-steel-400">{track.shipmentTracking}</span>
+                <a
+                  href={`https://guepex.app/tracking/${encodeURIComponent(
+                    order.shipment.tracking
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  dir="ltr"
+                  className="font-mono font-bold text-accent hover:underline"
+                >
+                  {order.shipment.tracking}
+                </a>
               </div>
             )}
           </div>

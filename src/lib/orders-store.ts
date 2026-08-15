@@ -34,8 +34,17 @@ export interface Order {
   price?: number | null;
   /** Currency shown next to the price (snapshot of the site settings). */
   currency?: string;
+  /** Courier (Guepex) parcel created for this order. */
+  shipment?: ShipmentInfo;
   /** How the customer wants to receive the order. */
   delivery?: DeliveryInfo;
+}
+
+/** Courier parcel created for an order. */
+export interface ShipmentInfo {
+  tracking: string;
+  id?: string;
+  createdAt: string;
 }
 
 const STORE_NAME = "orders";
@@ -137,6 +146,7 @@ export interface OrderPatch {
   price?: number | null;
   currency?: string;
   delivery?: DeliveryInfo;
+  shipment?: ShipmentInfo | null;
   /** Status change is appended to the history at this time (ISO) — default now. */
   at?: string;
 }
@@ -165,6 +175,9 @@ export async function updateOrder(
   if (patch.price !== undefined) updated.price = patch.price;
   if (patch.currency !== undefined) updated.currency = patch.currency;
   if (patch.delivery) updated.delivery = patch.delivery;
+  if (patch.shipment !== undefined) {
+    updated.shipment = patch.shipment ?? undefined;
+  }
 
   const store = resolveStore();
   if (store) {

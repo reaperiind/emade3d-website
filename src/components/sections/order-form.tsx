@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useI18n } from "@/i18n/provider";
 import { localizePath } from "@/i18n/config";
@@ -31,12 +31,11 @@ const SERVICE_MAP: Record<string, string> = {
 /**
  * Order form backed by the site's own API.
  *
- * On confirm the order is sent to POST /api/orders, which stores it and
- * returns a unique tracking code (EMD-XXXXXX). The confirmation panel then
- * shows the code with actions to save the receipt as an image, copy the code
- * and go to the tracking page. A delivery method (pickup / courier office /
- * courier home) is chosen and the delivery fee is computed from the site
- * settings.
+ * A delivery method is chosen (pickup / courier office / courier home) and the
+ * delivery fee is shown live: office fees come from the imported/configured
+ * centers; home delivery quotes Guepex per wilaya + commune when the courier
+ * is enabled, otherwise it uses the configured home fee. On confirm the order
+ * is sent to POST /api/orders, which stores it and returns the tracking code.
  */
 export function OrderForm() {
   const { locale, t } = useI18n();
@@ -54,8 +53,12 @@ export function OrderForm() {
   const [courierOption, setCourierOption] = useState<CourierOption>("office");
   const [officeId, setOfficeId] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [wilayaId, setWilayaId] = useState<number | null>(null);
+  const [communeId, setCommuneId] = useState<number | null>(null);
+  const [quoteFee, setQuoteFee] = useState<number | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
 
-  // Load delivery settings (offices, fees, currency) for the fee computation.
+  // Load settings (offices, wilayas, communes, currency, courier state).
   useEffect(() => {
     fetch("/api/settings")
       .then((res) => (res.ok ? res.json() : null))
@@ -70,17 +73,91 @@ export function OrderForm() {
       .catch(() => undefined);
   }, []);
 
+  const courierConfigured = Boolean(
+    deliverySettings?.delivery.courier?.enabled &&
+      (deliverySettings.delivery.courier as { hasCredentials?: boolean })
+        .hasCredentials
+  );
   const currency = deliverySettings?.currency ?? "DA";
+  const offices = deliverySettings?.delivery.offices ?? [];
+  const homeFeeFallback = deliverySettings?.delivery.homeFee ?? 0;
 
-  const deliveryFee = useMemo(() => {
-    if (deliveryMethod === "pickup") return 0;
-    if (courierOption === "home")
-      return deliverySettings?.delivery.homeFee ?? 0;
-    const office = deliverySettings?.delivery.offices.find(
-      (o) => o.id === officeId
-    );
-    return office?.fee ?? 0;
-  }, [deliveryMethod, courierOption, officeId, deliverySettings]);
+  const wilayas = deliverySettings?.delivery.wilayas ?? [];
+  const communes = deliverySettings?.delivery.communes ?? [];
+  const communeOptions = useMemo(
+    () =>
+      wilayaId == null
+        ? []
+        : communes.filter((c) => c.wilayaId === wilayaId),
+    [communes, wilayaId]
+  );
+
+  const wilayaLabel = useMemo(
+    () =>
+      wilayaId == null
+        ? null
+        : wilayas.find((w) => w.id === wilayaId)?.name ?? null,
+    [wilayas, wilayaId]
+  );
+  const communeLabel = useMemo(
+    () =>
+      communeId == null
+        ? null
+        : communes.find((c) => c.id === communeId)?.name ?? null,
+    [communes, communeId]
+  );
+
+  const fetchQuote = useCallback(async () => {
+    if (!courierConfigured || courierOption !== "home" || communeId == null) {
+      setQuoteFee(null);
+      return;
+    }
+    setQuoteLoading(true);
+    try {
+      const res = await fetch("/api/courier/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deliveryType: "home",
+          wilayaId,
+          communeId,
+        }),
+      });
+      const json = (await res.json().catch(() => null)) as { fee?: number } | null;
+      setQuoteFee(typeof json?.fee === "number" ? json.fee : null);
+    } catch {
+      setQuoteFee(null);
+    } finally {
+      setQuoteLoading(false);
+    }
+  }, [courierConfigured, courierOption, communeId, wilayaId]);
+
+  useEffect(() => {
+    fetchQuote();
+  }, [fetchQuote]);
+
+  const displayedFee = useMemo(() => {
+    if (deliveryMethod === "pickup") return { fee: 0, loading: false };
+    if (courierOption === "office") {
+      const office = offices.find((o) => o.id === officeId);
+      return { fee: office?.fee ?? 0, loading: false };
+    }
+    if (courierConfigured) {
+      if (communeId == null) return { fee: null, loading: quoteLoading };
+      return { fee: quoteFee, loading: quoteLoading };
+    }
+    return { fee: homeFeeFallback, loading: false };
+  }, [
+    deliveryMethod,
+    courierOption,
+    courierConfigured,
+    officeId,
+    offices,
+    communeId,
+    quoteFee,
+    quoteLoading,
+    homeFeeFallback,
+  ]);
 
   function buildDeliveryPayload() {
     if (deliveryMethod === "pickup") return { method: "pickup" as const };
@@ -88,7 +165,15 @@ export function OrderForm() {
       method: "courier" as const,
       option: courierOption,
       ...(courierOption === "office" ? { officeId } : {}),
-      ...(courierOption === "home" ? { address: deliveryAddress } : {}),
+      ...(courierOption === "home"
+        ? {
+            ...(courierConfigured && wilayaId != null
+              ? { wilayaId, ...(communeId != null ? { communeId } : {}) }
+              : {}),
+            ...(communeLabel ? { communeName: communeLabel } : {}),
+            address: deliveryAddress,
+          }
+        : {}),
     };
   }
 
@@ -163,6 +248,14 @@ export function OrderForm() {
       /* clipboard unavailable */
     }
   }
+
+  const feeDisplay = displayedFee.loading
+    ? q.deliveryPriceLoading
+    : displayedFee.fee == null
+      ? "—"
+      : displayedFee.fee === 0
+        ? q.deliveryFree
+        : `${displayedFee.fee} ${currency}`;
 
   const serviceLabel = sent
     ? SERVICE_MAP[sent.serviceType] ?? sent.serviceType
@@ -407,7 +500,7 @@ export function OrderForm() {
               icon={<BoxIcon className="h-5 w-5" />}
               title={q.deliveryCourier}
               desc={q.deliveryCourierDesc}
-              meta={`${deliveryFee} ${currency}`}
+              meta={feeDisplay}
             />
           </div>
 
@@ -420,7 +513,10 @@ export function OrderForm() {
                 <div className="grid grid-cols-2 gap-3">
                   <OptionRadio
                     active={courierOption === "office"}
-                    onClick={() => setCourierOption("office")}
+                    onClick={() => {
+                      setCourierOption("office");
+                      setQuoteFee(null);
+                    }}
                     label={q.deliveryOffice}
                   />
                   <OptionRadio
@@ -442,37 +538,104 @@ export function OrderForm() {
                   <select
                     id="of-office"
                     value={officeId}
-                    onChange={(e) => setOfficeId(e.target.value)}
+                    onChange={(e) => {
+                      setOfficeId(e.target.value);
+                      setQuoteFee(null);
+                    }}
                     required
                     className={cn(inputClass, "appearance-none")}
                   >
                     <option value="" disabled>
                       {q.deliveryOfficePlaceholder}
                     </option>
-                    {deliverySettings?.delivery.offices.map((office) => (
+                    {offices.map((office) => (
                       <option key={office.id} value={office.id}>
-                        {office.name} · {office.fee} {currency}
+                        {office.name} ·{" "}
+                        {office.fee === 0 ? q.deliveryFree : `${office.fee} ${currency}`}
                       </option>
                     ))}
                   </select>
                 </div>
               ) : (
-                <div>
-                  <label
-                    htmlFor="of-address"
-                    className="mb-1.5 block text-sm font-medium text-steel-300"
-                  >
-                    {q.deliveryAddress} *
-                  </label>
-                  <textarea
-                    id="of-address"
-                    required
-                    rows={2}
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    placeholder={q.deliveryAddressPlaceholder}
-                    className={cn(inputClass, "resize-none")}
-                  />
+                <div className="space-y-4">
+                  {/* Wilaya + commune selection (courier configured) */}
+                  {courierConfigured && (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label
+                          htmlFor="of-wilaya"
+                          className="mb-1.5 block text-sm font-medium text-steel-300"
+                        >
+                          {q.deliveryWilaya} *
+                        </label>
+                        <select
+                          id="of-wilaya"
+                          required
+                          value={wilayaId ?? ""}
+                          onChange={(e) => {
+                            setWilayaId(e.target.value ? Number(e.target.value) : null);
+                            setCommuneId(null);
+                            setQuoteFee(null);
+                          }}
+                          className={cn(inputClass, "appearance-none")}
+                        >
+                          <option value="" disabled>
+                            {q.deliverySelectWilaya}
+                          </option>
+                          {wilayas.map((w) => (
+                            <option key={w.id} value={w.id}>
+                              {w.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="of-commune"
+                          className="mb-1.5 block text-sm font-medium text-steel-300"
+                        >
+                          {q.deliveryCommune} *
+                        </label>
+                        <select
+                          id="of-commune"
+                          required
+                          value={communeId ?? ""}
+                          onChange={(e) =>
+                            setCommuneId(e.target.value ? Number(e.target.value) : null)
+                          }
+                          disabled={wilayaId == null}
+                          className={cn(inputClass, "appearance-none")}
+                        >
+                          <option value="" disabled>
+                            {q.deliverySelectCommune}
+                          </option>
+                          {communeOptions.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label
+                      htmlFor="of-address"
+                      className="mb-1.5 block text-sm font-medium text-steel-300"
+                    >
+                      {q.deliveryAddress} *
+                    </label>
+                    <textarea
+                      id="of-address"
+                      required
+                      rows={2}
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      placeholder={q.deliveryAddressPlaceholder}
+                      className={cn(inputClass, "resize-none")}
+                    />
+                  </div>
                 </div>
               )}
             </>
@@ -480,9 +643,7 @@ export function OrderForm() {
 
           <div className="flex items-center justify-between rounded-lg bg-ink-800 px-4 py-3 text-sm">
             <span className="text-steel-400">{q.deliveryFee}</span>
-            <span className="font-semibold text-white">
-              {deliveryFee === 0 ? q.deliveryFree : `${deliveryFee} ${currency}`}
-            </span>
+            <span className="font-semibold text-white">{feeDisplay}</span>
           </div>
         </div>
 

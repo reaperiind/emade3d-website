@@ -11,7 +11,7 @@ import {
 import type { Order, OrderStatus } from "@/lib/orders-store";
 import { statusesFor } from "@/lib/order-flows";
 import type { HistoryEntry } from "@/lib/order-flows";
-import type { Office, SiteSettings } from "@/lib/settings-store";
+import type { Commune, CourierConfig, Office, Wilaya } from "@/lib/settings-store";
 import { cn } from "@/lib/cn";
 
 const TOKEN_KEY = "emade3d-admin-token";
@@ -64,6 +64,30 @@ function toLocalInput(iso: string): string {
 
 function fromLocalInput(value: string): string {
   return new Date(value).toISOString();
+}
+
+/**
+ * Admin-side settings: the public GET hides courier credentials, but the
+ * settings panel needs to edit them. apiId / apiToken are optional here so a
+ * blank field means "keep the stored value".
+ */
+interface AdminCourier extends Omit<CourierConfig, "apiId" | "apiToken"> {
+  apiId?: string;
+  apiToken?: string;
+  hasCredentials?: boolean;
+}
+
+interface AdminSettings {
+  currency: string;
+  delivery: {
+    pickupAvailable: boolean;
+    pickupNote: string;
+    homeFee: number;
+    offices: Office[];
+    wilayas?: Wilaya[];
+    communes?: Commune[];
+    courier?: AdminCourier;
+  };
 }
 
 export default function AdminPage() {
@@ -178,10 +202,7 @@ export default function AdminPage() {
           ? {
               ...o,
               status,
-              history: [
-                ...o.history,
-                { status, at: new Date().toISOString() },
-              ],
+              history: [...o.history, { status, at: new Date().toISOString() }],
             }
           : o
       )
@@ -226,6 +247,15 @@ export default function AdminPage() {
       prev.map((o) => (o.code === code ? { ...o, history } : o))
     );
     patchOrder(code, { history });
+  }
+
+  function onShipmentCreated(
+    code: string,
+    shipment: { tracking: string; id?: string; createdAt: string }
+  ) {
+    setOrders((prev) =>
+      prev.map((o) => (o.code === code ? { ...o, shipment } : o))
+    );
   }
 
   async function onDelete(code: string) {
@@ -302,6 +332,7 @@ export default function AdminPage() {
             onPrice={setPrice}
             onDeliveryFee={setDeliveryFee}
             onHistoryAt={setHistoryAt}
+            onShipment={onShipmentCreated}
             onDelete={onDelete}
           />
         )}
@@ -356,10 +387,7 @@ function LoginForm({
               Mot de passe incorrect.
             </p>
           )}
-          <button
-            type="submit"
-            className="btn-primary btn-md mt-5 w-full"
-          >
+          <button type="submit" className="btn-primary btn-md mt-5 w-full">
             Se connecter
           </button>
         </form>
@@ -406,6 +434,7 @@ function OrdersPanel({
   onPrice,
   onDeliveryFee,
   onHistoryAt,
+  onShipment,
   onDelete,
 }: {
   orders: Order[];
@@ -415,6 +444,10 @@ function OrdersPanel({
   onPrice: (code: string, raw: string) => void;
   onDeliveryFee: (code: string, raw: string) => void;
   onHistoryAt: (code: string, index: number, value: string) => void;
+  onShipment: (
+    code: string,
+    shipment: { tracking: string; id?: string; createdAt: string }
+  ) => void;
   onDelete: (code: string) => void;
 }) {
   return (
@@ -442,6 +475,7 @@ function OrdersPanel({
               onPrice={onPrice}
               onDeliveryFee={onDeliveryFee}
               onHistoryAt={onHistoryAt}
+              onShipment={onShipment}
               onDelete={onDelete}
             />
           ))}
@@ -457,6 +491,7 @@ function OrderCard({
   onPrice,
   onDeliveryFee,
   onHistoryAt,
+  onShipment,
   onDelete,
 }: {
   order: Order;
@@ -464,10 +499,61 @@ function OrderCard({
   onPrice: (code: string, raw: string) => void;
   onDeliveryFee: (code: string, raw: string) => void;
   onHistoryAt: (code: string, index: number, value: string) => void;
+  onShipment: (
+    code: string,
+    shipment: { tracking: string; id?: string; createdAt: string }
+  ) => void;
   onDelete: (code: string) => void;
 }) {
   const options = statusesFor(order.serviceType);
   const isCourier = order.delivery?.method === "courier";
+  const [shipOpen, setShipOpen] = useState(false);
+  const [shipWeight, setShipWeight] = useState("1");
+  const [shipLength, setShipLength] = useState("");
+  const [shipWidth, setShipWidth] = useState("");
+  const [shipHeight, setShipHeight] = useState("");
+  const [shipInsurance, setShipInsurance] = useState(false);
+  const [shipDeclared, setShipDeclared] = useState("");
+  const [shipSending, setShipSending] = useState(false);
+  const [shipError, setShipError] = useState<string | null>(null);
+
+  async function createShipment() {
+    setShipSending(true);
+    setShipError(null);
+    try {
+      const res = await fetch("/api/courier/shipments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${window.localStorage.getItem(TOKEN_KEY) ?? ""}`,
+        },
+        body: JSON.stringify({
+          code: order.code,
+          weight: parseFloat(shipWeight) || 0,
+          length: parseFloat(shipLength) || 0,
+          width: parseFloat(shipWidth) || 0,
+          height: parseFloat(shipHeight) || 0,
+          doInsurance: shipInsurance,
+          declaredValue: parseFloat(shipDeclared) || 0,
+        }),
+      });
+      const json = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        shipment?: { tracking: string; id?: string; createdAt: string };
+        error?: string;
+      } | null;
+      if (res.ok && json?.shipment) {
+        onShipment(order.code, json.shipment);
+        setShipOpen(false);
+      } else {
+        setShipError(json?.error ?? "shipment_failed");
+      }
+    } catch {
+      setShipError("network");
+    } finally {
+      setShipSending(false);
+    }
+  }
 
   return (
     <li className="card rounded-xl border-white/10 p-4 sm:p-5">
@@ -480,7 +566,8 @@ function OrderCard({
             <span
               className={cn(
                 "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
-                STATUS_STYLES[order.status] ?? "border-white/20 bg-ink-800 text-steel-300"
+                STATUS_STYLES[order.status] ??
+                  "border-white/20 bg-ink-800 text-steel-300"
               )}
             >
               {STATUS_LABELS[order.status] ?? order.status}
@@ -562,7 +649,7 @@ function OrderCard({
           Livraison :{" "}
           {order.delivery.method === "courier"
             ? order.delivery.option === "home"
-              ? `À domicile${order.delivery.address ? ` — ${order.delivery.address}` : ""}`
+              ? `À domicile${order.delivery.address ? ` — ${order.delivery.address}` : ""}${order.delivery.communeName ? ` / ${order.delivery.communeName}` : ""}`
               : `Bureau du coursier — ${order.delivery.officeId ?? "—"}`
             : "Retrait sur place"}
         </p>
@@ -572,6 +659,122 @@ function OrderCard({
         <p className="mt-3 rounded-lg bg-ink-800/60 px-3 py-2.5 text-sm leading-relaxed text-steel-200">
           {order.description}
         </p>
+      )}
+
+      {/* Guepex shipment */}
+      {isCourier && (
+        <div className="mt-3">
+          {order.shipment?.tracking ? (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm">
+              <span className="text-emerald-300">Shène Guepex créée</span>
+              <a
+                href={`https://guepex.app/tracking/${encodeURIComponent(
+                  order.shipment.tracking
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                dir="ltr"
+                className="font-mono font-bold text-emerald-200 hover:underline"
+              >
+                {order.shipment.tracking}
+              </a>
+            </div>
+          ) : shipOpen ? (
+            <div className="rounded-lg border border-white/10 bg-ink-800/60 p-3">
+              <p className="mb-2 text-xs font-semibold text-steel-300">
+                Créer la shène Guepex
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={shipWeight}
+                  onChange={(e) => setShipWeight(e.target.value)}
+                  placeholder="Poids (kg)"
+                  className="w-full rounded-md border border-white/12 bg-ink-900 px-2.5 py-1.5 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={shipLength}
+                  onChange={(e) => setShipLength(e.target.value)}
+                  placeholder="Long. (cm)"
+                  className="w-full rounded-md border border-white/12 bg-ink-900 px-2.5 py-1.5 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={shipWidth}
+                  onChange={(e) => setShipWidth(e.target.value)}
+                  placeholder="Larg. (cm)"
+                  className="w-full rounded-md border border-white/12 bg-ink-900 px-2.5 py-1.5 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={shipHeight}
+                  onChange={(e) => setShipHeight(e.target.value)}
+                  placeholder="Haut. (cm)"
+                  className="w-full rounded-md border border-white/12 bg-ink-900 px-2.5 py-1.5 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none"
+                />
+              </div>
+              <label className="mt-2 flex items-center gap-2 text-xs text-steel-300">
+                <input
+                  type="checkbox"
+                  checked={shipInsurance}
+                  onChange={(e) => setShipInsurance(e.target.checked)}
+                  className="h-3.5 w-3.5 accent-[#FF5A1F]"
+                />
+                Assurance
+              </label>
+              {shipInsurance && (
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={shipDeclared}
+                  onChange={(e) => setShipDeclared(e.target.value)}
+                  placeholder="Valeur déclarée (DA)"
+                  className="mt-2 w-full rounded-md border border-white/12 bg-ink-900 px-2.5 py-1.5 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none"
+                />
+              )}
+              {shipError && <p className="mt-2 text-xs text-red-300">{shipError}</p>}
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={createShipment}
+                  disabled={shipSending}
+                  className="btn-primary btn-sm disabled:opacity-60"
+                >
+                  {shipSending ? "Création…" : "Créer"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShipOpen(false);
+                    setShipError(null);
+                  }}
+                  className="btn-outline btn-sm"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShipOpen(true)}
+              className="btn-outline btn-sm"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Créer la shène Guepex
+            </button>
+          )}
+        </div>
       )}
 
       {/* History (editable timestamps) */}
@@ -634,32 +837,56 @@ function StatCard({
 }
 
 function SettingsPanel({ token }: { token: string }) {
-  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/settings")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        const s = json?.settings as SiteSettings | undefined;
+        const s = json?.settings as AdminSettings | undefined;
         if (s) setSettings(s);
       })
       .catch(() => undefined);
   }, []);
 
-  function update<K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) {
+  function update<K extends keyof AdminSettings>(key: K, value: AdminSettings[K]) {
     setSettings((prev) => (prev ? { ...prev, [key]: value } : prev));
     setSaved(false);
   }
 
-  function updateDelivery<K extends keyof SiteSettings["delivery"]>(
+  function updateDelivery<K extends keyof AdminSettings["delivery"]>(
     key: K,
-    value: SiteSettings["delivery"][K]
+    value: AdminSettings["delivery"][K]
   ) {
     setSettings((prev) =>
       prev ? { ...prev, delivery: { ...prev.delivery, [key]: value } } : prev
+    );
+    setSaved(false);
+  }
+
+  function updateCourier(patch: Partial<AdminCourier>) {
+    setSettings((prev) =>
+      prev
+        ? {
+            ...prev,
+            delivery: {
+              ...prev.delivery,
+              courier: {
+                provider: "guepex",
+                name: "Guepex",
+                enabled: false,
+                fromWilayaId: null,
+                ...(prev.delivery.courier ?? {}),
+                ...patch,
+              },
+            },
+          }
+        : prev
     );
     setSaved(false);
   }
@@ -690,12 +917,7 @@ function SettingsPanel({ token }: { token: string }) {
               ...prev.delivery,
               offices: [
                 ...prev.delivery.offices,
-                {
-                  id: `office-${Date.now()}`,
-                  name: "",
-                  address: "",
-                  fee: 0,
-                },
+                { id: `office-${Date.now()}`, name: "", address: "", fee: 0 },
               ],
             },
           }
@@ -747,6 +969,37 @@ function SettingsPanel({ token }: { token: string }) {
     }
   }
 
+  async function onImport() {
+    if (!token) return;
+    setImporting(true);
+    setImportMsg(null);
+    try {
+      const res = await fetch("/api/courier/import", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        counts?: { wilayas: number; communes: number; centers: number };
+        error?: string;
+      } | null;
+      if (res.ok && json?.ok && json?.counts) {
+        setImportMsg(
+          `Importé : ${json.counts.wilayas} wilayas, ${json.counts.communes} communes, ${json.counts.centers} bureaux.`
+        );
+        const sres = await fetch("/api/settings");
+        const sjson = await sres.json();
+        if (sjson.settings) setSettings(sjson.settings);
+      } else {
+        setImportMsg(`Erreur : ${json?.error ?? "inconnue"}`);
+      }
+    } catch {
+      setImportMsg("Erreur réseau.");
+    } finally {
+      setImporting(false);
+    }
+  }
+
   if (!settings) {
     return (
       <p className="text-muted mt-10 text-center">
@@ -757,22 +1010,161 @@ function SettingsPanel({ token }: { token: string }) {
 
   const input =
     "w-full rounded-md border border-white/12 bg-ink-900 px-3 py-2 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none";
+  const courier = settings.delivery.courier;
+  const hasCredentials = Boolean(courier?.hasCredentials);
+  const wilayas = settings.delivery.wilayas ?? [];
 
   return (
     <div className="mt-6 space-y-6">
+      {/* Service de livraison (Guepex) */}
+      <div className="card rounded-xl border-white/10 p-5 sm:p-6">
+        <h2 className="font-display text-lg font-semibold text-white">
+          Service de livraison
+        </h2>
+        <p className="text-muted mt-1 text-sm leading-relaxed">
+          Connectez le site à l&apos;API Guepex (identifiants depuis votre
+          tableau de bord Guepex). Les wilayas, communes et bureaux sont ensuite
+          importés puis proposés aux clients, avec des prix calculés par
+          l&apos;API. Le token n&apos;est jamais affiché au client.
+        </p>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-steel-400">
+              Société de livraison
+            </label>
+            <input
+              value={courier?.name ?? "Guepex"}
+              onChange={(e) => updateCourier({ name: e.target.value })}
+              className={input}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-steel-400">
+              API ID
+            </label>
+            <input
+              value={courier?.apiId ?? ""}
+              onChange={(e) => updateCourier({ apiId: e.target.value })}
+              placeholder={
+                hasCredentials
+                  ? "•••••• (laisser vide pour conserver)"
+                  : "API ID"
+              }
+              autoComplete="off"
+              className={input}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-steel-400">
+              API TOKEN
+            </label>
+            <input
+              type="password"
+              value={courier?.apiToken ?? ""}
+              onChange={(e) => updateCourier({ apiToken: e.target.value })}
+              placeholder={
+                hasCredentials
+                  ? "•••••• (laisser vide pour conserver)"
+                  : "API TOKEN"
+              }
+              autoComplete="off"
+              className={input}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-steel-400">
+              Wilaya d&apos;expédition (origine)
+            </label>
+            <select
+              value={courier?.fromWilayaId ?? ""}
+              onChange={(e) =>
+                updateCourier({
+                  fromWilayaId: e.target.value ? Number(e.target.value) : null,
+                })
+              }
+              className={cn(input, "appearance-none")}
+            >
+              <option value="">Choisissez la wilaya d&apos;origine</option>
+              {wilayas.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <label className="mt-4 flex items-center gap-2.5 text-sm font-medium text-steel-200">
+          <input
+            type="checkbox"
+            checked={Boolean(courier?.enabled)}
+            onChange={(e) => updateCourier({ enabled: e.target.checked })}
+            className="h-4 w-4 accent-[#FF5A1F]"
+          />
+          Activer l&apos;intégration Guepex (communes + prix calculés)
+        </label>
+
+        {courier?.lastImportedAt && (
+          <p className="mt-3 text-xs text-steel-400">
+            Dernier import :{" "}
+            {new Date(courier.lastImportedAt).toLocaleString("fr-FR")}
+          </p>
+        )}
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={onImport}
+            disabled={importing}
+            className="btn-primary btn-md disabled:opacity-60"
+          >
+            {importing ? "Import…" : "Importer wilayas / communes / bureaux"}
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving}
+            className="btn-outline btn-md"
+          >
+            {saving ? "Enregistrement…" : "Enregistrer"}
+          </button>
+        </div>
+        {importMsg && (
+          <p
+            className={cn(
+              "mt-3 text-sm",
+              importMsg.startsWith("Erreur")
+                ? "text-red-300"
+                : "text-emerald-300"
+            )}
+          >
+            {importMsg}
+          </p>
+        )}
+        {error && (
+          <p className="mt-3 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
+            Impossible d&apos;enregistrer les paramètres.
+          </p>
+        )}
+        {saved && (
+          <p className="mt-3 rounded-md border border-emerald-400/30 bg-emerald-400/10 px-4 py-2.5 text-sm text-emerald-300">
+            Paramètres enregistrés.
+          </p>
+        )}
+      </div>
+
+      {/* Livraison & devis */}
       <div className="card rounded-xl border-white/10 p-5 sm:p-6">
         <h2 className="font-display text-lg font-semibold text-white">
           Livraison & devis
         </h2>
         <p className="text-muted mt-1 text-sm leading-relaxed">
-          Ces informations sont utilisées par le formulaire de commande (frais
-          de livraison) et affichées au client lors du suivi. La liste des
-          bureaux sera prochainement importée depuis l&apos;API de la société de
-          livraison.
+          Ces informations restent les valeurs de secours quand l&apos;API
+          Guepex est indisponible.
         </p>
 
         <div className="mt-5 space-y-5">
-          {/* Currency */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-steel-400">
@@ -786,7 +1178,7 @@ function SettingsPanel({ token }: { token: string }) {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-steel-400">
-                Frais de livraison à domicile
+                Frais de livraison à domicile (secours)
               </label>
               <input
                 type="number"
@@ -801,7 +1193,6 @@ function SettingsPanel({ token }: { token: string }) {
             </div>
           </div>
 
-          {/* Pickup */}
           <div className="space-y-3">
             <label className="flex items-center gap-2.5 text-sm font-medium text-steel-200">
               <input
@@ -827,11 +1218,10 @@ function SettingsPanel({ token }: { token: string }) {
             </div>
           </div>
 
-          {/* Offices */}
           <div>
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-steel-200">
-                Bureaux de livraison (coursier)
+                Bureaux de livraison (importés ou manuels)
               </p>
               <button
                 type="button"
@@ -904,17 +1294,6 @@ function SettingsPanel({ token }: { token: string }) {
             </div>
           </div>
         </div>
-
-        {error && (
-          <p className="mt-4 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
-            Impossible d&apos;enregistrer les paramètres.
-          </p>
-        )}
-        {saved && (
-          <p className="mt-4 rounded-md border border-emerald-400/30 bg-emerald-400/10 px-4 py-2.5 text-sm text-emerald-300">
-            Paramètres enregistrés.
-          </p>
-        )}
 
         <button
           type="button"

@@ -195,6 +195,11 @@ const en: Dictionary = {
     deliveryAddressPlaceholder: "Full address (street, city, postal code)...",
     deliveryFee: "Delivery fee",
     deliveryFree: "Free",
+    deliveryWilaya: "Wilaya",
+    deliveryCommune: "Commune",
+    deliverySelectWilaya: "Choose a wilaya",
+    deliverySelectCommune: "Choose a commune",
+    deliveryPriceLoading: "Calculating price…",
     submit: "Confirm the order",
     sending: "Sending...",
     noteBeforeSubmit:
@@ -273,6 +278,7 @@ const en: Dictionary = {
     deliveryOfficeName: "Delivery office",
     deliveryFee: "Delivery fee",
     total: "Total",
+    shipmentTracking: "Delivery tracking (Guepex)",
     historyTitle: "Order history",
     historySubtitle:
       "Every step your order went through, with date and time.",
