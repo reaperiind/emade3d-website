@@ -687,6 +687,7 @@ function SettingsPanel({ token }: { token: string }) {
     ok: boolean;
     text: string;
   } | null>(null);
+  const [chosenFile, setChosenFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [communeWilayaFilter, setCommuneWilayaFilter] = useState<number | "all">(
     "all"
@@ -905,6 +906,7 @@ function SettingsPanel({ token }: { token: string }) {
     } finally {
       setImporting(false);
       if (fileRef.current) fileRef.current.value = "";
+      setChosenFile(null);
     }
   }
 
@@ -959,12 +961,34 @@ function SettingsPanel({ token }: { token: string }) {
               type="file"
               accept=".xlsx,.xls,.csv"
               onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) onImportFile(f);
+                setChosenFile(e.target.files?.[0] ?? null);
+                setImportMsg(null);
               }}
-              className="block w-full max-w-sm text-sm text-steel-300 file:mr-3 file:rounded-md file:border-none file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white file:cursor-pointer hover:file:bg-accent/90"
+              className="sr-only"
+              id="of-excel-file"
+              style={{ position: "absolute", width: "1px", height: "1px" }}
             />
-            {importing && <span className="text-sm text-steel-400">Import…</span>}
+            <label
+              htmlFor="of-excel-file"
+              className="cursor-pointer rounded-md border border-white/15 bg-ink-800 px-3 py-2 text-sm font-medium text-steel-200 transition hover:border-white/25 hover:text-white"
+            >
+              Choisir un fichier…
+            </label>
+            {chosenFile && (
+              <span className="max-w-[220px] truncate text-sm text-steel-300">
+                📎 {chosenFile.name}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (chosenFile) onImportFile(chosenFile);
+              }}
+              disabled={!chosenFile || importing}
+              className="btn-primary btn-sm"
+            >
+              {importing ? "Import en cours…" : "⟳ Importer le fichier"}
+            </button>
           </div>
           {importMsg && (
             <p
