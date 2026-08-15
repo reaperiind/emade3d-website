@@ -38,7 +38,9 @@ export function TrackForm() {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState(false);
   const [initialCode, setInitialCode] = useState<string | null>(null);
-  const [wilayas, setWilayas] = useState<{ id: number; name: string }[]>([]);
+  const [wilayas, setWilayas] = useState<
+    { id: number; name: string; nameAr?: string }[]
+  >([]);
   const [communes, setCommunes] = useState<
     { id: number; wilayaId: number; name: string }[]
   >([]);
@@ -141,7 +143,8 @@ export function TrackForm() {
         ? communes.find((c) => c.id === delivery.communeId)
         : undefined;
 
-    const wilayaName = wilaya?.name;
+    const wilayaName =
+      locale === "ar" && wilaya?.nameAr ? wilaya.nameAr : wilaya?.name;
     const communeName = commune?.name ?? delivery?.communeName;
 
     return (

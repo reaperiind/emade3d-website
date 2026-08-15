@@ -471,7 +471,7 @@ export function OrderForm() {
                       </option>
                       {wilayas.map((w) => (
                         <option key={w.id} value={w.id}>
-                          {w.name}
+                          {locale === "ar" && w.nameAr ? w.nameAr : w.name}
                         </option>
                       ))}
                     </select>

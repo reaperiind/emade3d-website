@@ -44,8 +44,12 @@ const toId = (v: string): number | null => {
 };
 
 const toFee = (v: string): number | null => {
-  const s = String(v).replace(/\u00a0/g, " ").replace(/,/g, ".").trim();
+  let s = String(v).replace(/\u00a0/g, " ").trim();
   if (!s) return null;
+  // Remove thousands separators: "1,000" / "1 000" / "1.000" → 1000
+  s = s.replace(/(\d)[.,\s](\d{3})(?!\d)/g, "$1$2").replace(/\u00a0/g, "");
+  // Remaining commas are decimal separators.
+  s = s.replace(/,/g, ".");
   const n = Number(s.replace(/[^\d.-]/g, ""));
   return Number.isFinite(n) && n >= 0 ? n : null;
 };
@@ -62,9 +66,11 @@ const HEADER = {
   communeName: ["commune", "communename", "بلدية", "البلدية"],
   fee: ["fee", "frais", "prix", "tarif", "livraison", "delivery", "cout",
     "سعر", "سعرالتوصيل", "tariff", "homedelivery", "homedeliveryfee", "prixdelivraison",
-    "tarifadomicile", "tarifadomicileda", "tarif à domicile", "domicile"],
+    "tarifadomicile", "tarifadomicileda", "tarif à domicile", "domicile",
+    "prixdomicile", "prixadomicile", "prix à domicile", "prixádomicile", "tarifdomicile"],
   stopDeskFee: ["stop-desk", "stopdesk", "tarifstopdesk", "tarifstopdeskda",
-    "tarif stop-desk", "tarifstopdeskfee", "bareme", "bureau", "stopdeskfee"],
+    "tarif stop-desk", "tarifstopdeskfee", "bareme", "bureau", "stopdeskfee",
+    "prixbureau", "prix bureau", "tarifbureau", "tarifbureauoff", "prixagence"],
   address: ["adresse", "address", "rue", "عنوان", "site", "position"],
 } as const;
 
