@@ -11,5 +11,13 @@
 # Orders are persisted with Netlify Blobs (free persistent storage).
 # Set the admin password as an environment variable in Netlify:
 #   ADMIN_PASSWORD=<your-admin-password>
+#
+# New-order email notifications (Gmail SMTP):
+#   EMAIL_USER=   sender Gmail address (requires an App Password)
+#   EMAIL_PASS=   the Gmail App Password for EMAIL_USER
+#   EMAIL_TO=     notification recipient(s), comma separated
+#   EMAIL_HOST=   smtp.gmail.com
+#   EMAIL_PORT=   465
+#   APP_URL=      base URL used in notification links
 [functions]
   directory = ".netlify/functions-internal"

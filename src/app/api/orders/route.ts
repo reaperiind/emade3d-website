@@ -8,6 +8,7 @@ import { generateTrackingCode } from "@/lib/order-code";
 import { isAuthorized } from "@/lib/admin-auth";
 import { getSettings } from "@/lib/settings-store";
 import { sanitizeOrderFile } from "@/lib/order-files-store";
+import { notifyNewOrder } from "@/lib/order-email";
 import type { DeliveryInfo } from "@/lib/order-flows";
 
 export const runtime = "nodejs";
@@ -154,6 +155,9 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "storage_failed" }, { status: 500 });
   }
+
+  // Notify the owner by email — best-effort and non-blocking.
+  void notifyNewOrder(order).catch(() => undefined);
 
   return NextResponse.json({ ok: true, code }, { status: 201 });
 }
