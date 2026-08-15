@@ -516,6 +516,25 @@ function OrderCard({
   const [shipDeclared, setShipDeclared] = useState("");
   const [shipSending, setShipSending] = useState(false);
   const [shipError, setShipError] = useState<string | null>(null);
+  const [priceDraft, setPriceDraft] = useState<string>(() =>
+    order.price == null ? "" : String(order.price)
+  );
+  const [feeDraft, setFeeDraft] = useState<string>(() =>
+    String(order.delivery?.fee ?? 0)
+  );
+  const [savedFlash, setSavedFlash] = useState(false);
+  const hasUnsaved =
+    priceDraft.trim() === ""
+      ? order.price != null
+      : Number(priceDraft) !== order.price ||
+        String(order.delivery?.fee ?? 0) !== feeDraft;
+
+  async function saveOrder() {
+    onPrice(order.code, priceDraft);
+    if (isCourier) onDeliveryFee(order.code, feeDraft);
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 2500);
+  }
 
   async function createShipment() {
     setShipSending(true);
@@ -616,8 +635,8 @@ function OrderCard({
             type="number"
             min="0"
             step="any"
-            defaultValue={order.price ?? ""}
-            onBlur={(e) => onPrice(order.code, e.target.value)}
+            value={priceDraft}
+            onChange={(e) => setPriceDraft(e.target.value)}
             placeholder="—"
             className="w-full rounded-md border border-white/12 bg-ink-900 px-3 py-1.5 text-sm text-white placeholder:text-steel-600 focus:border-accent/60 focus:outline-none"
           />
@@ -631,8 +650,8 @@ function OrderCard({
               type="number"
               min="0"
               step="any"
-              defaultValue={order.delivery?.fee ?? 0}
-              onBlur={(e) => onDeliveryFee(order.code, e.target.value)}
+              value={feeDraft}
+              onChange={(e) => setFeeDraft(e.target.value)}
               className="w-full rounded-md border border-white/12 bg-ink-900 px-3 py-1.5 text-sm text-white focus:border-accent/60 focus:outline-none"
             />
           </div>
@@ -801,6 +820,29 @@ function OrderCard({
           ))}
         </ul>
       </div>
+
+      {/* Save changes */}
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+        <p className="text-xs">
+          {savedFlash ? (
+            <span className="text-emerald-300">
+              Modifications enregistrées ✓
+            </span>
+          ) : hasUnsaved ? (
+            <span className="text-amber-300">Modifications non enregistrées</span>
+          ) : (
+            <span className="text-steel-500">Aucune modification</span>
+          )}
+        </p>
+        <button
+          type="button"
+          onClick={saveOrder}
+          disabled={!hasUnsaved}
+          className="btn-primary btn-sm disabled:opacity-50"
+        >
+          Enregistrer
+        </button>
+      </div>
     </li>
   );
 }
@@ -843,6 +885,10 @@ function SettingsPanel({ token }: { token: string }) {
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [testMsg, setTestMsg] = useState<{ ok: boolean; text: string } | null>(
+    null
+  );
 
   useEffect(() => {
     fetch("/api/settings")
@@ -1000,6 +1046,45 @@ function SettingsPanel({ token }: { token: string }) {
     }
   }
 
+  async function onTest() {
+    if (!token) return;
+    setTesting(true);
+    setTestMsg(null);
+    try {
+      const res = await fetch("/api/courier/test", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          apiId: courier?.apiId ?? "",
+          apiToken: courier?.apiToken ?? "",
+        }),
+      });
+      const json = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        counts?: { wilayas: number; communes: number; centers: number };
+        error?: string;
+      } | null;
+      if (res.ok && json?.ok) {
+        setTestMsg({
+          ok: true,
+          text:
+            json.counts != null
+              ? `Connexion réussie : ${json.counts.wilayas} wilayas, ${json.counts.communes} communes, ${json.counts.centers} bureaux.`
+              : "Connexion réussie.",
+        });
+      } else {
+        setTestMsg({ ok: false, text: `Échec : ${json?.error ?? "inconnue"}` });
+      }
+    } catch {
+      setTestMsg({ ok: false, text: "Erreur réseau." });
+    } finally {
+      setTesting(false);
+    }
+  }
+
   if (!settings) {
     return (
       <p className="text-muted mt-10 text-center">
@@ -1115,6 +1200,14 @@ function SettingsPanel({ token }: { token: string }) {
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             type="button"
+            onClick={onTest}
+            disabled={testing}
+            className="btn-outline-accent btn-md disabled:opacity-60"
+          >
+            {testing ? "Test en cours…" : "Test de connexion"}
+          </button>
+          <button
+            type="button"
             onClick={onImport}
             disabled={importing}
             className="btn-primary btn-md disabled:opacity-60"
@@ -1130,6 +1223,18 @@ function SettingsPanel({ token }: { token: string }) {
             {saving ? "Enregistrement…" : "Enregistrer"}
           </button>
         </div>
+        {testMsg && (
+          <p
+            className={cn(
+              "mt-3 rounded-md border px-4 py-2.5 text-sm",
+              testMsg.ok
+                ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                : "border-red-500/30 bg-red-500/10 text-red-300"
+            )}
+          >
+            {testMsg.text}
+          </p>
+        )}
         {importMsg && (
           <p
             className={cn(

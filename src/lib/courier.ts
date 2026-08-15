@@ -48,6 +48,88 @@ async function guepexConfig(): Promise<CourierConfig | null> {
   return c;
 }
 
+export interface ConnectionTestResult {
+  ok: boolean;
+  counts?: { wilayas: number; communes: number; centers: number };
+  error?: string;
+}
+
+/**
+ * Verifies a Guepex connection. Pass typed (possibly unsaved) credentials to
+ * test before saving; omit to test the stored configuration. Never throws:
+ * returns a structured result instead, so the admin UI can show a clear error.
+ */
+export async function testConnection(creds?: {
+  apiId?: string;
+  apiToken?: string;
+}): Promise<ConnectionTestResult> {
+  const stored = (await getSettings()).delivery.courier;
+  const apiId = creds?.apiId?.trim() || stored?.apiId || "";
+  const apiToken = creds?.apiToken?.trim() || stored?.apiToken || "";
+
+  if (!apiId || !apiToken) {
+    return {
+      ok: false,
+      error:
+        "Identifiants non renseignés : remplissez l'API ID et l'API TOKEN puis cliquez « Enregistrer ».",
+    };
+  }
+  const config: CourierConfig = {
+    provider: "guepex",
+    name: stored?.name ?? "Guepex",
+    apiId,
+    apiToken,
+    enabled: true,
+    fromWilayaId: stored?.fromWilayaId ?? null,
+  };
+
+  try {
+    const [w, c, centers] = await Promise.all([
+      request<unknown[]>(config, ENDPOINTS.wilayas),
+      request<unknown[]>(config, ENDPOINTS.communes),
+      request<unknown[]>(config, ENDPOINTS.centers),
+    ]);
+    return {
+      ok: true,
+      counts: {
+        wilayas: (Array.isArray(w) ? w : []).length,
+        communes: (Array.isArray(c) ? c : []).length,
+        centers: (Array.isArray(centers) ? centers : []).length,
+      },
+    };
+  } catch (e) {
+    const err = e as CourierError;
+    let error: string;
+    if (err.status === 401 || err.status === 403) {
+      error =
+        "Identifiants invalides (401/403). Vérifiez l'API ID et l'API TOKEN dans votre tableau de bord Guepex.";
+    } else if (err.status === 404) {
+      error =
+        "Endpoint introuvable (404). L'URL de l'API Guepex configurée est peut-être incorrecte.";
+    } else if (err.message === "Courier API unreachable") {
+      error = "Impossible de joindre l'API Guepex (réseau/coupure). Réessayez plus tard.";
+    } else {
+      error = `Erreur réponse HTTP ${err.status ?? "?"} : ${err.message}`;
+    }
+    return { ok: false, error };
+  }
+}
+
+async function requireConfig(): Promise<CourierConfig> {
+  const c = (await getSettings()).delivery.courier;
+  if (!c || !c.apiId || !c.apiToken) {
+    throw new CourierError(
+      "Identifiants API non enregistrés : remplissez l'API ID et l'API TOKEN dans Paramètres puis cliquez « Enregistrer »."
+    );
+  }
+  if (!c.enabled) {
+    throw new CourierError(
+      "L'intégration Guepex est désactivée : cochez « Activer l'intégration Guepex » dans Paramètres puis cliquez « Enregistrer »."
+    );
+  }
+  return c;
+}
+
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT";
   query?: Record<string, string | number | undefined>;
@@ -111,8 +193,7 @@ export interface ImportResult {
 
 /** Fetches wilayas, communes and delivery centers from Guepex. */
 export async function importDeliveryData(): Promise<ImportResult> {
-  const config = await guepexConfig();
-  if (!config) throw new CourierError("Courier not configured");
+  const config = await requireConfig();
 
   const [wilayaJson, communeJson, centerJson] = await Promise.all([
     request<unknown[]>(config, ENDPOINTS.wilayas),
@@ -234,8 +315,7 @@ const SERVICE_LABELS: Record<ServiceType, string> = {
 export async function createShipment(
   input: ShipmentInput
 ): Promise<ShipmentResult> {
-  const config = await guepexConfig();
-  if (!config) throw new CourierError("Courier not configured");
+  const config = await requireConfig();
   if (!config.fromWilayaId)
     throw new CourierError("Origin wilaya (source) is not configured");
 
