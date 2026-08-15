@@ -38,9 +38,9 @@ export const services: Service[] = [
       ar: "نمذجة ثلاثية الأبعاد وتصميم ميكانيكي انطلاقاً من فكرة أو رسم أولي أو مخطط أو قطعة موجودة.",
     },
     description: {
-      fr: "Nos ingénieurs conçoivent des pièces et des assemblages en CAO 3D, pensés pour l'impression 3D ou pour la fabrication classique. Nous partons de votre besoin — croquis, plan, image, fichier ou simple description — et nous livrons des fichiers 3D proprement modélisés, corrigés et prêts pour la fabrication.",
-      en: "Our engineers design parts and assemblies in 3D CAD, engineered for 3D printing or traditional manufacturing. We start from your need — sketch, drawing, image, file or simple description — and deliver clean, corrected, production-ready 3D files.",
-      ar: "يصمّم مهندسونا القطع والتجميعات باستخدام التصميم بمساعدة الحاسوب ثلاثي الأبعاد، معدّة للطباعة أو للتصنيع التقليدي. ننطلق من حاجتكم — رسم أولي، مخطط، صورة، ملف أو مجرد وصف — ونُسلّم ملفات ثلاثية الأبعاد نظيفة ومصحّحة وجاهزة للتصنيع.",
+      fr: "Nous concevons des pièces et des assemblages en CAO 3D, pensés pour l'impression 3D ou pour la fabrication classique. Nous partons de votre besoin — croquis, plan, image, fichier ou simple description — et nous livrons des fichiers 3D proprement modélisés, corrigés et prêts pour la fabrication.",
+      en: "We design parts and assemblies in 3D CAD, engineered for 3D printing or traditional manufacturing. We start from your need — sketch, drawing, image, file or simple description — and deliver clean, corrected, production-ready 3D files.",
+      ar: "نصمّم القطع والتجميعات باستخدام التصميم بمساعدة الحاسوب ثلاثي الأبعاد، معدّة للطباعة أو للتصنيع التقليدي. ننطلق من حاجتكم — رسم أولي، مخطط، صورة، ملف أو مجرد وصف — ونُسلّم ملفات ثلاثية الأبعاد نظيفة ومصحّحة وجاهزة للتصنيع.",
     },
     process: {
       fr: "Analyse du besoin → esquisse CAO → modélisation → vérification → fichiers d'usine.",

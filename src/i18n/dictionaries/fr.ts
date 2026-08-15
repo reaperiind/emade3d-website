@@ -23,7 +23,7 @@ const fr = {
     about: {
       title: "À propos — Emade3D, ingénierie, design et fabrication",
       description:
-        "Emade3D est une société d'ingénierie, de conception et de fabrication qui transforme les idées et les problèmes techniques en pièces fonctionnelles.",
+        "Emade3D est un studio personnel de conception et de fabrication qui transforme les idées et les problèmes techniques en pièces fonctionnelles.",
     },
     faq: {
       title: "Questions fréquentes — Emade3D",
@@ -99,7 +99,7 @@ const fr = {
 
   services: {
     kicker: "Nos services",
-    title: "Des solutions d'ingénierie complètes",
+    title: "Des solutions de conception et de fabrication complètes",
     subtitle:
       "De la conception à la production, nous couvrons toute la chaîne : créer, prototyper, usiner, outiller, mouler.",
     explore: "En savoir plus",
@@ -107,7 +107,7 @@ const fr = {
     fromIdea: "De l'idée à la pièce",
     futureTitle: "Vers d'autres procédés",
     futureSubtitle:
-      "Notre plateforme d'ingénierie continue d'évoluer : de nouveaux procédés et services seront ajoutés sans bouleverser votre expérience.",
+      "De nouveaux procédés et services seront ajoutés régulièrement, sans bouleverser votre expérience.",
     futureStatus: "Bientôt disponible",
   },
 
@@ -149,7 +149,7 @@ const fr = {
     kicker: "Notre méthode",
     title: "Comment ça marche ?",
     subtitle:
-      "Un processus simple et transparent, pensé pour le client comme pour l'ingénieur.",
+      "Un processus simple et transparent, pensé pour le client.",
     intro:
       "De la première discussion à la pièce entre vos mains, chaque étape est claire, validée et traçable.",
   },
@@ -297,14 +297,14 @@ const fr = {
 
   about: {
     kicker: "À propos",
-    title: "Engineering + Design + Manufacturing",
+    title: "Ingénierie + Design + Fabrication",
     intro:
-      "Emade3D est une société d'ingénierie, de conception et de fabrication. Nous transformons des idées, des croquis et des problèmes techniques en pièces réelles, fonctionnelles et durables.",
+      "Emade3D est un studio personnel de conception et de fabrication. Nous transformons des idées, des croquis et des problèmes techniques en pièces réelles, fonctionnelles et durables.",
     lead:
       "Nous ne sommes pas un simple service d'impression 3D. Nous intervenons en amont — pour étudier, concevoir et optimiser — et en aval — pour fabriquer, contrôler et livrer.",
     pillars: [
       {
-        title: "Engineering",
+        title: "Ingénierie",
         text: "Une approche technique et rigoureuse : choix des matériaux, dimensionnement, contraintes de fabrication.",
       },
       {
@@ -312,7 +312,7 @@ const fr = {
         text: "Conception 3D, optimisation et design pensé dès le départ pour être fabriqué.",
       },
       {
-        title: "Manufacturing",
+        title: "Fabrication",
         text: "Fabrication, contrôle qualité et livraison de pièces fiables, prêtes à l'emploi.",
       },
     ],
@@ -322,23 +322,23 @@ const fr = {
       "Prototypage rapide et tests",
       "Outillage et moules de production",
       "Solutions sur mesure pour chaque client",
-      "Accompagnement des entreprises, ateliers, startups et inventeurs",
+      "Accompagnement des particuliers, ateliers, startups et inventeurs",
     ],
     sectionTitle: "Ce que nous faisons, concrètement",
     sectionText:
-      "Que vous ayez besoin d'une seule pièce, d'un prototype à tester ou d'un petit outillage de série, nous mettons l'ingénierie au service de votre projet.",
+      "Que vous ayez besoin d'une seule pièce, d'un prototype à tester ou d'un petit outillage de série, nous mettons la conception et la fabrication au service de votre projet.",
     audiencesTitle: "Pour qui ?",
     audiences: [
-      "Entreprises et industriels",
+      "Particuliers et inventeurs",
       "Ateliers et bureaux d'études",
       "Startups et projets innovants",
-      "Inventeurs et particuliers",
+      "Entreprises et industriels",
     ],
     valuesTitle: "Notre manière de travailler",
     values: [
       { title: "Précision", text: "Des pièces justes, mesurées et contrôlées." },
       { title: "Honneteté technique", text: "Nous recommandons la solution adaptée, pas la plus chère." },
-      { title: "Disponibilité", text: "Un interlocuteur unique et des réponses claires." },
+      { title: "Disponibilité", text: "Un contact direct et des réponses claires." },
     ],
   },
 

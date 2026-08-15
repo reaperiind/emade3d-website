@@ -25,7 +25,7 @@ const en: Dictionary = {
     about: {
       title: "About — Emade3D, engineering, design and manufacturing",
       description:
-        "Emade3D is an engineering, design and manufacturing company that turns ideas and technical problems into functional parts.",
+        "Emade3D is a personal design and manufacturing studio that turns ideas and technical problems into functional parts.",
     },
     faq: {
       title: "Frequently asked questions — Emade3D",
@@ -101,7 +101,7 @@ const en: Dictionary = {
 
   services: {
     kicker: "Our services",
-    title: "Complete engineering solutions",
+    title: "Complete design and manufacturing solutions",
     subtitle:
       "From design to production, we cover the whole chain: create, prototype, machine, tool, mold.",
     explore: "Learn more",
@@ -109,7 +109,7 @@ const en: Dictionary = {
     fromIdea: "From idea to part",
     futureTitle: "Toward other processes",
     futureSubtitle:
-      "Our engineering platform keeps evolving: new processes and services will be added without changing your experience.",
+      "New processes and services keep being added, without changing your experience.",
     futureStatus: "Coming soon",
   },
 
@@ -151,7 +151,7 @@ const en: Dictionary = {
     kicker: "Our method",
     title: "How does it work?",
     subtitle:
-      "A simple and transparent process, designed for both the client and the engineer.",
+      "A simple and transparent process, designed for the client.",
     intro:
       "From the first discussion to the part in your hands, every step is clear, validated and traceable.",
   },
@@ -298,7 +298,7 @@ const en: Dictionary = {
     kicker: "About",
     title: "Engineering + Design + Manufacturing",
     intro:
-      "Emade3D is an engineering, design and manufacturing company. We turn ideas, sketches and technical problems into real, functional and durable parts.",
+      "Emade3D is a personal design and manufacturing studio. We turn ideas, sketches and technical problems into real, functional and durable parts.",
     lead:
       "We are not just a 3D printing service. We work upstream — to study, design and optimize — and downstream — to manufacture, control and deliver.",
     pillars: [
@@ -321,23 +321,23 @@ const en: Dictionary = {
       "Rapid prototyping and testing",
       "Tooling and production molds",
       "Custom solutions for every client",
-      "Working with companies, workshops, startups and inventors",
+      "Working with individuals, workshops, startups and inventors",
     ],
     sectionTitle: "What we actually do",
     sectionText:
-      "Whether you need a single part, a prototype to test or small production tooling, we put engineering at the service of your project.",
+      "Whether you need a single part, a prototype to test or small production tooling, we put design and manufacturing at the service of your project.",
     audiencesTitle: "Who we work with",
     audiences: [
-      "Companies and industry",
+      "Individuals and inventors",
       "Workshops and design offices",
       "Startups and innovative projects",
-      "Inventors and individuals",
+      "Companies and industry",
     ],
     valuesTitle: "How we work",
     values: [
       { title: "Precision", text: "Accurate, measured and controlled parts." },
       { title: "Technical honesty", text: "We recommend the right solution, not the most expensive one." },
-      { title: "Availability", text: "A single point of contact and clear answers." },
+      { title: "Availability", text: "Direct contact and clear answers." },
     ],
   },
 
