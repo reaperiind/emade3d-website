@@ -113,19 +113,20 @@ function formatBytes(bytes: number): string {
   return `${bytes} o`;
 }
 
-function waLink(order: Order): string {
+function waPhone(order: Order): string {
   const digits = (order.phone ?? "").replace(/\D/g, "");
-  const number = digits.startsWith("213")
-    ? digits
-    : digits.startsWith("0")
-      ? `213${digits.slice(1)}`
-      : digits;
+  if (digits.startsWith("213")) return digits;
+  if (digits.startsWith("0")) return `213${digits.slice(1)}`;
+  return digits;
+}
+
+function waLink(order: Order, locale: "ar" | "fr"): string {
+  const number = waPhone(order);
   if (!number) return "";
-  const locale = order.locale === "ar" || order.locale === "en" ? order.locale : "fr";
   const base =
     typeof window !== "undefined" ? window.location.origin : "https://emade3d.dz";
-  const path = `${localizePath("/suivre-ma-commande", locale)}?code=${encodeURIComponent(order.code)}`;
-  const text = `${(WA_TEMPLATES[locale] ?? WA_TEMPLATES.fr)(order)}${base}${path}`;
+  const path = `${localizePath("/suivre-ma-commande", locale === "ar" ? "ar" : "fr")}?code=${encodeURIComponent(order.code)}`;
+  const text = `${WA_TEMPLATES[locale](order)}${base}${path}`;
   return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
 }
 
@@ -221,7 +222,7 @@ function OrderCard({
     String(order.delivery?.fee ?? 0)
   );
   const [savedFlash, setSavedFlash] = useState(false);
-  const waHref = waLink(order);
+  const waPhoneNumber = waPhone(order);
   const hasUnsaved =
     priceDraft.trim() === ""
       ? order.price != null
@@ -307,16 +308,27 @@ function OrderCard({
               </option>
             ))}
           </select>
-          {waHref && (
-            <a
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-9 w-9 items-center justify-center rounded-md border border-green-200 text-green-600 transition hover:border-green-300 hover:bg-green-50"
-              title="Contacter sur WhatsApp"
-            >
-              <WhatsAppIcon className="h-4 w-4" />
-            </a>
+          {waPhoneNumber && (
+            <div className="flex items-center gap-1 rounded-md border border-green-200 p-0.5">
+              <a
+                href={waLink(order, "ar")}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-7 items-center px-2 text-xs font-semibold text-green-700 transition hover:bg-green-50"
+                title="Envoyer en arabe"
+              >
+                عربي
+              </a>
+              <a
+                href={waLink(order, "fr")}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-7 items-center px-2 text-xs font-semibold text-green-700 transition hover:bg-green-50"
+                title="Envoyer en français"
+              >
+                FR
+              </a>
+            </div>
           )}
           <button
             type="button"
