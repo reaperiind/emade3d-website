@@ -256,6 +256,20 @@ export function GalleryPanel({ token }: { token: string }) {
               <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
+                  aria-label={project.featured ? "Retirer de la page d'accueil" : "Mettre en avant sur la page d'accueil"}
+                  title={project.featured ? "Mis en avant (page d'accueil)" : "Mettre en avant"}
+                  onClick={() => persist(projects.map((p) => (p.slug === project.slug ? { ...p, featured: !p.featured } : p)))}
+                  className={cn(
+                    "inline-flex h-9 w-9 items-center justify-center rounded-md border text-lg transition",
+                    project.featured
+                      ? "border-amber-300 bg-amber-50 text-amber-500 hover:bg-amber-100"
+                      : "border-slate-300 bg-white text-slate-300 hover:border-amber-300 hover:text-amber-400"
+                  )}
+                >
+                  ★
+                </button>
+                <button
+                  type="button"
                   onClick={() => setEditing({ ...project, images: [...(project.images ?? [])] })}
                   className={secondaryButton}
                 >
@@ -322,7 +336,7 @@ function ProjectEditor({
             ))}
           </select>
         </div>
-        {project.slug ? (
+        {project.slug && (
           <div>
             <label className={labelClass}>Lien (slug)</label>
             <input
@@ -333,7 +347,18 @@ function ProjectEditor({
               className={cn(inputClass, "font-mono text-xs")}
             />
           </div>
-        ) : null}
+        )}
+        <div className="flex items-end">
+          <label className={cn(labelClass, "flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700")}>
+            <input
+              type="checkbox"
+              checked={project.featured}
+              onChange={(e) => onChange({ ...project, featured: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-accent focus:ring-accent"
+            />
+            Mis en avant (page d&apos;accueil)
+          </label>
+        </div>
       </div>
 
       <ImageManager project={project} onChange={onChange} />
