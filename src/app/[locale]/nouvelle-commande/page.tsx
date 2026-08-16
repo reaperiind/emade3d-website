@@ -26,7 +26,7 @@ export function generateMetadata({
     locale: params.locale,
     dict,
     page: "quote",
-    pathname: "/demander-un-devis",
+    pathname: "/nouvelle-commande",
   });
 }
 

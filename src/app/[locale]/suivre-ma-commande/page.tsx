@@ -102,7 +102,7 @@ export default function SuivreMaCommandePage({
                 </p>
                 <div className="mt-5 flex flex-col gap-2.5">
                   <Link
-                    href={`/${locale}/demander-un-devis`}
+                    href={`/${locale}/nouvelle-commande`}
                     className="btn-primary btn-md w-full justify-between"
                   >
                     <span>{track.helpNewOrder}</span>

@@ -36,9 +36,9 @@ const fr = {
         "Contactez Emade3D par téléphone, WhatsApp, e-mail ou via notre formulaire de contact. Nous sommes à votre écoute pour votre projet.",
     },
     quote: {
-      title: "Demander un devis — Conception et fabrication sur mesure",
+      title: "Nouvelle commande — Conception et fabrication sur mesure",
       description:
-        "Lancez votre demande de devis Emade3D : préparez votre projet, créez votre demande sur notre portail et recevez votre étude technique et votre proposition en 24-48 h.",
+        "Lancez votre nouvelle commande Emade3D : préparez votre projet, créez votre demande sur notre portail et recevez votre étude technique et votre proposition en 24-48 h.",
     },
     track: {
       title: "Suivre ma commande — Emade3D",
@@ -55,7 +55,7 @@ const fr = {
     about: "À propos",
     contact: "Contact",
     faq: "FAQ",
-    devis: "Demander un devis",
+    devis: "Nouvelle commande",
     tracking: "Suivre ma commande",
     orders: "Mes commandes",
     newOrder: "Nouvelle commande",
@@ -87,7 +87,7 @@ const fr = {
     accentWord: "fabriquée.",
     subtitle:
       "Emade3D accompagne votre projet d'un bout à l'autre : étude de faisabilité, conception 3D, prototypage, impression et fabrication de la pièce finale. Vous avez une idée, un croquis ou un problème de fabrication ? Nous cherchons la solution.",
-    ctaDevis: "Demander un devis",
+    ctaDevis: "Nouvelle commande",
     ctaRealisations: "Voir nos réalisations",
     scroll: "Défiler",
     badges: [
@@ -158,12 +158,12 @@ const fr = {
     kicker: "Parlons de votre projet",
     title: "Vous avez un projet ?",
     lead: "Décrivez votre besoin sur notre portail et recevez une proposition d'étude et de fabrication. Sans engagement.",
-    button: "Demander un devis",
+    button: "Nouvelle commande",
     tracking: "Suivre ma commande",
   },
 
   quote: {
-    kicker: "Demander un devis",
+    kicker: "Nouvelle commande",
     title: "Nouvelle commande",
     subtitle:
       "Remplissez les informations ci-dessous et nous commencerons à travailler sur votre commande.",
@@ -381,9 +381,9 @@ const fr = {
       email: "E-mail",
       address: "Adresse",
       hours: "Horaires",
-      quoteTitle: "Besoin d'un devis ?",
-      quoteText: "Créez votre demande directement sur notre portail :",
-      quoteButton: "Demander un devis",
+      quoteTitle: "Prêt à passer commande ?",
+      quoteText: "Créez votre commande directement sur notre portail :",
+      quoteButton: "Nouvelle commande",
     },
   },
 
@@ -395,7 +395,7 @@ const fr = {
     services: "Services",
     contact: "Contact",
     resources: "Ressources",
-    devis: "Demander un devis",
+    devis: "Nouvelle commande",
     tracking: "Suivre ma commande",
     rights: "Tous droits réservés.",
     madeWith: "Conçu et fabriqué avec précision.",

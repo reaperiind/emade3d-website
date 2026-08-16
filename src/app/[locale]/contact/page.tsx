@@ -125,7 +125,7 @@ export default async function ContactPage({
                 </h3>
                 <p className="text-muted mt-1.5 text-sm">{dict.contact.info.quoteText}</p>
                 <Link
-                  href={`/${locale}/demander-un-devis`}
+                  href={`/${locale}/nouvelle-commande`}
                   className="btn-primary btn-md mt-5 w-full justify-between"
                 >
                   <span>{dict.contact.info.quoteButton}</span>

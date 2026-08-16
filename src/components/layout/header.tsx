@@ -144,7 +144,7 @@ export function Header() {
             </div>
             <div className="mt-8 grid gap-2.5">
               <Link
-                href={`/${locale}/demander-un-devis`}
+                href={`/${locale}/nouvelle-commande`}
                 onClick={() => setMenuOpen(false)}
                 className="btn-primary btn-md w-full justify-between"
               >

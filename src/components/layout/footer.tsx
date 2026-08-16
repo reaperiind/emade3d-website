@@ -222,7 +222,7 @@ export function Footer() {
 
 <div className="mt-6 space-y-2.5">
               <Link
-                href={`/${locale}/demander-un-devis`}
+                href={`/${locale}/nouvelle-commande`}
                 className="btn-primary btn-md w-full justify-between"
               >
                 <span>{t.nav.newOrder}</span>

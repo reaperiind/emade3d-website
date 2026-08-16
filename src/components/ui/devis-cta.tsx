@@ -6,7 +6,7 @@ import { useI18n } from "@/i18n/provider";
 import { ArrowRightIcon } from "@/components/ui/icons";
 
 /**
- * The "Demander un devis" CTA opens the in-site quote page, which in turn
+ * The "Nouvelle commande" CTA opens the in-site order page, which in turn
  * sends the customer to the Emade3D Portal (see /src/config/site.ts →
  * PORTAL_URL). This keeps the funnel consistent and the portal URL centralized.
  */
@@ -23,7 +23,7 @@ export function DevisCta({
   const sizeClass = size === "lg" ? "btn-lg" : "btn-md";
   return (
     <Link
-      href={`/${locale}/demander-un-devis`}
+      href={`/${locale}/nouvelle-commande`}
       aria-label={t.nav.devis}
       className={cn("btn-primary", sizeClass, className)}
     >

@@ -21,3 +21,16 @@
 #   APP_URL=      base URL used in notification links
 [functions]
   directory = ".netlify/functions-internal"
+
+# Keep the old "Demander un devis" page working after the rename.
+[[redirects]]
+  from = "/:locale/demander-un-devis"
+  to = "/:locale/nouvelle-commande"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/demander-un-devis"
+  to = "/nouvelle-commande"
+  status = 301
+  force = true

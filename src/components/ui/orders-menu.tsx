@@ -10,7 +10,7 @@ import { ChevronDownIcon, PlusIcon, SearchIcon } from "@/components/ui/icons";
  * Header "Mes commandes" button with a dropdown revealed on hover.
  *
  * Two actions are offered:
- *  - "Nouvelle commande"  → the in-site order page (/demander-un-devis)
+ *  - "Nouvelle commande"  → the in-site order page (/nouvelle-commande)
  *  - "Suivre ma commande" → the in-site tracking page (/suivre-ma-commande)
  */
 export function OrdersMenu({
@@ -48,7 +48,7 @@ export function OrdersMenu({
       key: "newOrder",
       label: t.nav.newOrder,
       sub: t.quote.kicker,
-      href: `/${locale}/demander-un-devis`,
+      href: `/${locale}/nouvelle-commande`,
       Icon: PlusIcon,
     },
     {

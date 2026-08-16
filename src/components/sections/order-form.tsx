@@ -66,6 +66,7 @@ export function OrderForm() {
   const [note, setNote] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const codeRef = useRef<HTMLDivElement>(null);
 
   const [deliverySettings, setDeliverySettings] = useState<SiteSettings | null>(
     null
@@ -85,6 +86,15 @@ export function OrderForm() {
       })
       .catch(() => undefined);
   }, []);
+
+  // When the order is confirmed, bring the tracking code into view so the
+  // customer does not have to scroll up to find it.
+  useEffect(() => {
+    if (!sent) return;
+    requestAnimationFrame(() => {
+      codeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [sent]);
 
   const hasDeliveryData = Boolean(deliverySettings?.delivery.wilayas?.length);
   const currency = deliverySettings?.currency ?? "DA";
@@ -283,29 +293,32 @@ export function OrderForm() {
           </div>
         </div>
 
-        {/* Tracking code */}
-        <div className="mt-6 rounded-xl border border-accent/30 bg-accent-dim p-5 text-center">
+        {/* Tracking code — the focus of this screen */}
+        <div
+          ref={codeRef}
+          className="mt-6 scroll-mt-28 rounded-xl border border-accent/30 bg-accent-dim p-6 text-center"
+        >
           <p className="text-xs font-semibold uppercase tracking-widest text-steel-400">
             {q.result.codeLabel}
           </p>
           <p
             dir="ltr"
-            className="mt-2 font-mono text-4xl font-extrabold tracking-wider text-white"
+            className="mt-2 font-mono text-5xl font-extrabold tracking-wider text-white"
           >
             {sent.code}
           </p>
-          <div className="mt-4 inline-flex flex-wrap justify-center gap-2">
+          <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
             <button
               type="button"
               onClick={onCopy}
-              className="btn-outline-accent btn-sm"
+              className="btn-primary btn-md"
             >
               <CopyIcon className="h-4 w-4" />
               {copied ? q.result.copied : q.result.copyCode}
             </button>
             <Link
               href={`${localizePath("/suivre-ma-commande", locale)}?code=${encodeURIComponent(sent.code)}`}
-              className="btn-outline btn-sm"
+              className="btn-outline btn-md"
             >
               <ArrowUpRightIcon className="h-4 w-4" />
               {q.result.goToTracking}

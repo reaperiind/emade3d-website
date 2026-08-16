@@ -38,9 +38,9 @@ const en: Dictionary = {
         "Contact Emade3D by phone, WhatsApp, e-mail or through our contact form. We are here to help with your project.",
     },
     quote: {
-      title: "Request a quote — Custom design and manufacturing",
+      title: "New order — Custom design and manufacturing",
       description:
-        "Start your Emade3D quote request: prepare your project, create your request on our portal and get your technical study and proposal within 24-48 hours.",
+        "Start your new Emade3D order: prepare your project, create your request on our portal and get your technical study and proposal within 24-48 hours.",
     },
     track: {
       title: "Track my order — Emade3D",
@@ -57,7 +57,7 @@ const en: Dictionary = {
     about: "About",
     contact: "Contact",
     faq: "FAQ",
-    devis: "Request a quote",
+    devis: "New order",
     tracking: "Track my order",
     orders: "My orders",
     newOrder: "New order",
@@ -89,7 +89,7 @@ const en: Dictionary = {
     accentWord: "finished part.",
     subtitle:
       "Emade3D supports your project end to end: feasibility study, 3D design, prototyping, printing and manufacturing of the final part. Have an idea, a sketch or a manufacturing problem? We find the solution.",
-    ctaDevis: "Request a quote",
+    ctaDevis: "New order",
     ctaRealisations: "See our work",
     scroll: "Scroll",
     badges: [
@@ -160,12 +160,12 @@ const en: Dictionary = {
     kicker: "Let's talk about your project",
     title: "Have a project?",
     lead: "Describe your need on our portal and receive a study and manufacturing proposal. No commitment.",
-    button: "Request a quote",
+    button: "New order",
     tracking: "Track my order",
   },
 
   quote: {
-    kicker: "Request a quote",
+    kicker: "New order",
     title: "New order",
     subtitle:
       "Fill in the details below and we will start working on your order.",
@@ -379,9 +379,9 @@ const en: Dictionary = {
       email: "E-mail",
       address: "Address",
       hours: "Opening hours",
-      quoteTitle: "Need a quote?",
-      quoteText: "Create your request directly on our portal:",
-      quoteButton: "Request a quote",
+      quoteTitle: "Ready to place an order?",
+      quoteText: "Create your order directly on our portal:",
+      quoteButton: "New order",
     },
   },
 
@@ -393,7 +393,7 @@ const en: Dictionary = {
     services: "Services",
     contact: "Contact",
     resources: "Resources",
-    devis: "Request a quote",
+    devis: "New order",
     tracking: "Track my order",
     rights: "All rights reserved.",
     madeWith: "Designed and manufactured with precision.",
