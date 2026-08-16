@@ -181,6 +181,7 @@ export function GalleryPanel({ token }: { token: string }) {
       {editing && (
         <ProjectEditor
           project={editing}
+          token={token}
           onCancel={() => setEditing(null)}
           onSave={saveEdited}
           onChange={setEditing}
@@ -294,6 +295,7 @@ export function GalleryPanel({ token }: { token: string }) {
 
 function ProjectEditor({
   project,
+  token,
   onChange,
   onSave,
   onCancel,
@@ -301,6 +303,7 @@ function ProjectEditor({
   categoryLabel,
 }: {
   project: Project;
+  token: string;
   onChange: (p: Project) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -361,7 +364,7 @@ function ProjectEditor({
         </div>
       </div>
 
-      <ImageManager project={project} onChange={onChange} />
+      <ImageManager project={project} token={token} onChange={onChange} />
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
         <button
@@ -426,24 +429,28 @@ function LangInput({
 
 function ImageManager({
   project,
+  token,
   onChange,
 }: {
   project: Project;
+  token: string;
   onChange: (p: Project) => void;
 }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const images = project.images ?? [];
 
   async function onFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const fd = new FormData();
       for (const file of Array.from(files)) fd.append("file", file);
       const res = await fetch("/api/media", {
         method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("emade3d-admin-token") ?? ""}` },
+        headers: { Authorization: `Bearer ${token}` },
         body: fd,
       });
       const json = (await res.json().catch(() => null)) as {
@@ -453,9 +460,23 @@ function ImageManager({
       } | null;
       if (res.ok && json?.ok && json.keys) {
         onChange({ ...project, images: [...images, ...json.keys] });
+      } else {
+        const reason =
+          res.status === 401
+            ? "Non autorisé : reconnectez-vous."
+            : res.status === 413
+              ? "Image(s) trop lourde(s)."
+              : json?.error === "no_file"
+                ? "Aucun fichier reçu."
+                : json?.error === "invalid_body"
+                  ? "Requête invalide."
+                  : `Échec de l'upload (statut ${res.status}).`;
+        setUploadError(reason);
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      setUploadError(
+        `Erreur réseau : ${err instanceof Error ? err.message : String(err)}`
+      );
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -467,7 +488,7 @@ function ImageManager({
     try {
       await fetch(`/api/media/${encodeURIComponent(key)}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${localStorage.getItem("emade3d-admin-token") ?? ""}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
     } catch {
       /* ignore */
@@ -517,6 +538,11 @@ function ImageManager({
         id="gallery-files"
         style={{ position: "absolute", width: "1px", height: "1px" }}
       />
+      {uploadError && (
+        <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+          {uploadError}
+        </p>
+      )}
       <label
         htmlFor="gallery-files"
         className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-accent hover:text-accent"
