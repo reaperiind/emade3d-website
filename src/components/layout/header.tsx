@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { key: "home", href: "/" },
   { key: "services", href: "/services" },
   { key: "realisations", href: "/realisations" },
+  { key: "products", href: "/produits" },
   { key: "process", href: "/comment-ca-marche" },
   { key: "about", href: "/a-propos" },
   { key: "contact", href: "/contact" },

@@ -47,12 +47,18 @@ const en: Dictionary = {
       description:
         "Track your Emade3D order at every step: study, design, manufacturing, control and delivery. Enter your tracking number.",
     },
+    products: {
+      title: "Products — Emade3D",
+      description:
+        "Discover Emade3D products available for sale: printed parts, accessories and custom-designed objects. Order in a few clicks.",
+    },
   },
 
   nav: {
     home: "Home",
     services: "Services",
     realisations: "Our work",
+    products: "Our products",
     process: "How it works",
     about: "About",
     contact: "Contact",
@@ -292,6 +298,33 @@ const en: Dictionary = {
       "Every step your order went through, with date and time.",
     trackingHelp:
       "This code is provided when your order is confirmed.",
+  },
+
+  products: {
+    kicker: "Our shop",
+    title: "Our products",
+    subtitle:
+      "Printed parts, accessories and custom-designed objects available for sale. Pick a product and fill in the form: we'll get back to you quickly.",
+    loading: "Loading…",
+    empty: "No products available for now.",
+    noImage: "No image",
+    available: "Available",
+    unavailable: "Unavailable",
+    orderCta: "Order",
+    formTitle: "Order this product",
+    name: "Full name",
+    namePlaceholder: "Your first and last name",
+    phone: "Phone",
+    phonePlaceholder: "06 XX XX XX XX",
+    quantity: "Quantity",
+    notes: "Note (optional)",
+    notesPlaceholder: "Any detail about your order?",
+    submit: "Send request",
+    sending: "Sending...",
+    error: "Something went wrong. Please try again.",
+    successTitle: "Request sent!",
+    successText:
+      "Thank you! Your request has been sent. We'll contact you soon by phone.",
   },
 
   about: {

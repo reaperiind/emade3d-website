@@ -15,6 +15,7 @@ import { OrdersPanel } from "./orders-panel";
 import { DeliverySettingsPanel } from "./delivery-settings-panel";
 import { InfoSettingsPanel } from "./info-settings-panel";
 import { GalleryPanel } from "./gallery-panel";
+import { ProductsPanel } from "./products-panel";
 import {
   inputClass,
   labelClass,
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { id: "settings", label: "Livraison", icon: "🚚" },
   { id: "info", label: "Informations", icon: "ℹ️" },
   { id: "gallery", label: "Galerie", icon: "🖼️" },
+  { id: "products", label: "Produits", icon: "🛍️" },
 ] as const;
 
 type NavId = (typeof NAV_ITEMS)[number]["id"];
@@ -330,6 +332,7 @@ export default function AdminPage() {
           {nav === "settings" && <DeliverySettingsPanel token={token} />}
           {nav === "info" && <InfoSettingsPanel token={token} />}
           {nav === "gallery" && <GalleryPanel token={token} />}
+          {nav === "products" && <ProductsPanel token={token} />}
         </main>
       </div>
     </div>

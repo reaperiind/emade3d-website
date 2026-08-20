@@ -45,12 +45,18 @@ const fr = {
       description:
         "Suivez l'avancement de votre commande Emade3D à chaque étape : étude, conception, fabrication, contrôle et livraison. Entrez votre numéro de suivi.",
     },
+    products: {
+      title: "Produits — Emade3D",
+      description:
+        "Découvrez les produits Emade3D disponibles à la vente : pièces imprimées, accessoires et objets conçus sur mesure. Commandez en quelques clics.",
+    },
   },
 
   nav: {
     home: "Accueil",
     services: "Services",
     realisations: "Réalisations",
+    products: "Nos produits",
     process: "Comment ça marche",
     about: "À propos",
     contact: "Contact",
@@ -293,6 +299,33 @@ const fr = {
       "Chaque étape franchie par votre commande, avec la date et l'heure.",
     trackingHelp:
       "Ce code est communiqué lors de la confirmation de votre commande.",
+  },
+
+  products: {
+    kicker: "Notre boutique",
+    title: "Nos produits",
+    subtitle:
+      "Pièces imprimées, accessoires et objets conçus sur mesure, disponibles à la vente. Sélectionnez un produit et remplissez le formulaire : nous vous recontactons rapidement.",
+    loading: "Chargement…",
+    empty: "Aucun produit disponible pour le moment.",
+    noImage: "Sans image",
+    available: "Disponible",
+    unavailable: "Indisponible",
+    orderCta: "Commander",
+    formTitle: "Commander ce produit",
+    name: "Nom complet",
+    namePlaceholder: "Votre nom et prénom",
+    phone: "Téléphone",
+    phonePlaceholder: "06 XX XX XX XX",
+    quantity: "Quantité",
+    notes: "Remarque (optionnel)",
+    notesPlaceholder: "Une précision sur votre commande ?",
+    submit: "Envoyer la demande",
+    sending: "Envoi...",
+    error: "Une erreur est survenue. Veuillez réessayer.",
+    successTitle: "Demande envoyée !",
+    successText:
+      "Merci ! Votre demande a bien été transmise. Nous vous contacterons rapidement par téléphone.",
   },
 
   about: {
