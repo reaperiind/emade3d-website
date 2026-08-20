@@ -1,15 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Product } from "@/data/products";
 import type { LocalizedText } from "@/lib/localize";
-import type { ProductOrder } from "@/lib/product-orders-store";
+import type {
+  ProductOrder,
+  ProductOrderStatus,
+} from "@/lib/product-orders-store";
 import { cn } from "@/lib/cn";
 import {
   PlusIcon,
   TrashIcon,
   CheckIcon,
   WhatsAppIcon,
+  SearchIcon,
+  CloseIcon,
+  PhoneIcon,
 } from "@/components/ui/icons";
 import {
   inputClass,
@@ -27,6 +33,41 @@ const MEDIA_URL = (key: string) => `/api/media/${key}`;
 type LocalizedRecord = { fr: string; en: string; ar: string };
 
 const EMPTY_LANG: LocalizedRecord = { fr: "", en: "", ar: "" };
+
+const STATUS_FLOW: ProductOrderStatus[] = [
+  "NEW",
+  "CONTACTED",
+  "CONFIRMED",
+  "SHIPPED",
+  "DELIVERED",
+];
+
+const STATUS_META: Record<ProductOrderStatus, { label: string; pill: string }> = {
+  NEW: {
+    label: "Nouveau",
+    pill: "border-orange-300 bg-orange-50 text-orange-700",
+  },
+  CONTACTED: {
+    label: "Contacté",
+    pill: "border-sky-300 bg-sky-50 text-sky-700",
+  },
+  CONFIRMED: {
+    label: "Confirmé",
+    pill: "border-violet-300 bg-violet-50 text-violet-700",
+  },
+  SHIPPED: {
+    label: "Expédié",
+    pill: "border-amber-300 bg-amber-50 text-amber-700",
+  },
+  DELIVERED: {
+    label: "Livré",
+    pill: "border-emerald-300 bg-emerald-50 text-emerald-700",
+  },
+  CANCELLED: {
+    label: "Annulé",
+    pill: "border-red-300 bg-red-50 text-red-600",
+  },
+};
 
 function slugify(s: string): string {
   return s
@@ -53,19 +94,8 @@ function productName(p: Product): string {
   return p.name.fr || p.name.en || p.name.ar || p.slug;
 }
 
-function waLink(order: ProductOrder): string {
-  let phone = order.phone.replace(/[^\d]/g, "");
-  if (phone.startsWith("0")) phone = "213" + phone.slice(1);
-  const lines = [
-    `Bonjour ${order.customerName},`,
-    `${order.quantity} × ${productLabelFromOrder(order)}`,
-    "Merci pour votre demande sur notre site Emade3D.",
-  ];
-  return `https://wa.me/${phone}?text=${encodeURIComponent(lines.join("\n"))}`;
-}
-
-function productLabelFromOrder(order: ProductOrder): string {
-  return order.productName.fr || order.productName.en || order.productName.ar || order.productSlug;
+function orderProductLabel(o: ProductOrder): string {
+  return o.productName.fr || o.productName.en || o.productName.ar || o.productSlug;
 }
 
 function deliveryLabel(order: ProductOrder): string {
@@ -75,6 +105,32 @@ function deliveryLabel(order: ProductOrder): string {
   return `Bureau du coursier${d.wilayaId != null ? ` — wilaya ${d.wilayaId}` : ""}`;
 }
 
+function orderTotal(o: ProductOrder): number {
+  return (o.price || 0) * o.quantity + (o.delivery?.fee ?? 0);
+}
+
+function orderDeliveryType(o: ProductOrder): string {
+  const d = o.delivery;
+  if (!d || d.method === "pickup") return "pickup";
+  return d.option === "home" ? "home" : "office";
+}
+
+function waPhone(o: ProductOrder): string {
+  const digits = (o.phone ?? "").replace(/\D/g, "");
+  if (digits.startsWith("213")) return digits;
+  if (digits.startsWith("0")) return "213" + digits.slice(1);
+  return digits;
+}
+
+function waLink(o: ProductOrder): string {
+  const lines = [
+    `Bonjour ${o.customerName},`,
+    `${o.quantity} × ${orderProductLabel(o)}`,
+    "Merci pour votre demande sur notre site Emade3D.",
+  ];
+  return `https://wa.me/${waPhone(o)}?text=${encodeURIComponent(lines.join("\n"))}`;
+}
+
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleString("fr-DZ", {
     dateStyle: "short",
@@ -82,14 +138,25 @@ function fmtDate(iso: string): string {
   });
 }
 
+function fmtMoney(n: number): string {
+  return new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n);
+}
+
 export function ProductsPanel({ token }: { token: string }) {
-  const [tab, setTab] = useState<"products" | "orders">("products");
+  const [tab, setTab] = useState<"products" | "orders">("orders");
   const [products, setProducts] = useState<Product[] | null>(null);
   const [orders, setOrders] = useState<ProductOrder[] | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
+  const [selected, setSelected] = useState<ProductOrder | null>(null);
+
+  const bySlug = useMemo(() => {
+    const map = new Map<string, Product>();
+    for (const p of products ?? []) map.set(p.slug, p);
+    return map;
+  }, [products]);
 
   const loadProducts = useCallback(() => {
     fetch("/api/products")
@@ -186,6 +253,47 @@ export function ProductsPanel({ token }: { token: string }) {
     await persist(next);
   }
 
+  const patchStatus = useCallback(
+    async (id: string, status: ProductOrderStatus) => {
+      const before = orders;
+      setOrders((prev) =>
+        (prev ?? []).map((o) =>
+          o.id === id
+            ? {
+                ...o,
+                status,
+                history: [...(o.history ?? []), { status, at: new Date().toISOString() }],
+              }
+            : o
+        )
+      );
+      try {
+        const res = await fetch("/api/product-orders", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ id, status }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.order) {
+            setOrders((prev) =>
+              (prev ?? []).map((o) => (o.id === id ? json.order : o))
+            );
+            setSelected((cur) => (cur?.id === id ? json.order : cur));
+          }
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
+      setOrders(before);
+    },
+    [orders, token]
+  );
+
   async function deleteOrder(id: string) {
     if (!window.confirm("Supprimer cette demande de produit ?")) return;
     try {
@@ -195,6 +303,7 @@ export function ProductsPanel({ token }: { token: string }) {
       });
       if (res.ok) {
         setOrders((prev) => (prev ?? []).filter((o) => o.id !== id));
+        setSelected(null);
       }
     } catch {
       /* ignore */
@@ -208,11 +317,21 @@ export function ProductsPanel({ token }: { token: string }) {
           <div>
             <h2 className={panelHeading}>Produits — Boutique</h2>
             <p className={panelMuted}>
-              Gérez les produits affichés sur la page « Produits » et consultez
-              les demandes d&apos;achat reçues via le formulaire de commande.
+              Gérez les produits affichés sur la page « Produits » et suivez les
+              demandes d&apos;achat reçues, de l&apos;appel de confirmation à la livraison.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {tab === "products" && (
+              <button
+                type="button"
+                onClick={() => setEditing(blankProduct())}
+                className={secondaryButton}
+              >
+                <PlusIcon className="h-4 w-4" />
+                Nouveau produit
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setTab("products")}
@@ -255,17 +374,6 @@ export function ProductsPanel({ token }: { token: string }) {
 
       {tab === "products" && (
         <>
-          <div>
-            <button
-              type="button"
-              onClick={() => setEditing(blankProduct())}
-              className={secondaryButton}
-            >
-              <PlusIcon className="h-4 w-4" />
-              Nouveau produit
-            </button>
-          </div>
-
           {editing && (
             <ProductEditor
               product={editing}
@@ -370,82 +478,566 @@ export function ProductsPanel({ token }: { token: string }) {
       )}
 
       {tab === "orders" && (
-        <ProductOrdersList orders={orders} onDelete={deleteOrder} />
+        <ProductOrdersTable
+          orders={orders}
+          bySlug={bySlug}
+          onChangeStatus={patchStatus}
+          onDelete={deleteOrder}
+          onSelect={setSelected}
+        />
+      )}
+
+      {selected && (
+        <OrderDetailOverlay
+          order={selected}
+          product={bySlug.get(selected.productSlug)}
+          onClose={() => setSelected(null)}
+          onChangeStatus={(s) => patchStatus(selected.id, s)}
+          onDelete={() => deleteOrder(selected.id)}
+        />
       )}
     </div>
   );
 }
 
-function ProductOrdersList({
+/* ------------------------------------------------------------------------- */
+/*  Product orders          – table + status pipeline + timeline             */
+/* ------------------------------------------------------------------------- */
+
+function ProductOrdersTable({
   orders,
+  bySlug,
+  onChangeStatus,
   onDelete,
+  onSelect,
 }: {
   orders: ProductOrder[] | null;
+  bySlug: Map<string, Product>;
+  onChangeStatus: (id: string, status: ProductOrderStatus) => void;
   onDelete: (id: string) => void;
+  onSelect: (o: ProductOrder) => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ProductOrderStatus | "all">("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: 0 };
+    for (const o of orders ?? []) {
+      c.all++;
+      c[o.status] = (c[o.status] ?? 0) + 1;
+    }
+    return c;
+  }, [orders]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (orders ?? []).filter((o) => {
+      if (statusFilter !== "all" && o.status !== statusFilter) return false;
+      if (typeFilter !== "all" && orderDeliveryType(o) !== typeFilter) return false;
+      if (!q) return true;
+      return (
+        orderProductLabel(o).toLowerCase().includes(q) ||
+        o.customerName.toLowerCase().includes(q) ||
+        (o.phone ?? "").replace(/\s/g, "").includes(q.replace(/\s/g, ""))
+      );
+    });
+  }, [orders, query, statusFilter, typeFilter]);
+
   return (
-    <div>
-      {orders === null ? (
-        <p className="py-10 text-center text-slate-400">Chargement…</p>
-      ) : orders.length === 0 ? (
-        <p className={cn(panelCard, "py-14 text-center text-slate-500")}>
-          Aucune demande d&apos;achat pour le moment.
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {orders.map((order) => (
-            <li key={order.id} className={cn(panelCard, "p-4")}>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-900">
-                    {productLabelFromOrder(order)}
-                    <span className="ml-2 text-sm font-normal text-slate-500">
-                      × {order.quantity}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {order.customerName} ·{" "}
-                    <span dir="ltr">{order.phone}</span>
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    {fmtDate(order.createdAt)}
-                  </p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Livraison : {deliveryLabel(order)}
-                    {order.delivery && order.delivery.method === "courier" ? (
-                      <span className="ml-2 text-slate-400">
-                        Frais : {order.delivery.fee ?? 0}
+    <div className={panelCard}>
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative min-w-0 flex-1 sm:max-w-xs">
+          <SearchIcon className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rechercher client, téléphone, produit…"
+            className={cn(inputClass, "ps-9")}
+          />
+        </div>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className={cn(inputClass, "w-auto")}
+        >
+          <option value="all">Tous les types</option>
+          <option value="pickup">Retrait sur place</option>
+          <option value="office">Bureau du coursier</option>
+          <option value="home">À domicile</option>
+        </select>
+      </div>
+
+      {/* Status pills */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {(["all", ...STATUS_FLOW, "CANCELLED"] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setStatusFilter(s)}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+              statusFilter === s
+                ? "border-accent bg-accent text-white"
+                : s === "all"
+                  ? "border-slate-300 bg-white text-slate-600 hover:border-accent"
+                  : cn(
+                      STATUS_META[s as ProductOrderStatus].pill,
+                      "hover:opacity-80"
+                    )
+            )}
+          >
+            {s === "all" ? `Toutes (${counts.all ?? 0})` : `${STATUS_META[s as ProductOrderStatus].label} (${counts[s] ?? 0})`}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="mt-4 overflow-x-auto">
+        {orders === null ? (
+          <p className="py-12 text-center text-slate-400">Chargement…</p>
+        ) : filtered.length === 0 ? (
+          <p className="py-14 text-center text-slate-500">
+            Aucune demande ne correspond aux filtres.
+          </p>
+        ) : (
+          <table className="w-full min-w-[720px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-widest text-slate-400">
+                <th className="px-3 py-2.5">Produit</th>
+                <th className="px-3 py-2.5">Client</th>
+                <th className="px-3 py-2.5 text-end">Qté × Prix</th>
+                <th className="px-3 py-2.5 text-end">Total</th>
+                <th className="hidden px-3 py-2.5 lg:table-cell">Livraison</th>
+                <th className="px-3 py-2.5">Statut</th>
+                <th className="hidden px-3 py-2.5 md:table-cell">Date</th>
+                <th className="px-3 py-2.5 text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((o) => {
+                const product = bySlug.get(o.productSlug);
+                const cover = product?.images?.[0];
+                const meta = STATUS_META[o.status] ?? STATUS_META.NEW;
+                return (
+                  <tr
+                    key={o.id}
+                    onClick={() => onSelect(o)}
+                    className="group cursor-pointer border-b border-slate-100 transition hover:bg-slate-50"
+                  >
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-11 w-11 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
+                          {cover ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={MEDIA_URL(cover)}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400">
+                              —
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="max-w-[12rem] truncate font-medium text-slate-900">
+                            {orderProductLabel(o)}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            {o.productSlug}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <p className="font-medium text-slate-900">{o.customerName}</p>
+                      <p className="text-xs text-slate-500" dir="ltr">
+                        {o.phone}
+                      </p>
+                    </td>
+                    <td className="px-3 py-3 text-end tabular-nums text-slate-600">
+                      {o.quantity} × {fmtMoney(o.price ?? 0)} DA
+                    </td>
+                    <td className="px-3 py-3 text-end font-semibold tabular-nums text-slate-900">
+                      {fmtMoney(orderTotal(o))} DA
+                    </td>
+                    <td className="hidden px-3 py-3 lg:table-cell">
+                      <p className="text-slate-600">{deliveryLabel(o)}</p>
+                      <p className="text-xs text-slate-400">
+                        Frais : {fmtMoney(o.delivery?.fee ?? 0)} DA
+                      </p>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold",
+                          meta.pill
+                        )}
+                      >
+                        {meta.label}
                       </span>
-                    ) : null}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-2">
-                  <a
-                    href={waLink(order)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
-                  >
-                    <WhatsAppIcon className="h-4 w-4" />
-                    Contacter
-                  </a>
-                  <button
-                    type="button"
-                    aria-label="Supprimer"
-                    onClick={() => onDelete(order.id)}
-                    className={dangerButton}
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+                    </td>
+                    <td className="hidden px-3 py-3 text-xs text-slate-500 md:table-cell">
+                      {fmtDate(o.createdAt)}
+                    </td>
+                    <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <a
+                          href={`tel:${o.phone}`}
+                          title="Appeler le client"
+                          className="flex h-8 w-8 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100"
+                        >
+                          <PhoneIcon className="h-4 w-4" />
+                        </a>
+                        <a
+                          href={waLink(o)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="WhatsApp"
+                          className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-emerald-300 hover:text-emerald-600"
+                        >
+                          <WhatsAppIcon className="h-4 w-4" />
+                        </a>
+                        <button
+                          type="button"
+                          title="Supprimer"
+                          onClick={() => onDelete(o.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 transition hover:border-red-200 hover:text-red-500"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
+
+/* ------------------------------------------------------------------------- */
+/*  Order detail overlay — status pipeline, totals, timeline                 */
+/* ------------------------------------------------------------------------- */
+
+function OrderDetailOverlay({
+  order,
+  product,
+  onClose,
+  onChangeStatus,
+  onDelete,
+}: {
+  order: ProductOrder;
+  product?: Product;
+  onClose: () => void;
+  onChangeStatus: (s: ProductOrderStatus) => void;
+  onDelete: () => void;
+}) {
+  const meta = STATUS_META[order.status] ?? STATUS_META.NEW;
+  const currentIdx = STATUS_FLOW.indexOf(order.status);
+  const timeline = order.history ?? [];
+
+  const cover = product?.images?.[0];
+  const deliveries: [string, string][] = [
+    ["Produit", orderProductLabel(order)],
+    [
+      "Qité",
+      `${order.quantity} × ${fmtMoney(order.price ?? 0)} DA`,
+    ],
+    [
+      "Sous-total",
+      `${fmtMoney((order.price ?? 0) * order.quantity)} DA`,
+    ],
+    ["Frais de livraison", `${fmtMoney(order.delivery?.fee ?? 0)} DA`],
+    [
+      "Total",
+      `${fmtMoney(orderTotal(order))} DA`,
+    ],
+  ];
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-display text-lg font-bold text-slate-900">
+              {orderProductLabel(order)}
+            </h3>
+            <p className="mt-0.5 text-sm text-slate-500">
+              {order.customerName} ·{" "}
+              <span dir="ltr">{order.phone}</span> · {fmtDate(order.createdAt)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fermer"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-300 text-slate-500 transition hover:border-slate-400 hover:text-slate-900"
+          >
+            <CloseIcon className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Status pipeline */}
+        <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+          <div className="flex items-center">
+            {STATUS_FLOW.map((s, i) => {
+              const reached = order.status === s || currentIdx > i;
+              const isCancelled = order.status === "CANCELLED";
+              const active = order.status === s;
+              return (
+                <div key={s} className="flex flex-1 items-center last:flex-none">
+                  <div className="flex flex-col items-center text-center">
+                    <span
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition",
+                        reached && !isCancelled
+                          ? "border-emerald-400 bg-emerald-500 text-white"
+                          : active && isCancelled
+                            ? "border-red-400 bg-red-500 text-white"
+                            : "border-slate-300 bg-white text-slate-400"
+                      )}
+                    >
+                      {reached && !isCancelled ? <CheckIcon className="h-4 w-4" /> : i + 1}
+                    </span>
+                    <span
+                      className={cn(
+                        "mt-1.5 hidden text-[10px] font-semibold sm:block",
+                        active ? "text-slate-900" : "text-slate-400"
+                      )}
+                    >
+                      {STATUS_META[s].label}
+                    </span>
+                  </div>
+                  {i < STATUS_FLOW.length - 1 && (
+                    <div
+                      className={cn(
+                        "mx-1 h-0.5 flex-1 rounded",
+                        reached && !isCancelled ? "bg-emerald-400" : "bg-slate-200"
+                      )}
+                    />
+                  )}
+                </div>
+              );
+            })}
+            {/* Cancelled branch */}
+            <div className="ms-1 flex items-center">
+              <span
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold",
+                  order.status === "CANCELLED"
+                    ? "border-red-400 bg-red-500 text-white"
+                    : "border-slate-300 bg-white text-slate-400"
+                )}
+              >
+                ✕
+              </span>
+              <span
+                className={cn(
+                  "mt-1.5 hidden text-[10px] font-semibold sm:block",
+                  order.status === "CANCELLED" ? "text-red-600" : "text-slate-400"
+                )}
+              >
+                Annulé
+              </span>
+            </div>
+          </div>
+
+          <p className="mt-4 flex items-center gap-2 text-sm text-slate-600">
+            Statut actuel :{" "}
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                meta.pill
+              )}
+            >
+              {meta.label}
+            </span>
+          </p>
+
+          {/* Status actions */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {STATUS_FLOW.map((s) => (
+              <button
+                key={s}
+                type="button"
+                disabled={s === order.status}
+                onClick={() => onChangeStatus(s)}
+                className={cn(
+                  "rounded-md border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-40",
+                  s === order.status
+                    ? "border-slate-300 bg-slate-100 text-slate-500"
+                    : "border-slate-300 bg-white text-slate-600 hover:border-accent hover:text-accent"
+                )}
+              >
+                {STATUS_META[s].label}
+              </button>
+            ))}
+            <button
+              type="button"
+              disabled={order.status === "CANCELLED"}
+              onClick={() => onChangeStatus("CANCELLED")}
+              className={cn(
+                "rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100 disabled:opacity-40"
+              )}
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {/* Contact */}
+          <div className="rounded-xl border border-slate-200 p-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+              Contact
+            </p>
+            <p className="mt-2 font-medium text-slate-900">{order.customerName}</p>
+            <p className="text-sm text-slate-500" dir="ltr">
+              {order.phone}
+            </p>
+            <div className="mt-3 flex gap-2">
+              <a
+                href={`tel:${order.phone}`}
+                className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+              >
+                <PhoneIcon className="h-4 w-4" />
+                Appeler
+              </a>
+              <a
+                href={waLink(order)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+              >
+                <WhatsAppIcon className="h-4 w-4" />
+                WhatsApp
+              </a>
+            </div>
+            {product && (
+              <div className="mt-4 flex items-center gap-3">
+                <div className="h-12 w-12 overflow-hidden rounded-md border border-slate-200">
+                  {cover ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={MEDIA_URL(cover)} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400">
+                      —
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-slate-900">
+                    {productName(product)}
+                  </p>
+                  <p className="text-xs text-slate-400">/{product.slug}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Delivery */}
+          <div className="rounded-xl border border-slate-200 p-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+              Livraison
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-900">
+              {deliveryLabel(order)}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Frais : {fmtMoney(order.delivery?.fee ?? 0)} DA
+            </p>
+            {order.delivery?.wilayaId != null && (
+              <p className="mt-1 text-sm text-slate-500">
+                Wilaya {order.delivery.wilayaId}
+              </p>
+            )}
+            {order.delivery?.address && (
+              <p className="mt-1 text-sm text-slate-500">
+                {order.delivery.address}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Totals */}
+        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+          <table className="w-full text-sm">
+            <tbody>
+              {deliveries.map(([label, value]) => (
+                <tr key={label} className="border-b border-slate-100 last:border-0">
+                  <td className="px-4 py-2.5 text-slate-500">{label}</td>
+                  <td
+                    className={cn(
+                      "px-4 py-2.5 text-end tabular-nums",
+                      label === "Total"
+                        ? "font-bold text-slate-900"
+                        : "text-slate-700"
+                    )}
+                  >
+                    {value}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Timeline */}
+        <div className="mt-5">
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+            Historique
+          </p>
+          <ol className="mt-3 space-y-3">
+            {timeline.map((h, i) => (
+              <li key={`${h.at}-${i}`} className="flex items-start gap-3">
+                <span className="mt-1 flex h-2 w-2 shrink-0 rounded-full bg-accent" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-800">
+                    {STATUS_META[h.status]?.label ?? h.status}
+                  </p>
+                  <p className="text-xs text-slate-400">{fmtDate(h.at)}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+          <button
+            type="button"
+            onClick={onDelete}
+            className={dangerButton}
+          >
+            <TrashIcon className="h-4 w-4" />
+            Supprimer la demande
+          </button>
+          <button type="button" onClick={onClose} className={secondaryButton}>
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------------- */
+/*  Product editor                                                           */
+/* ------------------------------------------------------------------------- */
 
 function ProductEditor({
   product,

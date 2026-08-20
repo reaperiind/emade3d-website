@@ -3,7 +3,9 @@ import {
   addProductOrder,
   deleteProductOrder,
   getProductOrders,
+  updateProductOrderStatus,
   type ProductOrder,
+  type ProductOrderStatus,
 } from "@/lib/product-orders-store";
 import { getProducts } from "@/lib/products-store";
 import { notifyProductOrder } from "@/lib/product-email";
@@ -14,6 +16,15 @@ import type { LocalizedText } from "@/lib/localize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const ALLOWED_STATUSES: ProductOrderStatus[] = [
+  "NEW",
+  "CONTACTED",
+  "CONFIRMED",
+  "SHIPPED",
+  "DELIVERED",
+  "CANCELLED",
+];
 
 function clean(v: unknown, max = 300): string {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
@@ -81,16 +92,22 @@ export async function POST(request: Request) {
 
   const delivery = await sanitizeDelivery(payload.delivery);
 
+  const price = Math.max(0, Number(payload.price) || 0);
+  const now = new Date().toISOString();
+
   const order: ProductOrder = {
     id: `PO-${Date.now()}`,
-    createdAt: new Date().toISOString(),
+    createdAt: now,
     productSlug,
     productName,
+    price,
     customerName,
     phone,
     quantity,
     delivery: delivery ?? { method: "pickup", fee: 0 },
     locale,
+    status: "NEW",
+    history: [{ status: "NEW", at: now }],
   };
 
   try {
@@ -114,6 +131,28 @@ export async function GET(request: Request) {
   }
   const orders = await getProductOrders();
   return NextResponse.json({ orders });
+}
+
+// PATCH /api/product-orders — admin only. Advances the lifecycle status of a
+// product order (appends a history entry server-side).
+export async function PATCH(request: Request) {
+  if (!isAuthorized(request.headers.get("authorization"))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const body = (await request.json().catch(() => null)) as {
+    id?: unknown;
+    status?: unknown;
+  } | null;
+  const id = clean(body?.id, 120);
+  const status = clean(body?.status, 20) as ProductOrderStatus;
+  if (!id || !ALLOWED_STATUSES.includes(status)) {
+    return NextResponse.json({ error: "invalid_body" }, { status: 400 });
+  }
+  const updated = await updateProductOrderStatus(id, status);
+  if (!updated) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+  return NextResponse.json({ ok: true, order: updated });
 }
 
 // DELETE /api/product-orders?id=... — admin only.

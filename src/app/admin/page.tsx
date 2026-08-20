@@ -26,11 +26,11 @@ import {
 const TOKEN_KEY = "emade3d-admin-token";
 
 const NAV_ITEMS = [
-  { id: "orders", label: "Commandes", icon: "📦" },
-  { id: "settings", label: "Livraison", icon: "🚚" },
-  { id: "info", label: "Informations", icon: "ℹ️" },
-  { id: "gallery", label: "Galerie", icon: "🖼️" },
-  { id: "products", label: "Produits", icon: "🛍️" },
+  { id: "orders", label: "Commandes", icon: "📦", hint: "Suivi des projets" },
+  { id: "products", label: "Produits", icon: "🛍️", hint: "Boutique & demandes" },
+  { id: "settings", label: "Livraison", icon: "🚚", hint: "Wilayas, communes, frais" },
+  { id: "info", label: "Informations", icon: "ℹ️", hint: "Contact, réseaux sociaux" },
+  { id: "gallery", label: "Galerie", icon: "🖼️", hint: "Réalisations" },
 ] as const;
 
 type NavId = (typeof NAV_ITEMS)[number]["id"];
@@ -271,14 +271,34 @@ export default function AdminPage() {
                 type="button"
                 onClick={() => setNav(item.id)}
                 className={cn(
-                  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition",
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition",
                   nav === item.id
                     ? "bg-accent text-white shadow-sm"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 )}
               >
-                <span aria-hidden>{item.icon}</span>
-                {item.label}
+                <span
+                  aria-hidden
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-lg",
+                    nav === item.id
+                      ? "bg-white/15"
+                      : "bg-slate-100"
+                  )}
+                >
+                  {item.icon}
+                </span>
+                <span className="min-w-0">
+                  <span className="block">{item.label}</span>
+                  <span
+                    className={cn(
+                      "block truncate text-xs",
+                      nav === item.id ? "text-white/80" : "text-slate-400"
+                    )}
+                  >
+                    {item.hint}
+                  </span>
+                </span>
               </button>
             ))}
           </nav>
@@ -305,11 +325,18 @@ export default function AdminPage() {
 
         {/* Main content */}
         <main className="min-w-0 flex-1">
-          {/* Stats (only on orders home) */}
+          <div className="mb-5">
+            <span className="inline-flex items-center gap-2.5 rounded-lg bg-accent/10 px-3 py-1.5 text-sm font-semibold text-accent">
+              <span aria-hidden className="text-base">
+                {NAV_ITEMS.find((i) => i.id === nav)?.icon}
+              </span>
+              {NAV_ITEMS.find((i) => i.id === nav)?.label}
+            </span>
+          </div>
           {nav === "orders" && (
             <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatCard label="Toutes" value={stats.total} />
-              <StatCard label="En attente" value={stats.pending} accent />
+              <StatCard label="Toutes" value={stats.total} accent />
+              <StatCard label="En attente" value={stats.pending} />
               <StatCard label="En cours" value={stats.inProgress} />
               <StatCard label="Finalisées" value={stats.finished} />
             </div>

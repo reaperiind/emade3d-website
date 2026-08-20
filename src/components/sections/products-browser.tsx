@@ -201,6 +201,7 @@ function PurchaseForm({
         body: JSON.stringify({
           productSlug: product.slug,
           productName: product.name,
+          price: product.price,
           customerName: String(fd.get("name") ?? "").trim(),
           phone: String(fd.get("phone") ?? "").trim(),
           quantity: Number(fd.get("quantity") ?? 1),

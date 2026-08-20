@@ -11,18 +11,38 @@ import { getStore, type Store } from "@netlify/blobs";
 import type { LocalizedText } from "@/lib/localize";
 import type { DeliveryInfo } from "@/lib/order-flows";
 
+export type ProductOrderStatus =
+  | "NEW"
+  | "CONTACTED"
+  | "CONFIRMED"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED";
+
+/** One step in the product order lifecycle with its timestamp. */
+export interface ProductOrderHistoryEntry {
+  status: ProductOrderStatus;
+  at: string;
+}
+
 export interface ProductOrder {
   id: string;
   createdAt: string;
   /** Snapshot of the product at purchase time. */
   productSlug: string;
   productName: LocalizedText;
+  /** Unit price snapshot (currency units) at request time. */
+  price: number;
   customerName: string;
   phone: string;
   quantity: number;
   /** Delivery chosen by the customer (same options as the order form). */
   delivery: DeliveryInfo;
   locale: string;
+  /** Current lifecycle status (defaults to "NEW"). */
+  status: ProductOrderStatus;
+  /** Full status timeline (creation is always first). */
+  history: ProductOrderHistoryEntry[];
 }
 
 const STORE_NAME = "product-orders";
@@ -51,15 +71,27 @@ function getMemory(): Record<string, unknown> {
   return g[MEMORY_KEY] as Record<string, unknown>;
 }
 
+function normalize(order: ProductOrder): ProductOrder {
+  const now = order.createdAt || new Date().toISOString();
+  return {
+    ...order,
+    price: Number(order.price) || 0,
+    status: order.status ?? "NEW",
+    history: Array.isArray(order.history) && order.history.length > 0
+      ? order.history
+      : [{ status: "NEW", at: now }],
+  };
+}
+
 export async function getProductOrders(): Promise<ProductOrder[]> {
   const store = resolveStore();
   if (store) {
     const raw = await store.get(LIST_KEY, { type: "text" });
     const parsed = raw ? (JSON.parse(raw) as ProductOrder[]) : null;
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(normalize) : [];
   }
   const mem = getMemory()[LIST_KEY];
-  return Array.isArray(mem) ? (mem as ProductOrder[]) : [];
+  return Array.isArray(mem) ? (mem as ProductOrder[]).map(normalize) : [];
 }
 
 export async function addProductOrder(
@@ -76,6 +108,29 @@ export async function deleteProductOrder(id: string): Promise<ProductOrder[]> {
   const next = current.filter((o) => o.id !== id);
   await persist(next);
   return next;
+}
+
+/**
+ * Advances a product order to a new lifecycle status, appending a history
+ * entry. Returns the updated order, or null when the id is unknown.
+ */
+export async function updateProductOrderStatus(
+  id: string,
+  status: ProductOrderStatus
+): Promise<ProductOrder | null> {
+  const current = await getProductOrders();
+  let updated: ProductOrder | null = null;
+  const next = current.map((o) => {
+    if (o.id !== id) return o;
+    updated = {
+      ...o,
+      status,
+      history: [...(o.history ?? []), { status, at: new Date().toISOString() }],
+    };
+    return updated;
+  });
+  await persist(next);
+  return updated;
 }
 
 async function persist(orders: ProductOrder[]): Promise<void> {
