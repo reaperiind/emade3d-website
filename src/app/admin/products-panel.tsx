@@ -68,6 +68,13 @@ function productLabelFromOrder(order: ProductOrder): string {
   return order.productName.fr || order.productName.en || order.productName.ar || order.productSlug;
 }
 
+function deliveryLabel(order: ProductOrder): string {
+  const d = order.delivery;
+  if (!d || d.method === "pickup") return "Retrait sur place";
+  if (d.option === "home") return `À domicile${d.address ? ` — ${d.address}` : ""}`;
+  return `Bureau du coursier${d.wilayaId != null ? ` — wilaya ${d.wilayaId}` : ""}`;
+}
+
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleString("fr-DZ", {
     dateStyle: "short",
@@ -403,11 +410,14 @@ function ProductOrdersList({
                   <p className="mt-0.5 text-xs text-slate-400">
                     {fmtDate(order.createdAt)}
                   </p>
-                  {order.notes && (
-                    <p className="mt-2 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                      {order.notes}
-                    </p>
-                  )}
+                  <p className="mt-2 text-sm text-slate-600">
+                    Livraison : {deliveryLabel(order)}
+                    {order.delivery && order.delivery.method === "courier" ? (
+                      <span className="ml-2 text-slate-400">
+                        Frais : {order.delivery.fee ?? 0}
+                      </span>
+                    ) : null}
+                  </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <a

@@ -3,12 +3,13 @@
  *
  * Completely separate from the main orders platform: a customer browsing the
  * "Produits" page fills a dedicated purchase form (name, phone, quantity,
- * notes) which is stored here. The admin sees them in the "Produits" admin
- * panel and can contact the customer directly.
+ * delivery info) which is stored here. The admin sees them in the "Produits"
+ * admin panel and can contact the customer directly.
  */
 
 import { getStore, type Store } from "@netlify/blobs";
 import type { LocalizedText } from "@/lib/localize";
+import type { DeliveryInfo } from "@/lib/order-flows";
 
 export interface ProductOrder {
   id: string;
@@ -19,7 +20,8 @@ export interface ProductOrder {
   customerName: string;
   phone: string;
   quantity: number;
-  notes?: string;
+  /** Delivery chosen by the customer (same options as the order form). */
+  delivery: DeliveryInfo;
   locale: string;
 }
 

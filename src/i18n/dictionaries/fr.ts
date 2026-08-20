@@ -318,8 +318,8 @@ const fr = {
     phone: "Téléphone",
     phonePlaceholder: "06 XX XX XX XX",
     quantity: "Quantité",
-    notes: "Remarque (optionnel)",
-    notesPlaceholder: "Une précision sur votre commande ?",
+    deliveryUnconfigured:
+      "Les données de livraison ne sont pas encore configurées.",
     submit: "Envoyer la demande",
     sending: "Envoi...",
     error: "Une erreur est survenue. Veuillez réessayer.",

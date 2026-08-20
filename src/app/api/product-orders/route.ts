@@ -8,6 +8,8 @@ import {
 import { getProducts } from "@/lib/products-store";
 import { notifyProductOrder } from "@/lib/product-email";
 import { isAuthorized } from "@/lib/admin-auth";
+import { getSettings } from "@/lib/settings-store";
+import type { DeliveryInfo } from "@/lib/order-flows";
 import type { LocalizedText } from "@/lib/localize";
 
 export const runtime = "nodejs";
@@ -15,6 +17,36 @@ export const dynamic = "force-dynamic";
 
 function clean(v: unknown, max = 300): string {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
+}
+
+/**
+ * Validates the delivery payload and computes the delivery fee from the
+ * manually configured catalogs — same rules as POST /api/orders.
+ */
+async function sanitizeDelivery(raw: unknown): Promise<DeliveryInfo | undefined> {
+  if (!raw || typeof raw !== "object") return undefined;
+  const d = raw as Record<string, unknown>;
+  const method =
+    d.method === "courier" ? "courier" : d.method === "pickup" ? "pickup" : undefined;
+  if (!method) return undefined;
+  if (method === "pickup") return { method, fee: 0 };
+
+  const option = d.option === "home" ? "home" : "office";
+  const address = clean(d.address, 500);
+  const wilayaId = Number(d.wilayaId) || undefined;
+  const settings = await getSettings();
+  const wilaya =
+    wilayaId != null
+      ? settings.delivery.wilayas.find((w) => w.id === wilayaId)
+      : undefined;
+
+  if (option === "office") {
+    const fee = wilaya?.stopDeskFee ?? settings.delivery.homeFee;
+    return { method, option, wilayaId, address, fee };
+  }
+
+  const fee = wilaya?.homeFee ?? settings.delivery.homeFee;
+  return { method, option, wilayaId, address, fee };
 }
 
 // POST /api/product-orders — public. Records a product purchase request
@@ -32,7 +64,6 @@ export async function POST(request: Request) {
   const customerName = clean(payload.customerName, 120);
   const phone = clean(payload.phone, 30);
   const quantity = Math.max(1, Math.round(Number(payload.quantity) || 1));
-  const notes = clean(payload.notes, 1000);
   const locale = clean(payload.locale, 5) || "fr";
 
   if (!productSlug || !customerName || !phone) {
@@ -48,6 +79,8 @@ export async function POST(request: Request) {
         }
       : { fr: "", en: "", ar: "" };
 
+  const delivery = await sanitizeDelivery(payload.delivery);
+
   const order: ProductOrder = {
     id: `PO-${Date.now()}`,
     createdAt: new Date().toISOString(),
@@ -56,7 +89,7 @@ export async function POST(request: Request) {
     customerName,
     phone,
     quantity,
-    notes: notes || undefined,
+    delivery: delivery ?? { method: "pickup", fee: 0 },
     locale,
   };
 

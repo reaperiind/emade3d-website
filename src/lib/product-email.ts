@@ -39,6 +39,13 @@ export function productLabel(product: Product | undefined, locale: string): stri
   return localized(product.name, locale as "fr" | "en" | "ar") || product.slug;
 }
 
+function deliveryLabel(order: ProductOrder): string {
+  const d = order.delivery;
+  if (!d || d.method === "pickup") return "Retrait sur place";
+  if (d.option === "home") return `Livraison à domicile${d.address ? ` — ${d.address}` : ""}`;
+  return `Bureau du coursier${d.wilayaId != null ? ` — wilaya ${d.wilayaId}` : ""}`;
+}
+
 export async function notifyProductOrder(
   order: ProductOrder,
   product?: Product
@@ -62,7 +69,7 @@ export async function notifyProductOrder(
     `Client : ${order.customerName}`,
     `Téléphone : ${order.phone}`,
     `Quantité : ${order.quantity}`,
-    order.notes ? `Remarque : ${order.notes}` : "",
+    `Livraison : ${deliveryLabel(order)}`,
     "",
     `Consulter dans l'admin : ${ADMIN_URL}`,
   ]
@@ -101,11 +108,10 @@ export async function notifyProductOrder(
                   <td style="padding:12px 16px;border-bottom:1px solid #eef1f5;color:#5b6470;font-size:13px;white-space:nowrap;">Quantité</td>
                   <td style="padding:12px 16px;border-bottom:1px solid #eef1f5;color:#101828;font-size:13px;font-weight:600;">${order.quantity}</td>
                 </tr>
-                ${order.notes ? `
                 <tr>
-                  <td style="padding:12px 16px;color:#5b6470;font-size:13px;white-space:nowrap;">Remarque</td>
-                  <td style="padding:12px 16px;color:#101828;font-size:13px;font-weight:600;">${esc(order.notes)}</td>
-                </tr>` : ""}
+                  <td style="padding:12px 16px;color:#5b6470;font-size:13px;white-space:nowrap;">Livraison</td>
+                  <td style="padding:12px 16px;color:#101828;font-size:13px;font-weight:600;">${esc(deliveryLabel(order))}</td>
+                </tr>
               </table>
               <div style="margin-top:24px;text-align:center;">
                 <a href="${ADMIN_URL}" target="_blank" rel="noopener" style="display:inline-block;background:#2563eb;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:13px 32px;border-radius:10px;">

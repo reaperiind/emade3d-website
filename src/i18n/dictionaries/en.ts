@@ -317,8 +317,8 @@ const en: Dictionary = {
     phone: "Phone",
     phonePlaceholder: "06 XX XX XX XX",
     quantity: "Quantity",
-    notes: "Note (optional)",
-    notesPlaceholder: "Any detail about your order?",
+    deliveryUnconfigured:
+      "Delivery data is not configured yet.",
     submit: "Send request",
     sending: "Sending...",
     error: "Something went wrong. Please try again.",

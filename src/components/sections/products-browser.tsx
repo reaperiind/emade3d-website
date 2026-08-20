@@ -127,7 +127,7 @@ export function ProductsBrowser() {
       {buying && (
         <PurchaseForm
           product={buying}
-          currency={currency}
+          settings={settings}
           onClose={() => setBuying(null)}
         />
       )}
@@ -137,18 +137,57 @@ export function ProductsBrowser() {
 
 function PurchaseForm({
   product,
-  currency,
+  settings,
   onClose,
 }: {
   product: Product;
-  currency: string;
+  settings: SiteSettings | null;
   onClose: () => void;
 }) {
   const { locale, t } = useI18n();
   const pr = t.products;
+  const q = t.quote;
+  const currency = settings?.currency ?? "DA";
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+
+  const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "courier">("pickup");
+  const [courierOption, setCourierOption] = useState<"office" | "home">("office");
+  const [wilayaId, setWilayaId] = useState<number | null>(null);
+  const [address, setAddress] = useState("");
+
+  const wilayas = useMemo(
+    () => settings?.delivery.wilayas ?? [],
+    [settings]
+  );
+  const hasDeliveryData = wilayas.length > 0;
+
+  const deliveryFee = useMemo(() => {
+    if (deliveryMethod === "pickup") return 0;
+    const wilaya =
+      wilayaId == null ? undefined : wilayas.find((w) => w.id === wilayaId);
+    if (courierOption === "office") {
+      return wilaya?.stopDeskFee ?? settings?.delivery.homeFee ?? 0;
+    }
+    return wilaya?.homeFee ?? settings?.delivery.homeFee ?? 0;
+  }, [deliveryMethod, courierOption, wilayaId, wilayas, settings]);
+
+  function buildDeliveryPayload() {
+    if (deliveryMethod === "pickup") return { method: "pickup" as const };
+    return {
+      method: "courier" as const,
+      option: courierOption,
+      ...(wilayaId != null ? { wilayaId } : {}),
+      ...(courierOption === "home" ? { address } : {}),
+    };
+  }
+
+  const feeDisplay = deliveryMethod === "courier" && !hasDeliveryData
+    ? "—"
+    : deliveryFee === 0
+      ? q.deliveryFree
+      : `${deliveryFee} ${currency}`;
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -165,7 +204,7 @@ function PurchaseForm({
           customerName: String(fd.get("name") ?? "").trim(),
           phone: String(fd.get("phone") ?? "").trim(),
           quantity: Number(fd.get("quantity") ?? 1),
-          notes: String(fd.get("notes") ?? "").trim(),
+          delivery: buildDeliveryPayload(),
           locale,
         }),
       });
@@ -268,16 +307,102 @@ function PurchaseForm({
                   className={inputClass}
                 />
               </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-steel-400">
-                  {pr.notes}
-                </label>
-                <textarea
-                  name="notes"
-                  rows={3}
-                  placeholder={pr.notesPlaceholder}
-                  className={inputClass}
-                />
+
+              {/* Delivery */}
+              <div className="space-y-3 rounded-lg border border-white/10 bg-ink-900/50 p-4">
+                <p className="text-sm font-semibold text-white">{q.delivery}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <DeliveryCard
+                    active={deliveryMethod === "pickup"}
+                    onClick={() => setDeliveryMethod("pickup")}
+                    title={q.deliveryPickup}
+                    meta={q.deliveryFree}
+                  />
+                  <DeliveryCard
+                    active={deliveryMethod === "courier"}
+                    onClick={() => setDeliveryMethod("courier")}
+                    title={q.deliveryCourier}
+                    meta={
+                      deliveryMethod === "courier"
+                        ? feeDisplay
+                        : "—"
+                    }
+                  />
+                </div>
+
+                {deliveryMethod === "courier" && (
+                  <>
+                    <div>
+                      <p className="mb-1.5 text-sm font-medium text-steel-300">
+                        {q.deliveryOption}
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <OptionRadio
+                          active={courierOption === "office"}
+                          onClick={() => setCourierOption("office")}
+                          label={q.deliveryOffice}
+                        />
+                        <OptionRadio
+                          active={courierOption === "home"}
+                          onClick={() => setCourierOption("home")}
+                          label={q.deliveryHome}
+                        />
+                      </div>
+                    </div>
+
+                    {hasDeliveryData ? (
+                      <>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-steel-400">
+                            {q.deliveryWilaya} *
+                          </label>
+                          <select
+                            required
+                            value={wilayaId ?? ""}
+                            onChange={(e) =>
+                              setWilayaId(e.target.value ? Number(e.target.value) : null)
+                            }
+                            className={cn(inputClass, "appearance-none")}
+                          >
+                            <option value="" disabled>
+                              {q.deliverySelectWilaya}
+                            </option>
+                            {wilayas.map((w) => (
+                              <option key={w.id} value={w.id}>
+                                {locale === "ar" && w.nameAr ? w.nameAr : w.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {courierOption === "home" && (
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-steel-400">
+                              {q.deliveryAddress} *
+                            </label>
+                            <textarea
+                              required
+                              rows={2}
+                              value={address}
+                              onChange={(e) => setAddress(e.target.value)}
+                              placeholder={q.deliveryAddressPlaceholder}
+                              className={cn(inputClass, "resize-none")}
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="rounded-lg bg-ink-800/60 px-3 py-3 text-xs text-steel-400">
+                        {pr.deliveryUnconfigured}
+                      </p>
+                    )}
+                  </>
+                )}
+
+                <div className="flex items-center justify-between rounded-lg bg-ink-800 px-4 py-3 text-sm">
+                  <span className="text-steel-400">{q.deliveryFee}</span>
+                  <span className="font-semibold text-white">{feeDisplay}</span>
+                </div>
               </div>
             </div>
 
@@ -298,5 +423,73 @@ function PurchaseForm({
         )}
       </div>
     </div>
+  );
+}
+
+function DeliveryCard({
+  active,
+  onClick,
+  title,
+  meta,
+}: {
+  active: boolean;
+  onClick: () => void;
+  title: string;
+  meta: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-lg border p-3 text-start transition",
+        active
+          ? "border-accent/60 bg-accent-dim"
+          : "border-white/10 bg-ink-800 hover:border-white/20"
+      )}
+    >
+      <span className="block text-sm font-semibold text-white">{title}</span>
+      <span
+        className={cn(
+          "mt-1.5 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold",
+          active ? "bg-accent/20 text-accent" : "bg-ink-700 text-steel-300"
+        )}
+      >
+        {meta}
+      </span>
+    </button>
+  );
+}
+
+function OptionRadio({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition",
+        active
+          ? "border-accent/60 bg-accent-dim text-white"
+          : "border-white/10 bg-ink-800 text-steel-300 hover:border-white/20"
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-4 w-4 items-center justify-center rounded-full border",
+          active ? "border-accent" : "border-steel-500"
+        )}
+      >
+        {active && <span className="h-2 w-2 rounded-full bg-accent" />}
+      </span>
+      {label}
+    </button>
   );
 }
