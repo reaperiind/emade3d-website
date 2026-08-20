@@ -183,7 +183,7 @@ const en: Dictionary = {
     description: "Detailed order description",
     descriptionPlaceholder: "Describe your project in detail here...",
     filesTitle: "Project file(s) (optional)",
-    filesHint: "STL, OBJ, STEP, IGES, 3MF, PDF or ZIP — 20 MB max per file.",
+    filesHint: "STL, OBJ, STEP, IGES, 3MF, PDF, ZIP, PNG, JPG, WebP or GIF — 20 MB max per file.",
     filesChoose: "Add files",
     filesRemove: "Remove",
     filesTooLarge: "File is too large (20 MB max).",

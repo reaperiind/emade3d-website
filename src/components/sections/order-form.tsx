@@ -33,9 +33,17 @@ const ACCEPT = [
   ".sldprt",
   ".pdf",
   ".zip",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".gif",
 ].join(",");
 
-const FILE_EXT_RE = /\.(stl|obj|step|stp|iges|igs|3mf|sldprt|pdf|zip)$/i;
+const FILE_EXT_RE =
+  /\.(stl|obj|step|stp|iges|igs|3mf|sldprt|pdf|zip|png|jpg|jpeg|webp|gif)$/i;
+
+const IMAGE_EXT_RE = /\.(png|jpg|jpeg|webp|gif)$/i;
 
 const inputClass =
   "w-full rounded-md border border-white/12 bg-ink-900 px-4 py-3 text-sm text-white placeholder:text-steel-500 transition focus:border-accent/60 focus:outline-none";
@@ -67,6 +75,18 @@ export function OrderForm() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const codeRef = useRef<HTMLDivElement>(null);
+
+  const imagePreviews = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const file of selectedFiles) {
+      if (IMAGE_EXT_RE.test(file.name)) {
+        map.set(file.name, URL.createObjectURL(file));
+      }
+    }
+    return map;
+    // Recreate only when the selection changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFiles]);
 
   const [deliverySettings, setDeliverySettings] = useState<SiteSettings | null>(
     null
@@ -635,13 +655,24 @@ export function OrderForm() {
                   key={`${file.name}-${index}`}
                   className="flex items-center justify-between gap-3 rounded-lg bg-ink-800 px-3 py-2"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-white">
-                      {file.name}
-                    </p>
-                    <p className="text-xs text-steel-400">
-                      {formatBytes(file.size)}
-                    </p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    {IMAGE_EXT_RE.test(file.name) && (
+                      <span className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-white/10 bg-ink-700">
+                        <img
+                          src={imagePreviews.get(file.name)}
+                          alt={file.name}
+                          className="h-full w-full object-cover"
+                        />
+                      </span>
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-white">
+                        {file.name}
+                      </p>
+                      <p className="text-xs text-steel-400">
+                        {formatBytes(file.size)}
+                      </p>
+                    </div>
                   </div>
                   <button
                     type="button"

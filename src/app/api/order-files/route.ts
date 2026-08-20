@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ALLOWED_EXT_RE =
-  /\.(stl|obj|step|stp|iges|igs|3mf|sldprt|pdf|zip)$/i;
+  /\.(stl|obj|step|stp|iges|igs|3mf|sldprt|pdf|zip|png|jpg|jpeg|webp|gif)$/i;
 
 // POST /api/order-files — public, uploads the design files attached to an
 // order. Validates extension + size, stores each as a blob and returns the

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Order, OrderStatus } from "@/lib/orders-store";
 import { statusesFor } from "@/lib/order-flows";
 import { cn } from "@/lib/cn";
@@ -55,6 +55,8 @@ const STATUS_STYLES: Record<string, string> = {
   done: "border-emerald-300 bg-emerald-50 text-emerald-700",
   cancelled: "border-red-300 bg-red-50 text-red-600",
 };
+
+const IMAGE_EXT_RE = /\.(png|jpg|jpeg|webp|gif)$/i;
 
 const WA_LABELS: Record<string, Record<string, string>> = {
   fr: {
@@ -222,7 +224,39 @@ function OrderCard({
     String(order.delivery?.fee ?? 0)
   );
   const [savedFlash, setSavedFlash] = useState(false);
+  const [previews, setPreviews] = useState<Record<string, string>>({});
+  const [viewer, setViewer] = useState<string | null>(null);
   const waPhoneNumber = waPhone(order);
+
+  const imageFiles = (order.files ?? []).filter((f) => IMAGE_EXT_RE.test(f.name));
+
+  // Load thumbnails for attached images (fetch requires the admin token).
+  useEffect(() => {
+    let cancelled = false;
+    for (const file of imageFiles) {
+      if (previews[file.key]) continue;
+      fetch(`/api/order-files/${encodeURIComponent(file.key)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("load_failed");
+          return res.blob();
+        })
+        .then((blob) => {
+          if (!cancelled) {
+            setPreviews((prev) => ({
+              ...prev,
+              [file.key]: URL.createObjectURL(blob),
+            }));
+          }
+        })
+        .catch(() => undefined);
+    }
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order.code]);
   const hasUnsaved =
     priceDraft.trim() === ""
       ? order.price != null
@@ -408,13 +442,31 @@ function OrderCard({
                 key={file.key}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
               >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-800">
-                    {file.name}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {formatBytes(file.size)}
-                  </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  {IMAGE_EXT_RE.test(file.name) &&
+                    (previews[file.key] ? (
+                      <button
+                        type="button"
+                        onClick={() => setViewer(previews[file.key])}
+                        className="shrink-0 overflow-hidden rounded-md border border-slate-200 transition hover:opacity-80"
+                      >
+                        <img
+                          src={previews[file.key]}
+                          alt={file.name}
+                          className="h-12 w-12 object-cover"
+                        />
+                      </button>
+                    ) : (
+                      <span className="h-12 w-12 shrink-0 animate-pulse rounded-md border border-slate-200 bg-slate-200" />
+                    ))}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-800">
+                      {file.name}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {formatBytes(file.size)}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -487,6 +539,21 @@ function OrderCard({
           Enregistrer
         </button>
       </div>
+
+      {/* Image viewer */}
+      {viewer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setViewer(null)}
+        >
+          <img
+            src={viewer}
+            alt="Aperçu"
+            className="max-h-full max-w-full rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </li>
   );
 }

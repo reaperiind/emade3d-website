@@ -182,7 +182,7 @@ const fr = {
     descriptionPlaceholder: "Décrivez votre projet en détail ici...",
     filesTitle: "Fichier(s) du projet (optionnel)",
     filesHint:
-      "STL, OBJ, STEP, IGES, 3MF, PDF ou ZIP — 20 Mo max par fichier.",
+      "STL, OBJ, STEP, IGES, 3MF, PDF, ZIP, PNG, JPG, WebP ou GIF — 20 Mo max par fichier.",
     filesChoose: "Ajouter des fichiers",
     filesRemove: "Retirer",
     filesTooLarge: "Fichier trop volumineux (20 Mo max).",

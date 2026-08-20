@@ -48,6 +48,8 @@ const ALLOWED_EXT = new Set([
   "png",
   "jpg",
   "jpeg",
+  "webp",
+  "gif",
 ]);
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -64,10 +66,12 @@ const CONTENT_TYPES: Record<string, string> = {
   png: "image/png",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
 };
 
 export function sanitizeOrderFileKey(key: string): string | null {
-  return /^[a-z0-9-]+\.(stl|obj|step|stp|iges|igs|3mf|sldprt|pdf|zip|png|jpg|jpeg)$/i.test(
+  return /^[a-z0-9-]+\.(stl|obj|step|stp|iges|igs|3mf|sldprt|pdf|zip|png|jpg|jpeg|webp|gif)$/i.test(
     key
   )
     ? key.toLowerCase()

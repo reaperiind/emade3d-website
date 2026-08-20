@@ -181,7 +181,7 @@ const ar: Dictionary = {
     description: "الوصف التفصيلي للطلب",
     descriptionPlaceholder: "صفوا مشروعكم بالتفصيل هنا...",
     filesTitle: "ملف(ات) المشروع (اختياري)",
-    filesHint: "STL أو OBJ أو STEP أو IGES أو 3MF أو PDF أو ZIP — 20 ميغا كحد أقصى لكل ملف.",
+    filesHint: "STL أو OBJ أو STEP أو IGES أو 3MF أو PDF أو ZIP أو PNG أو JPG أو WebP أو GIF — 20 ميغا كحد أقصى لكل ملف.",
     filesChoose: "إضافة ملفات",
     filesRemove: "إزالة",
     filesTooLarge: "الملف كبير جداً (20 ميغا كحد أقصى).",
