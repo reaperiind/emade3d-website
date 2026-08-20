@@ -86,6 +86,7 @@ export function PortfolioBrowser() {
                 <ProjectCard
                   project={project}
                   className="h-full"
+                  minimal
                   onImageClick={
                     cover && indexInGallery !== -1
                       ? () => setLightboxIndex(indexInGallery)
