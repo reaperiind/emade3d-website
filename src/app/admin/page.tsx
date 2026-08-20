@@ -193,6 +193,17 @@ export default function AdminPage() {
     patchOrder(code, { history });
   }
 
+  function removeHistoryAt(code: string, index: number) {
+    const order = orders.find((o) => o.code === code);
+    if (!order || order.history.length <= 1) return;
+    const history = order.history.filter((_, i) => i !== index);
+    const status = history[history.length - 1].status;
+    setOrders((prev) =>
+      prev.map((o) => (o.code === code ? { ...o, history, status } : o))
+    );
+    patchOrder(code, { history, status });
+  }
+
   function setFiles(code: string, files: Order["files"]) {
     setOrders((prev) =>
       prev.map((o) => (o.code === code ? { ...o, files } : o))
@@ -311,6 +322,7 @@ export default function AdminPage() {
               onPrice={setPrice}
               onDeliveryFee={setDeliveryFee}
               onHistoryAt={setHistoryAt}
+              onHistoryRemove={removeHistoryAt}
               onDelete={onDelete}
               onFilesChange={setFiles}
             />

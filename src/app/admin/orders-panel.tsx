@@ -152,6 +152,7 @@ export function OrdersPanel({
   onPrice,
   onDeliveryFee,
   onHistoryAt,
+  onHistoryRemove,
   onDelete,
   onFilesChange,
 }: {
@@ -162,6 +163,7 @@ export function OrdersPanel({
   onPrice: (code: string, raw: string) => void;
   onDeliveryFee: (code: string, raw: string) => void;
   onHistoryAt: (code: string, index: number, value: string) => void;
+  onHistoryRemove: (code: string, index: number) => void;
   onDelete: (code: string) => void;
   onFilesChange: (code: string, files: Order["files"]) => void;
 }) {
@@ -186,6 +188,7 @@ export function OrdersPanel({
               onPrice={onPrice}
               onDeliveryFee={onDeliveryFee}
               onHistoryAt={onHistoryAt}
+              onHistoryRemove={onHistoryRemove}
               onDelete={onDelete}
               onFilesChange={onFilesChange}
             />
@@ -203,6 +206,7 @@ function OrderCard({
   onPrice,
   onDeliveryFee,
   onHistoryAt,
+  onHistoryRemove,
   onDelete,
   onFilesChange,
 }: {
@@ -212,6 +216,7 @@ function OrderCard({
   onPrice: (code: string, raw: string) => void;
   onDeliveryFee: (code: string, raw: string) => void;
   onHistoryAt: (code: string, index: number, value: string) => void;
+  onHistoryRemove: (code: string, index: number) => void;
   onDelete: (code: string) => void;
   onFilesChange: (code: string, files: Order["files"]) => void;
 }) {
@@ -506,12 +511,24 @@ function OrderCard({
               <span className="text-sm font-medium text-slate-800">
                 {STATUS_LABELS[entry.status] ?? entry.status}
               </span>
-              <input
-                type="datetime-local"
-                value={toLocalInput(entry.at)}
-                onChange={(e) => onHistoryAt(order.code, index, e.target.value)}
-                className={cn(inputClass, "py-1")}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="datetime-local"
+                  value={toLocalInput(entry.at)}
+                  onChange={(e) => onHistoryAt(order.code, index, e.target.value)}
+                  className={cn(inputClass, "py-1")}
+                />
+                {index < order.history.length - 1 && (
+                  <button
+                    type="button"
+                    aria-label={`Supprimer l'étape ${STATUS_LABELS[entry.status] ?? entry.status}`}
+                    onClick={() => onHistoryRemove(order.code, index)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-400 transition hover:border-red-300 hover:text-red-500"
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             </li>
           ))}
         </ul>
