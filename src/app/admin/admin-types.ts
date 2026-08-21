@@ -35,25 +35,25 @@ export interface AdminSettings {
   };
 }
 
-/** Light-theme shared input styling used across admin panels. */
+/** Shared admin styling — warm cream + amber (DZBuild-style dashboard). */
 export const inputClass =
-  "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 shadow-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20";
+  "w-full rounded-xl border border-[#e6d9bf] bg-white px-3.5 py-2.5 text-sm text-[#2b2b46] placeholder:text-[#b3ab9c] shadow-[0_1px_2px_rgba(27,26,45,0.04)] transition focus:border-[#f7a921] focus:outline-none focus:ring-4 focus:ring-[#f7a921]/15";
 
-export const labelClass = "mb-1 block text-xs font-medium text-slate-500";
+export const labelClass = "mb-1.5 block text-xs font-semibold text-[#6b6878]";
 
 export const panelCard =
-  "rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6";
+  "rounded-[20px] border border-[#f0e6d2] bg-white p-5 shadow-[0_6px_20px_rgba(27,26,45,0.05)] sm:p-6";
 
 export const panelHeading =
-  "font-display text-lg font-semibold text-slate-900";
+  "font-display text-lg font-bold text-[#2b2b46]";
 
-export const panelMuted = "mt-1 text-sm leading-relaxed text-slate-500";
+export const panelMuted = "mt-1 text-sm leading-relaxed text-[#6b6878]";
 
 export const saveButton =
-  "inline-flex items-center justify-center gap-1.5 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50";
+  "inline-flex items-center justify-center gap-1.5 rounded-full bg-dzb-amber px-5 py-2.5 text-sm font-bold text-dzb-inkdark shadow-[0_8px_20px_-8px_rgba(247,169,33,0.8)] transition hover:bg-dzb-amberdeep disabled:opacity-50";
 
 export const secondaryButton =
-  "inline-flex items-center justify-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-accent hover:text-accent disabled:opacity-50";
+  "inline-flex items-center justify-center gap-1.5 rounded-full border-2 border-dzb-navy/15 bg-white px-4 py-2.5 text-sm font-semibold text-dzb-navy transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-50";
 
 export const dangerButton =
-  "inline-flex items-center justify-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100 disabled:opacity-50";
+  "inline-flex items-center justify-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:opacity-50";

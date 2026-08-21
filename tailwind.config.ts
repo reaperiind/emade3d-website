@@ -31,6 +31,20 @@ const config: Config = {
           500: "#6B7684",
           600: "#4A525F",
         },
+        // Admin dashboard palette (DZBuild-style warm cream + amber)
+        dzb: {
+          amber: "#f7a921",
+          amberdeep: "#e8940a",
+          amberink: "#c47b06",
+          inkdark: "#141119",
+          navy: "#2b2b46",
+          muted: "#6b6878",
+          faint: "#9a97a6",
+          cream: "#fff8ec",
+          creamline: "#f0e6d2",
+          sand: "#ffe9c4",
+          tint: "#fff4e0",
+        },
       },
       fontFamily: {
         display: ["var(--font-display)", "var(--font-arabic)", "system-ui", "sans-serif"],

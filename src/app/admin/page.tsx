@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
   type FormEvent,
+  type ReactNode,
 } from "react";
 import { LogoMark, LogOutIcon } from "@/components/ui/icons";
 import type { Order, OrderStatus } from "@/lib/orders-store";
@@ -16,21 +17,67 @@ import { DeliverySettingsPanel } from "./delivery-settings-panel";
 import { InfoSettingsPanel } from "./info-settings-panel";
 import { GalleryPanel } from "./gallery-panel";
 import { ProductsPanel } from "./products-panel";
-import {
-  inputClass,
-  labelClass,
-  panelCard,
-  saveButton,
-} from "./admin-types";
 
 const TOKEN_KEY = "emade3d-admin-token";
 
 const NAV_ITEMS = [
-  { id: "orders", label: "Commandes", icon: "📦", hint: "Suivi des projets" },
-  { id: "products", label: "Produits", icon: "🛍️", hint: "Boutique & demandes" },
-  { id: "settings", label: "Livraison", icon: "🚚", hint: "Wilayas, communes, frais" },
-  { id: "info", label: "Informations", icon: "ℹ️", hint: "Contact, réseaux sociaux" },
-  { id: "gallery", label: "Galerie", icon: "🖼️", hint: "Réalisations" },
+  {
+    id: "orders",
+    label: "Commandes",
+    hint: "Suivi des projets",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+        <path d="M21 8l-9-5-9 5v8l9 5 9-5V8z" strokeLinejoin="round" />
+        <path d="M3.3 8.3L12 13l8.7-4.7M12 13v9" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    id: "products",
+    label: "Produits",
+    hint: "Boutique & demandes",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+        <path d="M6 7h12l1.5 12.5a1.5 1.5 0 01-1.5 1.5H6a1.5 1.5 0 01-1.5-1.5L6 7z" strokeLinejoin="round" />
+        <path d="M9 10V6a3 3 0 016 0v4" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: "settings",
+    label: "Livraison",
+    hint: "Wilayas, communes, frais",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+        <path d="M2 7h11v10H2zM13 10h4l4 3.5V17h-8" strokeLinejoin="round" />
+        <circle cx="6.5" cy="17.5" r="1.8" />
+        <circle cx="16.5" cy="17.5" r="1.8" />
+      </svg>
+    ),
+  },
+  {
+    id: "info",
+    label: "Informations",
+    hint: "Contact, réseaux sociaux",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 11v5M12 7.5v.5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: "gallery",
+    label: "Galerie",
+    hint: "Réalisations",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+        <rect x="3" y="4" width="18" height="16" rx="2.5" />
+        <circle cx="9" cy="10" r="1.6" />
+        <path d="M3 17l5.2-4.6a1.5 1.5 0 012 0L15 17m-2.8-2.5l2-1.8a1.5 1.5 0 012 0L21 16.5" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
 ] as const;
 
 type NavId = (typeof NAV_ITEMS)[number]["id"];
@@ -231,21 +278,27 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
+    <div className="min-h-screen bg-dzb-cream text-dzb-navy">
+      {/* Top bar */}
+      <header className="sticky top-0 z-20 border-b border-dzb-creamline bg-white/85 backdrop-blur-md">
         <div className="container-site flex h-16 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-white">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-dzb-amber to-dzb-amberdeep text-white shadow-[0_8px_18px_-8px_rgba(247,169,33,0.9)]">
               <LogoMark className="h-5 w-5" />
             </span>
-            <span className="font-display text-lg font-bold text-slate-900">
-              Emade3D <span className="text-accent">Admin</span>
-            </span>
+            <div className="leading-tight">
+              <p className="font-display text-base font-bold text-dzb-navy">
+                Emade3D <span className="text-dzb-amberink">Admin</span>
+              </p>
+              <p className="text-[11px] font-medium text-dzb-faint">
+                Tableau de bord
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={logout}
-            className="flex items-center gap-1.5 text-sm text-slate-500 transition hover:text-slate-900"
+            className="inline-flex items-center gap-1.5 rounded-full border-2 border-dzb-navy/10 bg-white px-4 py-2 text-sm font-semibold text-dzb-muted transition hover:border-red-300 hover:text-red-600"
           >
             <LogOutIcon className="h-4 w-4" />
             Déconnexion
@@ -253,92 +306,105 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 sm:px-6">
-        {/* Left sidebar */}
-        <aside className="hidden w-56 shrink-0 md:block">
-          <nav
-            className={cn(
-              panelCard,
-              "sticky top-24 space-y-1 p-3"
-            )}
-          >
-            <p className="px-2 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+      <div className="container-site flex max-w-7xl gap-6 px-4 py-6 sm:px-6">
+        {/* Sidebar */}
+        <aside className="hidden w-64 shrink-0 md:block">
+          <nav className="sticky top-24 space-y-1.5 rounded-[20px] border border-dzb-creamline bg-white p-3 shadow-[0_6px_20px_rgba(27,26,45,0.05)]">
+            <p className="px-3 pb-1 pt-1 text-[11px] font-bold uppercase tracking-widest text-dzb-faint">
               Espace admin
             </p>
+            {NAV_ITEMS.map((item) => {
+              const active = nav === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setNav(item.id)}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition",
+                    active
+                      ? "bg-dzb-tint shadow-[inset_0_0_0_1px_rgba(247,169,33,0.35)]"
+                      : "hover:bg-dzb-cream"
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition",
+                      active
+                        ? "bg-gradient-to-br from-dzb-amber to-dzb-amberdeep text-white shadow-[0_8px_16px_-8px_rgba(247,169,33,0.9)]"
+                        : "bg-dzb-cream text-dzb-muted"
+                    )}
+                  >
+                    {item.icon}
+                  </span>
+                  <span className="min-w-0">
+                    <span
+                      className={cn(
+                        "block text-sm font-bold",
+                        active ? "text-dzb-navy" : "text-dzb-muted"
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                    <span className="block truncate text-xs text-dzb-faint">
+                      {item.hint}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        {/* Main column */}
+        <main className="min-w-0 flex-1">
+          {/* Mobile nav */}
+          <div className="mb-4 flex flex-wrap gap-2 md:hidden">
             {NAV_ITEMS.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => setNav(item.id)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition",
+                  "rounded-full border px-3.5 py-1.5 text-sm font-semibold transition",
                   nav === item.id
-                    ? "bg-accent text-white shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    ? "border-transparent bg-gradient-to-br from-dzb-amber to-dzb-amberdeep text-white shadow-[0_8px_16px_-8px_rgba(247,169,33,0.9)]"
+                    : "border-dzb-creamline bg-white text-dzb-muted"
                 )}
               >
-                <span
-                  aria-hidden
-                  className={cn(
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-lg",
-                    nav === item.id
-                      ? "bg-white/15"
-                      : "bg-slate-100"
-                  )}
-                >
-                  {item.icon}
-                </span>
-                <span className="min-w-0">
-                  <span className="block">{item.label}</span>
-                  <span
-                    className={cn(
-                      "block truncate text-xs",
-                      nav === item.id ? "text-white/80" : "text-slate-400"
-                    )}
-                  >
-                    {item.hint}
-                  </span>
-                </span>
+                {item.label}
               </button>
             ))}
-          </nav>
-        </aside>
-
-        {/* Mobile nav */}
-        <div className="mb-4 flex flex-wrap gap-2 md:hidden">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setNav(item.id)}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-sm transition",
-                nav === item.id
-                  ? "border-accent bg-accent text-white"
-                  : "border-slate-300 bg-white text-slate-600"
-              )}
-            >
-              {item.icon} {item.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Main content */}
-        <main className="min-w-0 flex-1">
-          <div className="mb-5">
-            <span className="inline-flex items-center gap-2.5 rounded-lg bg-accent/10 px-3 py-1.5 text-sm font-semibold text-accent">
-              <span aria-hidden className="text-base">
-                {NAV_ITEMS.find((i) => i.id === nav)?.icon}
-              </span>
-              {NAV_ITEMS.find((i) => i.id === nav)?.label}
-            </span>
           </div>
+
           {nav === "orders" && (
-            <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatCard label="Toutes" value={stats.total} accent />
-              <StatCard label="En attente" value={stats.pending} />
-              <StatCard label="En cours" value={stats.inProgress} />
-              <StatCard label="Finalisées" value={stats.finished} />
+            <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+              <StatCard
+                label="Toutes"
+                value={stats.total}
+                tone="amber"
+                icon={<LogoMark className="h-5 w-5" />}
+              />
+              <StatCard
+                label="En attente"
+                value={stats.pending}
+                tone="sand"
+                icon={<ClockIcon />}
+              />
+              <StatCard
+                label="En cours"
+                value={stats.inProgress}
+                tone="blue"
+                icon={<SpinnerIcon />}
+              />
+              <StatCard
+                label="Finalisées"
+                value={stats.finished}
+                tone="green"
+                icon={<CheckIcon />}
+              />
             </div>
           )}
 
@@ -376,19 +442,38 @@ function LoginForm({
   onChange: () => void;
 }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent text-white shadow-lg">
-            <LogoMark className="h-8 w-8" />
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-dzb-cream px-4">
+      {/* Soft brand blobs */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-dzb-sand/60 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-40 right-[-6rem] h-80 w-80 rounded-full bg-dzb-tint blur-3xl"
+      />
+
+      <div className="relative w-full max-w-sm">
+        <div className="mb-7 flex flex-col items-center text-center">
+          <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-dzb-amber to-dzb-amberdeep text-white shadow-[0_18px_36px_-14px_rgba(247,169,33,0.9)]">
+            <LogoMark className="h-9 w-9" />
           </span>
-          <h1 className="mt-4 font-display text-2xl font-bold text-slate-900">
-            Emade3D <span className="text-accent">Admin</span>
+          <h1 className="mt-5 font-display text-2xl font-bold text-dzb-navy">
+            Emade3D <span className="text-dzb-amberink">Admin</span>
           </h1>
-          <p className="mt-1 text-sm text-slate-500">Accès réservé</p>
+          <p className="mt-1 text-sm font-medium text-dzb-muted">
+            Espace réservé — connectez-vous pour gérer votre activité
+          </p>
         </div>
-        <form onSubmit={onLogin} className={cn(panelCard, "p-6 sm:p-8")}>
-          <label htmlFor="admin-password" className={labelClass}>
+
+        <form
+          onSubmit={onLogin}
+          className="rounded-[24px] border border-dzb-creamline bg-white p-7 shadow-[0_20px_50px_-20px_rgba(27,26,45,0.25)] sm:p-8"
+        >
+          <label
+            htmlFor="admin-password"
+            className="mb-1.5 block text-xs font-semibold text-dzb-muted"
+          >
             Mot de passe
           </label>
           <input
@@ -399,14 +484,17 @@ function LoginForm({
             autoFocus
             onChange={onChange}
             placeholder="••••••••"
-            className={cn(inputClass, "py-3")}
+            className="w-full rounded-xl border border-[#e6d9bf] bg-white px-4 py-3 text-sm text-dzb-navy placeholder:text-[#b3ab9c] transition focus:border-dzb-amber focus:outline-none focus:ring-4 focus:ring-dzb-amber/15"
           />
           {error && (
-            <p className="mt-2 text-sm text-red-600">
+            <p className="mt-3 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm font-medium text-red-600">
               Mot de passe incorrect.
             </p>
           )}
-          <button type="submit" className={cn(saveButton, "mt-5 w-full py-3")}>
+          <button
+            type="submit"
+            className="mt-5 w-full rounded-full bg-dzb-amber py-3 text-sm font-bold text-dzb-inkdark shadow-[0_10px_24px_-10px_rgba(247,169,33,0.9)] transition hover:bg-dzb-amberdeep"
+          >
             Se connecter
           </button>
         </form>
@@ -415,34 +503,74 @@ function LoginForm({
   );
 }
 
+const TONES: Record<string, { tile: string; value: string }> = {
+  amber: {
+    tile: "bg-gradient-to-br from-dzb-amber to-dzb-amberdeep text-white shadow-[0_8px_16px_-8px_rgba(247,169,33,0.9)]",
+    value: "text-dzb-navy",
+  },
+  sand: { tile: "bg-dzb-sand text-dzb-amberink", value: "text-dzb-navy" },
+  blue: { tile: "bg-[#e3ecfb] text-[#3b6fd4]", value: "text-dzb-navy" },
+  green: { tile: "bg-[#e2f5ea] text-[#1f9d61]", value: "text-dzb-navy" },
+};
+
 function StatCard({
   label,
   value,
-  accent,
+  tone = "sand",
+  icon,
 }: {
   label: string;
   value: number;
-  accent?: boolean;
+  tone?: keyof typeof TONES;
+  icon?: ReactNode;
 }) {
+  const t = TONES[tone] ?? TONES.sand;
   return (
-    <div
-      className={cn(
-        panelCard,
-        "p-4",
-        accent && "border-accent/40 bg-accent/5"
+    <div className="flex items-center gap-3.5 rounded-[20px] border border-dzb-creamline bg-white p-4 shadow-[0_6px_20px_rgba(27,26,45,0.05)] sm:p-5">
+      {icon && (
+        <span
+          aria-hidden
+          className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+            t.tile
+          )}
+        >
+          {icon}
+        </span>
       )}
-    >
-      <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
-        {label}
-      </p>
-      <p
-        className={cn(
-          "mt-1 font-display text-3xl font-bold",
-          accent ? "text-accent" : "text-slate-900"
-        )}
-      >
-        {value}
-      </p>
+      <div className="min-w-0 leading-tight">
+        <p className="truncate text-xs font-semibold text-dzb-faint">{label}</p>
+        <p className={cn("mt-0.5 font-display text-2xl font-bold sm:text-3xl", t.value)}>
+          {value}
+        </p>
+      </div>
     </div>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SpinnerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+      <path d="M12 3a9 9 0 109 9" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="3.2" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M8.5 12.2l2.4 2.4 4.6-5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

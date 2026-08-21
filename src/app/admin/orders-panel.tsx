@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import type { Order, OrderStatus } from "@/lib/orders-store";
@@ -19,26 +19,26 @@ import {
 } from "./admin-types";
 
 export const STATUS_LABELS: Record<string, string> = {
-  SUBMITTED: "Commande reçue",
-  UNDER_REVIEW: "En étude",
-  QUOTE_SENT: "Devis envoyé",
-  CONFIRMED: "Confirmée",
+  SUBMITTED: "Commande reÃ§ue",
+  UNDER_REVIEW: "En Ã©tude",
+  QUOTE_SENT: "Devis envoyÃ©",
+  CONFIRMED: "ConfirmÃ©e",
   IN_PRODUCTION: "En fabrication",
   IN_DESIGN: "En conception",
   DESIGN_APPROVAL: "Validation design",
-  QUALITY_CHECK: "Contrôle qualité",
-  READY: "Prête",
-  DELIVERED: "Livrée",
-  CLOSED: "Clôturée",
-  new: "Commande reçue",
+  QUALITY_CHECK: "ContrÃ´le qualitÃ©",
+  READY: "PrÃªte",
+  DELIVERED: "LivrÃ©e",
+  CLOSED: "ClÃ´turÃ©e",
+  new: "Commande reÃ§ue",
   processing: "En cours",
-  shipped: "Expédiée",
-  done: "Terminée",
-  cancelled: "Annulée",
+  shipped: "ExpÃ©diÃ©e",
+  done: "TerminÃ©e",
+  cancelled: "AnnulÃ©e",
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  SUBMITTED: "border-accent/40 bg-orange-50 text-accent",
+  SUBMITTED: "border-dzb-amber/40 bg-orange-50 text-dzb-amberink",
   UNDER_REVIEW: "border-sky-300 bg-sky-50 text-sky-700",
   QUOTE_SENT: "border-amber-300 bg-amber-50 text-amber-700",
   CONFIRMED: "border-emerald-300 bg-emerald-50 text-emerald-700",
@@ -48,8 +48,8 @@ const STATUS_STYLES: Record<string, string> = {
   QUALITY_CHECK: "border-sky-300 bg-sky-50 text-sky-700",
   READY: "border-emerald-300 bg-emerald-50 text-emerald-700",
   DELIVERED: "border-emerald-300 bg-emerald-50 text-emerald-700",
-  CLOSED: "border-slate-300 bg-slate-100 text-slate-600",
-  new: "border-accent/40 bg-orange-50 text-accent",
+  CLOSED: "border-[#e6d9bf] bg-[#f8f2e5] text-[#5f5975]",
+  new: "border-dzb-amber/40 bg-orange-50 text-dzb-amberink",
   processing: "border-sky-300 bg-sky-50 text-sky-700",
   shipped: "border-violet-300 bg-violet-50 text-violet-700",
   done: "border-emerald-300 bg-emerald-50 text-emerald-700",
@@ -60,17 +60,17 @@ const IMAGE_EXT_RE = /\.(png|jpg|jpeg|webp|gif)$/i;
 
 const WA_LABELS: Record<string, Record<string, string>> = {
   fr: {
-    SUBMITTED: "reçue",
-    UNDER_REVIEW: "en étude",
-    QUOTE_SENT: "devis envoyé",
-    CONFIRMED: "confirmée",
+    SUBMITTED: "reÃ§ue",
+    UNDER_REVIEW: "en Ã©tude",
+    QUOTE_SENT: "devis envoyÃ©",
+    CONFIRMED: "confirmÃ©e",
     IN_PRODUCTION: "en fabrication",
     IN_DESIGN: "en conception",
     DESIGN_APPROVAL: "en validation du design",
-    QUALITY_CHECK: "en contrôle qualité",
-    READY: "prête",
-    DELIVERED: "livrée",
-    CLOSED: "clôturée",
+    QUALITY_CHECK: "en contrÃ´le qualitÃ©",
+    READY: "prÃªte",
+    DELIVERED: "livrÃ©e",
+    CLOSED: "clÃ´turÃ©e",
   },
   en: {
     SUBMITTED: "received",
@@ -86,27 +86,27 @@ const WA_LABELS: Record<string, Record<string, string>> = {
     CLOSED: "closed",
   },
   ar: {
-    SUBMITTED: "تم استلامها",
-    UNDER_REVIEW: "قيد الدراسة",
-    QUOTE_SENT: "تم إرسال العرض",
-    CONFIRMED: "مؤكدة",
-    IN_PRODUCTION: "قيد التصنيع",
-    IN_DESIGN: "قيد التصميم",
-    DESIGN_APPROVAL: "قيد اعتماد التصميم",
-    QUALITY_CHECK: "قيد مراقبة الجودة",
-    READY: "جاهزة",
-    DELIVERED: "تم التسليم",
-    CLOSED: "مغلقة",
+    SUBMITTED: "ØªÙ… Ø§Ø³ØªÙ„Ø§Ù…Ù‡Ø§",
+    UNDER_REVIEW: "Ù‚ÙŠØ¯ Ø§Ù„Ø¯Ø±Ø§Ø³Ø©",
+    QUOTE_SENT: "ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø¹Ø±Ø¶",
+    CONFIRMED: "Ù…Ø¤ÙƒØ¯Ø©",
+    IN_PRODUCTION: "Ù‚ÙŠØ¯ Ø§Ù„ØªØµÙ†ÙŠØ¹",
+    IN_DESIGN: "Ù‚ÙŠØ¯ Ø§Ù„ØªØµÙ…ÙŠÙ…",
+    DESIGN_APPROVAL: "Ù‚ÙŠØ¯ Ø§Ø¹ØªÙ…Ø§Ø¯ Ø§Ù„ØªØµÙ…ÙŠÙ…",
+    QUALITY_CHECK: "Ù‚ÙŠØ¯ Ù…Ø±Ø§Ù‚Ø¨Ø© Ø§Ù„Ø¬ÙˆØ¯Ø©",
+    READY: "Ø¬Ø§Ù‡Ø²Ø©",
+    DELIVERED: "ØªÙ… Ø§Ù„ØªØ³Ù„ÙŠÙ…",
+    CLOSED: "Ù…ØºÙ„Ù‚Ø©",
   },
 };
 
 const WA_TEMPLATES: Record<string, (o: Order) => string> = {
   fr: (o) =>
-    `Bonjour ${o.firstName} ${o.lastName},\nvotre commande ${o.code} est passée au statut « ${WA_LABELS.fr[o.status] ?? o.status} ».\nVous pouvez la suivre ici : `,
+    `Bonjour ${o.firstName} ${o.lastName},\nvotre commande ${o.code} est passÃ©e au statut Â« ${WA_LABELS.fr[o.status] ?? o.status} Â».\nVous pouvez la suivre ici : `,
   en: (o) =>
     `Hello ${o.firstName} ${o.lastName},\nyour order ${o.code} is now ${WA_LABELS.en[o.status] ?? o.status}.\nTrack it here: `,
   ar: (o) =>
-    `مرحباً ${o.firstName} ${o.lastName}،\nأصبحت حالة طلبكم ${o.code} « ${WA_LABELS.ar[o.status] ?? o.status} ».\nيمكنكم متابعته هنا: `,
+    `Ù…Ø±Ø­Ø¨Ø§Ù‹ ${o.firstName} ${o.lastName}ØŒ\nØ£ØµØ¨Ø­Øª Ø­Ø§Ù„Ø© Ø·Ù„Ø¨ÙƒÙ… ${o.code} Â« ${WA_LABELS.ar[o.status] ?? o.status} Â».\nÙŠÙ…ÙƒÙ†ÙƒÙ… Ù…ØªØ§Ø¨Ø¹ØªÙ‡ Ù‡Ù†Ø§: `,
 };
 
 function formatBytes(bytes: number): string {
@@ -170,10 +170,10 @@ export function OrdersPanel({
   return (
     <div className="space-y-6">
       {loading ? (
-        <p className="py-10 text-center text-slate-400">Chargement…</p>
+        <p className="py-10 text-center text-[#9a97a6]">Chargementâ€¦</p>
       ) : orders.length === 0 ? (
         <p
-          className={cn(panelCard, "py-14 text-center text-slate-500")}
+          className={cn(panelCard, "py-14 text-center text-[#6b6878]")}
         >
           Aucune commande pour le moment.
         </p>
@@ -309,27 +309,27 @@ function OrderCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="font-mono text-sm font-extrabold tracking-wider text-accent">
+            <span className="font-mono text-sm font-extrabold tracking-wider text-dzb-amberink">
               {order.code}
             </span>
             <span
               className={cn(
                 "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
                 STATUS_STYLES[order.status] ??
-                  "border-slate-300 bg-slate-100 text-slate-600"
+                  "border-[#e6d9bf] bg-[#f8f2e5] text-[#5f5975]"
               )}
             >
               {STATUS_LABELS[order.status] ?? order.status}
             </span>
           </div>
-          <p className="mt-1.5 text-sm font-semibold text-slate-900">
-            {order.firstName} {order.lastName} ·{" "}
+          <p className="mt-1.5 text-sm font-semibold text-[#2b2b46]">
+            {order.firstName} {order.lastName} Â·{" "}
             <span dir="ltr">{order.phone}</span>
           </p>
-          <p className="mt-0.5 text-xs text-slate-500">
-            {new Date(order.createdAt).toLocaleString("fr-FR")} ·{" "}
+          <p className="mt-0.5 text-xs text-[#6b6878]">
+            {new Date(order.createdAt).toLocaleString("fr-FR")} Â·{" "}
             {order.serviceType.replace(/_/g, " ")}
-            {order.orderDate ? ` · ${order.orderDate}` : ""}
+            {order.orderDate ? ` Â· ${order.orderDate}` : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -356,14 +356,14 @@ function OrderCard({
                 className="flex h-7 items-center px-2 text-xs font-semibold text-green-700 transition hover:bg-green-50"
                 title="Envoyer en arabe"
               >
-                عربي
+                Ø¹Ø±Ø¨ÙŠ
               </a>
               <a
                 href={waLink(order, "fr")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-7 items-center px-2 text-xs font-semibold text-green-700 transition hover:bg-green-50"
-                title="Envoyer en français"
+                title="Envoyer en franÃ§ais"
               >
                 FR
               </a>
@@ -373,7 +373,7 @@ function OrderCard({
             type="button"
             aria-label={`Supprimer ${order.code}`}
             onClick={() => onDelete(order.code)}
-            className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-400 transition hover:border-red-300 hover:text-red-500"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-[#f0e6d2] text-[#9a97a6] transition hover:border-red-300 hover:text-red-500"
           >
             <TrashIcon className="h-4 w-4" />
           </button>
@@ -383,8 +383,8 @@ function OrderCard({
       {/* Price + delivery fee */}
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500">
-            Prix (visible du client dès « Devis envoyé »)
+          <label className="mb-1 block text-xs font-medium text-[#6b6878]">
+            Prix (visible du client dÃ¨s Â« Devis envoyÃ© Â»)
           </label>
           <input
             type="number"
@@ -392,13 +392,13 @@ function OrderCard({
             step="any"
             value={priceDraft}
             onChange={(e) => setPriceDraft(e.target.value)}
-            placeholder="—"
+            placeholder="â€”"
             className={inputClass}
           />
         </div>
         {isCourier ? (
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500">
+            <label className="mb-1 block text-xs font-medium text-[#6b6878]">
               Frais de livraison
             </label>
             <input
@@ -411,26 +411,26 @@ function OrderCard({
             />
           </div>
         ) : (
-          <p className="flex items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-500">
-            Retrait sur place — gratuit
+          <p className="flex items-center justify-center rounded-md border border-[#f0e6d2] bg-[#fdfaf3] px-3 py-1.5 text-xs text-[#6b6878]">
+            Retrait sur place â€” gratuit
           </p>
         )}
       </div>
 
       {/* Delivery summary */}
       {order.delivery && (
-        <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600">
+        <p className="mt-3 rounded-lg bg-[#fdfaf3] px-3 py-2 text-xs leading-relaxed text-[#5f5975]">
           Livraison :{" "}
           {order.delivery.method === "courier"
             ? order.delivery.option === "home"
-              ? `À domicile${order.delivery.address ? ` — ${order.delivery.address}` : ""}${order.delivery.communeName ? ` / ${order.delivery.communeName}` : ""}`
-              : `Bureau du coursier — ${order.delivery.wilayaId ?? order.delivery.officeId ?? "—"}`
+              ? `Ã€ domicile${order.delivery.address ? ` â€” ${order.delivery.address}` : ""}${order.delivery.communeName ? ` / ${order.delivery.communeName}` : ""}`
+              : `Bureau du coursier â€” ${order.delivery.wilayaId ?? order.delivery.officeId ?? "â€”"}`
             : "Retrait sur place"}
         </p>
       )}
 
       {order.description && (
-        <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-sm leading-relaxed text-slate-700">
+        <p className="mt-3 rounded-lg bg-[#fdfaf3] px-3 py-2.5 text-sm leading-relaxed text-[#4a4560]">
           {order.description}
         </p>
       )}
@@ -438,14 +438,14 @@ function OrderCard({
       {/* Attached design files */}
       {order.files && order.files.length > 0 && (
         <div className="mt-3">
-          <p className="text-xs font-medium uppercase tracking-widest text-slate-400">
+          <p className="text-xs font-medium uppercase tracking-widest text-[#9a97a6]">
             Fichiers du projet
           </p>
           <ul className="mt-2 space-y-2">
             {order.files.map((file) => (
               <li
                 key={file.key}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#f0e6d2] bg-[#fdfaf3] px-3 py-2"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   {IMAGE_EXT_RE.test(file.name) &&
@@ -453,7 +453,7 @@ function OrderCard({
                       <button
                         type="button"
                         onClick={() => setViewer(previews[file.key])}
-                        className="shrink-0 overflow-hidden rounded-md border border-slate-200 transition hover:opacity-80"
+                        className="shrink-0 overflow-hidden rounded-md border border-[#f0e6d2] transition hover:opacity-80"
                       >
                         <img
                           src={previews[file.key]}
@@ -462,13 +462,13 @@ function OrderCard({
                         />
                       </button>
                     ) : (
-                      <span className="h-12 w-12 shrink-0 animate-pulse rounded-md border border-slate-200 bg-slate-200" />
+                      <span className="h-12 w-12 shrink-0 animate-pulse rounded-md border border-[#f0e6d2] bg-[#f0e6d2]" />
                     ))}
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-800">
+                    <p className="truncate text-sm font-medium text-[#3a3550]">
                       {file.name}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-[#6b6878]">
                       {formatBytes(file.size)}
                     </p>
                   </div>
@@ -477,16 +477,16 @@ function OrderCard({
                   <button
                     type="button"
                     onClick={() => downloadFile(file.key)}
-                    className="flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 transition hover:border-accent hover:text-accent"
+                    className="flex h-8 items-center gap-1 rounded-md border border-[#f0e6d2] bg-white px-2.5 text-xs font-medium text-[#5f5975] transition hover:border-dzb-amber hover:text-dzb-amberink"
                   >
                     <DownloadIcon className="h-3.5 w-3.5" />
-                    Télécharger
+                    TÃ©lÃ©charger
                   </button>
                   <button
                     type="button"
                     aria-label={`Supprimer ${file.name}`}
                     onClick={() => deleteFile(file.key)}
-                    className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-400 transition hover:border-red-300 hover:text-red-500"
+                    className="flex h-8 w-8 items-center justify-center rounded-md border border-[#f0e6d2] text-[#9a97a6] transition hover:border-red-300 hover:text-red-500"
                   >
                     <TrashIcon className="h-3.5 w-3.5" />
                   </button>
@@ -499,16 +499,16 @@ function OrderCard({
 
       {/* History (editable timestamps) */}
       <div className="mt-4">
-        <p className="text-xs font-medium uppercase tracking-widest text-slate-400">
+        <p className="text-xs font-medium uppercase tracking-widest text-[#9a97a6]">
           Historique (date &amp; heure)
         </p>
         <ul className="mt-2 space-y-2">
           {order.history.map((entry, index) => (
             <li
               key={`${entry.status}-${index}`}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#f0e6d2] bg-[#fdfaf3] px-3 py-2"
             >
-              <span className="text-sm font-medium text-slate-800">
+              <span className="text-sm font-medium text-[#3a3550]">
                 {STATUS_LABELS[entry.status] ?? entry.status}
               </span>
               <div className="flex items-center gap-2">
@@ -521,9 +521,9 @@ function OrderCard({
                 {index < order.history.length - 1 && (
                   <button
                     type="button"
-                    aria-label={`Supprimer l'étape ${STATUS_LABELS[entry.status] ?? entry.status}`}
+                    aria-label={`Supprimer l'Ã©tape ${STATUS_LABELS[entry.status] ?? entry.status}`}
                     onClick={() => onHistoryRemove(order.code, index)}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-400 transition hover:border-red-300 hover:text-red-500"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#f0e6d2] text-[#9a97a6] transition hover:border-red-300 hover:text-red-500"
                   >
                     <TrashIcon className="h-3.5 w-3.5" />
                   </button>
@@ -535,16 +535,16 @@ function OrderCard({
       </div>
 
       {/* Save changes */}
-      <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#f8f2e5] pt-3">
         <p className="text-xs">
           {savedFlash ? (
             <span className="text-emerald-600">
-              Modifications enregistrées ✓
+              Modifications enregistrÃ©es âœ“
             </span>
           ) : hasUnsaved ? (
-            <span className="text-amber-600">Modifications non enregistrées</span>
+            <span className="text-amber-600">Modifications non enregistrÃ©es</span>
           ) : (
-            <span className="text-slate-400">Aucune modification</span>
+            <span className="text-[#9a97a6]">Aucune modification</span>
           )}
         </p>
         <button
@@ -565,7 +565,7 @@ function OrderCard({
         >
           <img
             src={viewer}
-            alt="Aperçu"
+            alt="AperÃ§u"
             className="max-h-full max-w-full rounded-lg"
             onClick={(e) => e.stopPropagation()}
           />

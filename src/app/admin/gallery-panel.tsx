@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -118,7 +118,7 @@ export function GalleryPanel({ token }: { token: string }) {
 
   function removeProject(project: Project) {
     if (!projects) return;
-    if (!window.confirm(`Supprimer le projet « ${project.title.fr} » ?`)) return;
+    if (!window.confirm(`Supprimer le projet Â« ${project.title.fr} Â» ?`)) return;
     persist(projects.filter((p) => p.slug !== project.slug));
   }
 
@@ -149,11 +149,11 @@ export function GalleryPanel({ token }: { token: string }) {
       <div className={panelCard}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className={panelHeading}>Galerie — Réalisations</h2>
+            <h2 className={panelHeading}>Galerie â€” RÃ©alisations</h2>
             <p className={panelMuted}>
-              Gérez les projets affichés sur la page « Réalisations » : ajout,
-              modification, suppression, catégorie et ordre d&apos;affichage.
-              Utilisez les flèches pour monter / descendre un projet.
+              GÃ©rez les projets affichÃ©s sur la page Â« RÃ©alisations Â» : ajout,
+              modification, suppression, catÃ©gorie et ordre d&apos;affichage.
+              Utilisez les flÃ¨ches pour monter / descendre un projet.
             </p>
           </div>
           <button
@@ -173,7 +173,7 @@ export function GalleryPanel({ token }: { token: string }) {
         )}
         {saved && (
           <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
-            Catalogue enregistré.
+            Catalogue enregistrÃ©.
           </p>
         )}
       </div>
@@ -191,10 +191,10 @@ export function GalleryPanel({ token }: { token: string }) {
       )}
 
       {projects === null ? (
-        <p className="py-10 text-center text-slate-400">Chargement…</p>
+        <p className="py-10 text-center text-[#9a97a6]">Chargementâ€¦</p>
       ) : projects.length === 0 ? (
-        <p className={cn(panelCard, "py-14 text-center text-slate-500")}>
-          Aucun projet. Cliquez sur « Nouveau projet » pour commencer.
+        <p className={cn(panelCard, "py-14 text-center text-[#6b6878]")}>
+          Aucun projet. Cliquez sur Â« Nouveau projet Â» pour commencer.
         </p>
       ) : (
         <ul className="space-y-3">
@@ -210,23 +210,23 @@ export function GalleryPanel({ token }: { token: string }) {
                   aria-label="Monter"
                   disabled={index === 0}
                   onClick={() => move(index, -1)}
-                  className="flex h-7 w-7 items-center justify-center rounded border border-slate-300 text-slate-500 transition hover:border-accent hover:text-accent disabled:opacity-30"
+                  className="flex h-7 w-7 items-center justify-center rounded border border-[#e6d9bf] text-[#6b6878] transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
                 >
-                  ▲
+                  â–²
                 </button>
                 <button
                   type="button"
                   aria-label="Descendre"
                   disabled={index === projects.length - 1}
                   onClick={() => move(index, 1)}
-                  className="flex h-7 w-7 items-center justify-center rounded border border-slate-300 text-slate-500 transition hover:border-accent hover:text-accent disabled:opacity-30"
+                  className="flex h-7 w-7 items-center justify-center rounded border border-[#e6d9bf] text-[#6b6878] transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
                 >
-                  ▼
+                  â–¼
                 </button>
               </div>
 
               {/* Cover */}
-              <div className="h-24 w-32 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+              <div className="h-24 w-32 shrink-0 overflow-hidden rounded-lg border border-[#f0e6d2] bg-[#f8f2e5]">
                 {project.images?.[0] ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -235,21 +235,21 @@ export function GalleryPanel({ token }: { token: string }) {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+                  <div className="flex h-full w-full items-center justify-center text-xs text-[#9a97a6]">
                     Sans image
                   </div>
                 )}
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold text-slate-900">
+                <p className="truncate font-semibold text-[#2b2b46]">
                   {project.title.fr || project.slug}
                 </p>
-                <p className="mt-0.5 truncate text-sm text-slate-500">
-                  {categoryLabel(project.category)} · {project.year}
-                  {project.featured ? " · ★ Mis en avant" : ""}
+                <p className="mt-0.5 truncate text-sm text-[#6b6878]">
+                  {categoryLabel(project.category)} Â· {project.year}
+                  {project.featured ? " Â· â˜… Mis en avant" : ""}
                 </p>
-                <p className="mt-0.5 truncate font-mono text-xs text-slate-400">
+                <p className="mt-0.5 truncate font-mono text-xs text-[#9a97a6]">
                   /{project.slug}
                 </p>
               </div>
@@ -264,10 +264,10 @@ export function GalleryPanel({ token }: { token: string }) {
                     "inline-flex h-9 w-9 items-center justify-center rounded-md border text-lg transition",
                     project.featured
                       ? "border-amber-300 bg-amber-50 text-amber-500 hover:bg-amber-100"
-                      : "border-slate-300 bg-white text-slate-300 hover:border-amber-300 hover:text-amber-400"
+                      : "border-[#e6d9bf] bg-white text-[#e6d9bf] hover:border-amber-300 hover:text-amber-400"
                   )}
                 >
-                  ★
+                  â˜…
                 </button>
                 <button
                   type="button"
@@ -324,7 +324,7 @@ function ProjectEditor({
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={labelClass}>Catégorie</label>
+          <label className={labelClass}>CatÃ©gorie</label>
           <select
             value={project.category}
             onChange={(e) =>
@@ -352,12 +352,12 @@ function ProjectEditor({
           </div>
         )}
         <div className="flex items-end">
-          <label className={cn(labelClass, "flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700")}>
+          <label className={cn(labelClass, "flex cursor-pointer items-center gap-2 text-sm font-medium text-[#4a4560]")}>
             <input
               type="checkbox"
               checked={project.featured}
               onChange={(e) => onChange({ ...project, featured: e.target.checked })}
-              className="h-4 w-4 rounded border-slate-300 text-accent focus:ring-accent"
+              className="h-4 w-4 rounded border-[#e6d9bf] text-dzb-amberink focus:ring-dzb-amber"
             />
             Mis en avant (page d&apos;accueil)
           </label>
@@ -366,7 +366,7 @@ function ProjectEditor({
 
       <ImageManager project={project} token={token} onChange={onChange} />
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[#f8f2e5] pt-4">
         <button
           type="button"
           onClick={onCancel}
@@ -463,19 +463,19 @@ function ImageManager({
       } else {
         const reason =
           res.status === 401
-            ? "Non autorisé : reconnectez-vous."
+            ? "Non autorisÃ© : reconnectez-vous."
             : res.status === 413
               ? "Image(s) trop lourde(s)."
               : json?.error === "no_file"
-                ? "Aucun fichier reçu."
+                ? "Aucun fichier reÃ§u."
                 : json?.error === "invalid_body"
-                  ? "Requête invalide."
-                  : `Échec de l'upload (statut ${res.status}).`;
+                  ? "RequÃªte invalide."
+                  : `Ã‰chec de l'upload (statut ${res.status}).`;
         setUploadError(reason);
       }
     } catch (err) {
       setUploadError(
-        `Erreur réseau : ${err instanceof Error ? err.message : String(err)}`
+        `Erreur rÃ©seau : ${err instanceof Error ? err.message : String(err)}`
       );
     } finally {
       setUploading(false);
@@ -496,23 +496,23 @@ function ImageManager({
   }
 
   return (
-    <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50/60 p-4">
-      <p className="text-sm font-medium text-slate-700">Images du projet</p>
-      <p className="mt-0.5 text-xs text-slate-500">
-        La première image sert de couverture. Ajoutez plusieurs photos — elles
-        apparaîtront dans la galerie de la page projet.
+    <div className="mt-5 rounded-lg border border-[#f0e6d2] bg-[#fdfaf3]/60 p-4">
+      <p className="text-sm font-medium text-[#4a4560]">Images du projet</p>
+      <p className="mt-0.5 text-xs text-[#6b6878]">
+        La premiÃ¨re image sert de couverture. Ajoutez plusieurs photos â€” elles
+        apparaÃ®tront dans la galerie de la page projet.
       </p>
       {images.length > 0 && (
         <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
           {images.map((key, i) => (
             <div
               key={key}
-              className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-slate-300 bg-white"
+              className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-[#e6d9bf] bg-white"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={MEDIA_URL(key)} alt="" className="h-full w-full object-cover" />
               {i === 0 && (
-                <span className="absolute start-1 top-1 rounded bg-accent px-1.5 py-0.5 text-[10px] font-bold text-white">
+                <span className="absolute start-1 top-1 rounded bg-dzb-amber px-1.5 py-0.5 text-[10px] font-bold text-white">
                   Couverture
                 </span>
               )}
@@ -545,10 +545,10 @@ function ImageManager({
       )}
       <label
         htmlFor="gallery-files"
-        className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-accent hover:text-accent"
+        className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#e6d9bf] bg-white px-3 py-2 text-sm font-medium text-[#4a4560] shadow-sm transition hover:border-dzb-amber hover:text-dzb-amberink"
       >
         <PlusIcon className="h-4 w-4" />
-        {uploading ? "Chargement…" : "Ajouter des images"}
+        {uploading ? "Chargementâ€¦" : "Ajouter des images"}
       </label>
     </div>
   );

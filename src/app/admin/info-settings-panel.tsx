@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import type { AdminSettings } from "./admin-types";
@@ -23,8 +23,8 @@ function Fieldset({
   children: React.ReactNode;
 }) {
   return (
-    <fieldset className="mt-6 rounded-lg border border-slate-200 bg-slate-50/60 p-4">
-      <legend className="px-1.5 text-xs font-semibold uppercase tracking-widest text-slate-500">
+    <fieldset className="mt-6 rounded-lg border border-[#f0e6d2] bg-[#fdfaf3]/60 p-4">
+      <legend className="px-1.5 text-xs font-semibold uppercase tracking-widest text-[#6b6878]">
         {legend}
       </legend>
       <div className="space-y-3">{children}</div>
@@ -56,8 +56,8 @@ export function InfoSettingsPanel({ token }: { token: string }) {
 
   if (!settings) {
     return (
-      <p className="mt-10 text-center text-slate-400">
-        Chargement des paramètres…
+      <p className="mt-10 text-center text-[#9a97a6]">
+        Chargement des paramÃ¨tresâ€¦
       </p>
     );
   }
@@ -132,7 +132,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
       <input
         value={social?.[key] ?? ""}
         onChange={(e) => setSocialField(key, e.target.value)}
-        placeholder="https://…"
+        placeholder="https://â€¦"
         dir="ltr"
         className={inputClass}
       />
@@ -143,14 +143,14 @@ export function InfoSettingsPanel({ token }: { token: string }) {
     <div className={panelCard}>
       <h2 className={panelHeading}>Informations du site</h2>
       <p className={panelMuted}>
-        Ces coordonnées sont affichées dans le pied de page, la page contact et
+        Ces coordonnÃ©es sont affichÃ©es dans le pied de page, la page contact et
         les pages FAQ / formulaire de contact du site public.
       </p>
 
-      <Fieldset legend="Coordonnées">
+      <Fieldset legend="CoordonnÃ©es">
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className={labelClass}>Téléphone (affiché)</label>
+            <label className={labelClass}>TÃ©lÃ©phone (affichÃ©)</label>
             <input
               value={contact?.phone ?? ""}
               onChange={(e) => setContactField("phone", e.target.value)}
@@ -159,7 +159,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
             />
           </div>
           <div>
-            <label className={labelClass}>Lien du téléphone</label>
+            <label className={labelClass}>Lien du tÃ©lÃ©phone</label>
             <input
               value={contact?.phoneHref ?? ""}
               onChange={(e) => setContactField("phoneHref", e.target.value)}
@@ -169,7 +169,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
             />
           </div>
           <div>
-            <label className={labelClass}>WhatsApp (affiché)</label>
+            <label className={labelClass}>WhatsApp (affichÃ©)</label>
             <input
               value={contact?.whatsapp ?? ""}
               onChange={(e) => setContactField("whatsapp", e.target.value)}
@@ -201,23 +201,23 @@ export function InfoSettingsPanel({ token }: { token: string }) {
 
       <Fieldset legend="Adresse & horaires (par langue)">
         <div className="grid gap-3 sm:grid-cols-3">
-          {textField("Adresse — FR", "address_fr", {
+          {textField("Adresse â€” FR", "address_fr", {
             placeholder: "Zone Industrielle, Alger",
           })}
-          {textField("Adresse — EN", "address_en", {
+          {textField("Adresse â€” EN", "address_en", {
             placeholder: "Industrial Zone, Algiers",
           })}
-          {textField("Adresse — AR", "address_ar", { rtl: true })}
-          {textField("Horaires — FR", "hours_fr", {
-            placeholder: "Lun – Sam : 08h30 – 18h00",
+          {textField("Adresse â€” AR", "address_ar", { rtl: true })}
+          {textField("Horaires â€” FR", "hours_fr", {
+            placeholder: "Lun â€“ Sam : 08h30 â€“ 18h00",
           })}
-          {textField("Horaires — EN", "hours_en", {
-            placeholder: "Mon – Sat: 8:30 AM – 6:00 PM",
+          {textField("Horaires â€” EN", "hours_en", {
+            placeholder: "Mon â€“ Sat: 8:30 AM â€“ 6:00 PM",
           })}
-          {textField("Horaires — AR", "hours_ar", { rtl: true })}
+          {textField("Horaires â€” AR", "hours_ar", { rtl: true })}
         </div>
         <div>
-          <label className={labelClass}>Carte (lien d&apos;intégration Google Maps)</label>
+          <label className={labelClass}>Carte (lien d&apos;intÃ©gration Google Maps)</label>
           <input
             value={contact?.mapEmbed ?? ""}
             onChange={(e) => setContactField("mapEmbed", e.target.value)}
@@ -227,7 +227,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
         </div>
       </Fieldset>
 
-      <Fieldset legend="Réseaux sociaux">
+      <Fieldset legend="RÃ©seaux sociaux">
         <div className="grid gap-3 sm:grid-cols-2">
           {socialField("Facebook", "facebook")}
           {socialField("Instagram", "instagram")}
@@ -244,7 +244,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
         disabled={saving}
         className={cn(saveButton, "mt-6")}
       >
-        {saving ? "Enregistrement…" : "Enregistrer"}
+        {saving ? "Enregistrementâ€¦" : "Enregistrer"}
       </button>
 
       {error && (
@@ -254,7 +254,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
       )}
       {saved && (
         <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
-          Informations enregistrées.
+          Informations enregistrÃ©es.
         </p>
       )}
     </div>
