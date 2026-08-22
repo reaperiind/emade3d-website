@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Product } from "@/data/products";
@@ -48,23 +48,23 @@ const STATUS_META: Record<ProductOrderStatus, { label: string; pill: string }> =
     pill: "border-orange-300 bg-orange-50 text-orange-700",
   },
   CONTACTED: {
-    label: "ContactÃ©",
+    label: "Contacté",
     pill: "border-sky-300 bg-sky-50 text-sky-700",
   },
   CONFIRMED: {
-    label: "ConfirmÃ©",
+    label: "Confirmé",
     pill: "border-violet-300 bg-violet-50 text-violet-700",
   },
   SHIPPED: {
-    label: "ExpÃ©diÃ©",
+    label: "Expédié",
     pill: "border-amber-300 bg-amber-50 text-amber-700",
   },
   DELIVERED: {
-    label: "LivrÃ©",
+    label: "Livré",
     pill: "border-emerald-300 bg-emerald-50 text-emerald-700",
   },
   CANCELLED: {
-    label: "AnnulÃ©",
+    label: "Annulé",
     pill: "border-red-300 bg-red-50 text-red-600",
   },
 };
@@ -101,8 +101,8 @@ function orderProductLabel(o: ProductOrder): string {
 function deliveryLabel(order: ProductOrder): string {
   const d = order.delivery;
   if (!d || d.method === "pickup") return "Retrait sur place";
-  if (d.option === "home") return `Ã€ domicile${d.address ? ` â€” ${d.address}` : ""}`;
-  return `Bureau du coursier${d.wilayaId != null ? ` â€” wilaya ${d.wilayaId}` : ""}`;
+  if (d.option === "home") return `À domicile${d.address ? ` — ${d.address}` : ""}`;
+  return `Bureau du coursier${d.wilayaId != null ? ` — wilaya ${d.wilayaId}` : ""}`;
 }
 
 function orderTotal(o: ProductOrder): number {
@@ -125,7 +125,7 @@ function waPhone(o: ProductOrder): string {
 function waLink(o: ProductOrder): string {
   const lines = [
     `Bonjour ${o.customerName},`,
-    `${o.quantity} Ã— ${orderProductLabel(o)}`,
+    `${o.quantity} × ${orderProductLabel(o)}`,
     "Merci pour votre demande sur notre site Emade3D.",
   ];
   return `https://wa.me/${waPhone(o)}?text=${encodeURIComponent(lines.join("\n"))}`;
@@ -227,7 +227,7 @@ export function ProductsPanel({ token }: { token: string }) {
 
   function removeProduct(product: Product) {
     if (!products) return;
-    if (!window.confirm(`Supprimer le produit Â« ${productName(product)} Â» ?`)) return;
+    if (!window.confirm(`Supprimer le produit « ${productName(product)} » ?`)) return;
     persist(products.filter((p) => p.slug !== product.slug));
   }
 
@@ -315,10 +315,10 @@ export function ProductsPanel({ token }: { token: string }) {
       <div className={panelCard}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className={panelHeading}>Produits â€” Boutique</h2>
+            <h2 className={panelHeading}>Produits — Boutique</h2>
             <p className={panelMuted}>
-              GÃ©rez les produits affichÃ©s sur la page Â« Produits Â» et suivez les
-              demandes d&apos;achat reÃ§ues, de l&apos;appel de confirmation Ã  la livraison.
+              Gérez les produits affichés sur la page « Produits » et suivez les
+              demandes d&apos;achat reçues, de l&apos;appel de confirmation à la livraison.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -367,7 +367,7 @@ export function ProductsPanel({ token }: { token: string }) {
         )}
         {saved && (
           <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
-            EnregistrÃ©.
+            Enregistré.
           </p>
         )}
       </div>
@@ -386,10 +386,10 @@ export function ProductsPanel({ token }: { token: string }) {
           )}
 
           {products === null ? (
-            <p className="py-10 text-center text-[#9a97a6]">Chargementâ€¦</p>
+            <p className="py-10 text-center text-[#9a97a6]">Chargement…</p>
           ) : products.length === 0 ? (
             <p className={cn(panelCard, "py-14 text-center text-[#6b6878]")}>
-              Aucun produit. Cliquez sur Â« Nouveau produit Â» pour commencer.
+              Aucun produit. Cliquez sur « Nouveau produit » pour commencer.
             </p>
           ) : (
             <ul className="space-y-3">
@@ -406,7 +406,7 @@ export function ProductsPanel({ token }: { token: string }) {
                       onClick={() => move(index, -1)}
                       className="flex h-7 w-7 items-center justify-center rounded border border-[#e6d9bf] text-[#6b6878] transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
                     >
-                      â–²
+                      ▲
                     </button>
                     <button
                       type="button"
@@ -415,7 +415,7 @@ export function ProductsPanel({ token }: { token: string }) {
                       onClick={() => move(index, 1)}
                       className="flex h-7 w-7 items-center justify-center rounded border border-[#e6d9bf] text-[#6b6878] transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
                     >
-                      â–¼
+                      ▼
                     </button>
                   </div>
 
@@ -439,7 +439,7 @@ export function ProductsPanel({ token }: { token: string }) {
                       {productName(product)}
                     </p>
                     <p className="mt-0.5 truncate text-sm text-[#6b6878]">
-                      {product.price.toLocaleString("fr-DZ")} DA Â·{" "}
+                      {product.price.toLocaleString("fr-DZ")} DA ·{" "}
                       {product.available ? "Disponible" : "Indisponible"}
                     </p>
                     <p className="mt-0.5 truncate font-mono text-xs text-[#9a97a6]">
@@ -501,7 +501,7 @@ export function ProductsPanel({ token }: { token: string }) {
 }
 
 /* ------------------------------------------------------------------------- */
-/*  Product orders          â€“ table + status pipeline + timeline             */
+/*  Product orders          – table + status pipeline + timeline             */
 /* ------------------------------------------------------------------------- */
 
 function ProductOrdersTable({
@@ -553,7 +553,7 @@ function ProductOrdersTable({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher client, tÃ©lÃ©phone, produitâ€¦"
+            placeholder="Rechercher client, téléphone, produit…"
             className={cn(inputClass, "ps-9")}
           />
         </div>
@@ -565,7 +565,7 @@ function ProductOrdersTable({
           <option value="all">Tous les types</option>
           <option value="pickup">Retrait sur place</option>
           <option value="office">Bureau du coursier</option>
-          <option value="home">Ã€ domicile</option>
+          <option value="home">À domicile</option>
         </select>
       </div>
 
@@ -596,7 +596,7 @@ function ProductOrdersTable({
       {/* Table */}
       <div className="mt-4 overflow-x-auto">
         {orders === null ? (
-          <p className="py-12 text-center text-[#9a97a6]">Chargementâ€¦</p>
+          <p className="py-12 text-center text-[#9a97a6]">Chargement…</p>
         ) : filtered.length === 0 ? (
           <p className="py-14 text-center text-[#6b6878]">
             Aucune demande ne correspond aux filtres.
@@ -607,7 +607,7 @@ function ProductOrdersTable({
               <tr className="border-b border-[#f0e6d2] text-left text-xs font-semibold uppercase tracking-widest text-[#9a97a6]">
                 <th className="px-3 py-2.5">Produit</th>
                 <th className="px-3 py-2.5">Client</th>
-                <th className="px-3 py-2.5 text-end">QtÃ© Ã— Prix</th>
+                <th className="px-3 py-2.5 text-end">Qté × Prix</th>
                 <th className="px-3 py-2.5 text-end">Total</th>
                 <th className="hidden px-3 py-2.5 lg:table-cell">Livraison</th>
                 <th className="px-3 py-2.5">Statut</th>
@@ -638,7 +638,7 @@ function ProductOrdersTable({
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-[10px] text-[#9a97a6]">
-                              â€”
+                              —
                             </div>
                           )}
                         </div>
@@ -659,7 +659,7 @@ function ProductOrdersTable({
                       </p>
                     </td>
                     <td className="px-3 py-3 text-end tabular-nums text-[#5f5975]">
-                      {o.quantity} Ã— {fmtMoney(o.price ?? 0)} DA
+                      {o.quantity} × {fmtMoney(o.price ?? 0)} DA
                     </td>
                     <td className="px-3 py-3 text-end font-semibold tabular-nums text-[#2b2b46]">
                       {fmtMoney(orderTotal(o))} DA
@@ -723,7 +723,7 @@ function ProductOrdersTable({
 }
 
 /* ------------------------------------------------------------------------- */
-/*  Order detail overlay â€” status pipeline, totals, timeline                 */
+/*  Order detail overlay — status pipeline, totals, timeline                 */
 /* ------------------------------------------------------------------------- */
 
 function OrderDetailOverlay({
@@ -747,8 +747,8 @@ function OrderDetailOverlay({
   const deliveries: [string, string][] = [
     ["Produit", orderProductLabel(order)],
     [
-      "QitÃ©",
-      `${order.quantity} Ã— ${fmtMoney(order.price ?? 0)} DA`,
+      "Qité",
+      `${order.quantity} × ${fmtMoney(order.price ?? 0)} DA`,
     ],
     [
       "Sous-total",
@@ -778,8 +778,8 @@ function OrderDetailOverlay({
               {orderProductLabel(order)}
             </h3>
             <p className="mt-0.5 text-sm text-[#6b6878]">
-              {order.customerName} Â·{" "}
-              <span dir="ltr">{order.phone}</span> Â· {fmtDate(order.createdAt)}
+              {order.customerName} ·{" "}
+              <span dir="ltr">{order.phone}</span> · {fmtDate(order.createdAt)}
             </p>
           </div>
           <button
@@ -844,7 +844,7 @@ function OrderDetailOverlay({
                     : "border-[#e6d9bf] bg-white text-[#9a97a6]"
                 )}
               >
-                âœ•
+                ✕
               </span>
               <span
                 className={cn(
@@ -852,7 +852,7 @@ function OrderDetailOverlay({
                   order.status === "CANCELLED" ? "text-red-600" : "text-[#9a97a6]"
                 )}
               >
-                AnnulÃ©
+                Annulé
               </span>
             </div>
           </div>
@@ -936,7 +936,7 @@ function OrderDetailOverlay({
                     <img src={MEDIA_URL(cover)} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-[10px] text-[#9a97a6]">
-                      â€”
+                      —
                     </div>
                   )}
                 </div>
@@ -1112,7 +1112,7 @@ function ProductEditor({
               }
               className="h-4 w-4 rounded border-[#e6d9bf] text-dzb-amberink focus:ring-dzb-amber"
             />
-            Disponible Ã  la vente
+            Disponible à la vente
           </label>
         </div>
       </div>
@@ -1232,15 +1232,15 @@ function ProductImageManager({
       } else {
         const reason =
           res.status === 401
-            ? "Non autorisÃ© : reconnectez-vous."
+            ? "Non autorisé : reconnectez-vous."
             : res.status === 413
               ? "Image(s) trop lourde(s)."
-              : `Ã‰chec de l'upload (statut ${res.status}).`;
+              : `Échec de l'upload (statut ${res.status}).`;
         setUploadError(reason);
       }
     } catch (err) {
       setUploadError(
-        `Erreur rÃ©seau : ${err instanceof Error ? err.message : String(err)}`
+        `Erreur réseau : ${err instanceof Error ? err.message : String(err)}`
       );
     } finally {
       setUploading(false);
@@ -1264,7 +1264,7 @@ function ProductImageManager({
     <div className="mt-5 rounded-lg border border-[#f0e6d2] bg-[#fdfaf3]/60 p-4">
       <p className="text-sm font-medium text-[#4a4560]">Images du produit</p>
       <p className="mt-0.5 text-xs text-[#6b6878]">
-        La premiÃ¨re image sert d&apos;image principale sur la fiche produit.
+        La première image sert d&apos;image principale sur la fiche produit.
       </p>
       {images.length > 0 && (
         <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
@@ -1312,7 +1312,7 @@ function ProductImageManager({
         className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#e6d9bf] bg-white px-3 py-2 text-sm font-medium text-[#4a4560] shadow-sm transition hover:border-dzb-amber hover:text-dzb-amberink"
       >
         <PlusIcon className="h-4 w-4" />
-        {uploading ? "Chargementâ€¦" : "Ajouter des images"}
+        {uploading ? "Chargement…" : "Ajouter des images"}
       </label>
     </div>
   );

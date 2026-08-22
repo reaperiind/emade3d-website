@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -118,7 +118,7 @@ export function GalleryPanel({ token }: { token: string }) {
 
   function removeProject(project: Project) {
     if (!projects) return;
-    if (!window.confirm(`Supprimer le projet Â« ${project.title.fr} Â» ?`)) return;
+    if (!window.confirm(`Supprimer le projet « ${project.title.fr} » ?`)) return;
     persist(projects.filter((p) => p.slug !== project.slug));
   }
 
@@ -149,11 +149,11 @@ export function GalleryPanel({ token }: { token: string }) {
       <div className={panelCard}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className={panelHeading}>Galerie â€” RÃ©alisations</h2>
+            <h2 className={panelHeading}>Galerie — Réalisations</h2>
             <p className={panelMuted}>
-              GÃ©rez les projets affichÃ©s sur la page Â« RÃ©alisations Â» : ajout,
-              modification, suppression, catÃ©gorie et ordre d&apos;affichage.
-              Utilisez les flÃ¨ches pour monter / descendre un projet.
+              Gérez les projets affichés sur la page « Réalisations » : ajout,
+              modification, suppression, catégorie et ordre d&apos;affichage.
+              Utilisez les flèches pour monter / descendre un projet.
             </p>
           </div>
           <button
@@ -173,7 +173,7 @@ export function GalleryPanel({ token }: { token: string }) {
         )}
         {saved && (
           <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
-            Catalogue enregistrÃ©.
+            Catalogue enregistré.
           </p>
         )}
       </div>
@@ -191,10 +191,10 @@ export function GalleryPanel({ token }: { token: string }) {
       )}
 
       {projects === null ? (
-        <p className="py-10 text-center text-[#9a97a6]">Chargementâ€¦</p>
+        <p className="py-10 text-center text-[#9a97a6]">Chargement…</p>
       ) : projects.length === 0 ? (
         <p className={cn(panelCard, "py-14 text-center text-[#6b6878]")}>
-          Aucun projet. Cliquez sur Â« Nouveau projet Â» pour commencer.
+          Aucun projet. Cliquez sur « Nouveau projet » pour commencer.
         </p>
       ) : (
         <ul className="space-y-3">
@@ -212,7 +212,7 @@ export function GalleryPanel({ token }: { token: string }) {
                   onClick={() => move(index, -1)}
                   className="flex h-7 w-7 items-center justify-center rounded border border-[#e6d9bf] text-[#6b6878] transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
                 >
-                  â–²
+                  ▲
                 </button>
                 <button
                   type="button"
@@ -221,7 +221,7 @@ export function GalleryPanel({ token }: { token: string }) {
                   onClick={() => move(index, 1)}
                   className="flex h-7 w-7 items-center justify-center rounded border border-[#e6d9bf] text-[#6b6878] transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
                 >
-                  â–¼
+                  ▼
                 </button>
               </div>
 
@@ -246,8 +246,8 @@ export function GalleryPanel({ token }: { token: string }) {
                   {project.title.fr || project.slug}
                 </p>
                 <p className="mt-0.5 truncate text-sm text-[#6b6878]">
-                  {categoryLabel(project.category)} Â· {project.year}
-                  {project.featured ? " Â· â˜… Mis en avant" : ""}
+                  {categoryLabel(project.category)} · {project.year}
+                  {project.featured ? " · ★ Mis en avant" : ""}
                 </p>
                 <p className="mt-0.5 truncate font-mono text-xs text-[#9a97a6]">
                   /{project.slug}
@@ -267,7 +267,7 @@ export function GalleryPanel({ token }: { token: string }) {
                       : "border-[#e6d9bf] bg-white text-[#e6d9bf] hover:border-amber-300 hover:text-amber-400"
                   )}
                 >
-                  â˜…
+                  ★
                 </button>
                 <button
                   type="button"
@@ -324,7 +324,7 @@ function ProjectEditor({
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={labelClass}>CatÃ©gorie</label>
+          <label className={labelClass}>Catégorie</label>
           <select
             value={project.category}
             onChange={(e) =>
@@ -463,19 +463,19 @@ function ImageManager({
       } else {
         const reason =
           res.status === 401
-            ? "Non autorisÃ© : reconnectez-vous."
+            ? "Non autorisé : reconnectez-vous."
             : res.status === 413
               ? "Image(s) trop lourde(s)."
               : json?.error === "no_file"
-                ? "Aucun fichier reÃ§u."
+                ? "Aucun fichier reçu."
                 : json?.error === "invalid_body"
-                  ? "RequÃªte invalide."
-                  : `Ã‰chec de l'upload (statut ${res.status}).`;
+                  ? "Requête invalide."
+                  : `Échec de l'upload (statut ${res.status}).`;
         setUploadError(reason);
       }
     } catch (err) {
       setUploadError(
-        `Erreur rÃ©seau : ${err instanceof Error ? err.message : String(err)}`
+        `Erreur réseau : ${err instanceof Error ? err.message : String(err)}`
       );
     } finally {
       setUploading(false);
@@ -499,8 +499,8 @@ function ImageManager({
     <div className="mt-5 rounded-lg border border-[#f0e6d2] bg-[#fdfaf3]/60 p-4">
       <p className="text-sm font-medium text-[#4a4560]">Images du projet</p>
       <p className="mt-0.5 text-xs text-[#6b6878]">
-        La premiÃ¨re image sert de couverture. Ajoutez plusieurs photos â€” elles
-        apparaÃ®tront dans la galerie de la page projet.
+        La première image sert de couverture. Ajoutez plusieurs photos — elles
+        apparaîtront dans la galerie de la page projet.
       </p>
       {images.length > 0 && (
         <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
@@ -548,7 +548,7 @@ function ImageManager({
         className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#e6d9bf] bg-white px-3 py-2 text-sm font-medium text-[#4a4560] shadow-sm transition hover:border-dzb-amber hover:text-dzb-amberink"
       >
         <PlusIcon className="h-4 w-4" />
-        {uploading ? "Chargementâ€¦" : "Ajouter des images"}
+        {uploading ? "Chargement…" : "Ajouter des images"}
       </label>
     </div>
   );

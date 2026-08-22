@@ -244,7 +244,7 @@ export function Footer() {
       <div className="border-t border-white/10">
         <div className="container-site flex flex-col items-center justify-between gap-3 py-6 text-center sm:flex-row sm:text-start">
           <p className="text-xs text-steel-400">
-            Â© {new Date().getFullYear()} {site.name}. {t.footer.rights}
+            © {new Date().getFullYear()} {site.name}. {t.footer.rights}
           </p>
           <p className="text-xs text-steel-500">{t.footer.madeWith}</p>
         </div>

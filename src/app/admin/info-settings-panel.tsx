@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import type { AdminSettings } from "./admin-types";
@@ -57,7 +57,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
   if (!settings) {
     return (
       <p className="mt-10 text-center text-[#9a97a6]">
-        Chargement des paramÃ¨tresâ€¦
+        Chargement des paramètres…
       </p>
     );
   }
@@ -132,7 +132,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
       <input
         value={social?.[key] ?? ""}
         onChange={(e) => setSocialField(key, e.target.value)}
-        placeholder="https://â€¦"
+        placeholder="https://…"
         dir="ltr"
         className={inputClass}
       />
@@ -143,14 +143,14 @@ export function InfoSettingsPanel({ token }: { token: string }) {
     <div className={panelCard}>
       <h2 className={panelHeading}>Informations du site</h2>
       <p className={panelMuted}>
-        Ces coordonnÃ©es sont affichÃ©es dans le pied de page, la page contact et
+        Ces coordonnées sont affichées dans le pied de page, la page contact et
         les pages FAQ / formulaire de contact du site public.
       </p>
 
-      <Fieldset legend="CoordonnÃ©es">
+      <Fieldset legend="Coordonnées">
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className={labelClass}>TÃ©lÃ©phone (affichÃ©)</label>
+            <label className={labelClass}>Téléphone (affiché)</label>
             <input
               value={contact?.phone ?? ""}
               onChange={(e) => setContactField("phone", e.target.value)}
@@ -159,7 +159,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
             />
           </div>
           <div>
-            <label className={labelClass}>Lien du tÃ©lÃ©phone</label>
+            <label className={labelClass}>Lien du téléphone</label>
             <input
               value={contact?.phoneHref ?? ""}
               onChange={(e) => setContactField("phoneHref", e.target.value)}
@@ -169,7 +169,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
             />
           </div>
           <div>
-            <label className={labelClass}>WhatsApp (affichÃ©)</label>
+            <label className={labelClass}>WhatsApp (affiché)</label>
             <input
               value={contact?.whatsapp ?? ""}
               onChange={(e) => setContactField("whatsapp", e.target.value)}
@@ -201,23 +201,23 @@ export function InfoSettingsPanel({ token }: { token: string }) {
 
       <Fieldset legend="Adresse & horaires (par langue)">
         <div className="grid gap-3 sm:grid-cols-3">
-          {textField("Adresse â€” FR", "address_fr", {
+          {textField("Adresse — FR", "address_fr", {
             placeholder: "Zone Industrielle, Alger",
           })}
-          {textField("Adresse â€” EN", "address_en", {
+          {textField("Adresse — EN", "address_en", {
             placeholder: "Industrial Zone, Algiers",
           })}
-          {textField("Adresse â€” AR", "address_ar", { rtl: true })}
-          {textField("Horaires â€” FR", "hours_fr", {
-            placeholder: "Lun â€“ Sam : 08h30 â€“ 18h00",
+          {textField("Adresse — AR", "address_ar", { rtl: true })}
+          {textField("Horaires — FR", "hours_fr", {
+            placeholder: "Lun – Sam : 08h30 – 18h00",
           })}
-          {textField("Horaires â€” EN", "hours_en", {
-            placeholder: "Mon â€“ Sat: 8:30 AM â€“ 6:00 PM",
+          {textField("Horaires — EN", "hours_en", {
+            placeholder: "Mon – Sat: 8:30 AM – 6:00 PM",
           })}
-          {textField("Horaires â€” AR", "hours_ar", { rtl: true })}
+          {textField("Horaires — AR", "hours_ar", { rtl: true })}
         </div>
         <div>
-          <label className={labelClass}>Carte (lien d&apos;intÃ©gration Google Maps)</label>
+          <label className={labelClass}>Carte (lien d&apos;intégration Google Maps)</label>
           <input
             value={contact?.mapEmbed ?? ""}
             onChange={(e) => setContactField("mapEmbed", e.target.value)}
@@ -227,7 +227,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
         </div>
       </Fieldset>
 
-      <Fieldset legend="RÃ©seaux sociaux">
+      <Fieldset legend="Réseaux sociaux">
         <div className="grid gap-3 sm:grid-cols-2">
           {socialField("Facebook", "facebook")}
           {socialField("Instagram", "instagram")}
@@ -244,7 +244,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
         disabled={saving}
         className={cn(saveButton, "mt-6")}
       >
-        {saving ? "Enregistrementâ€¦" : "Enregistrer"}
+        {saving ? "Enregistrement…" : "Enregistrer"}
       </button>
 
       {error && (
@@ -254,7 +254,7 @@ export function InfoSettingsPanel({ token }: { token: string }) {
       )}
       {saved && (
         <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
-          Informations enregistrÃ©es.
+          Informations enregistrées.
         </p>
       )}
     </div>

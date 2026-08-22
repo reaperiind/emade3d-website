@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import type { Order, OrderStatus } from "@/lib/orders-store";
@@ -19,22 +19,22 @@ import {
 } from "./admin-types";
 
 export const STATUS_LABELS: Record<string, string> = {
-  SUBMITTED: "Commande reÃ§ue",
-  UNDER_REVIEW: "En Ã©tude",
-  QUOTE_SENT: "Devis envoyÃ©",
-  CONFIRMED: "ConfirmÃ©e",
+  SUBMITTED: "Commande reçue",
+  UNDER_REVIEW: "En étude",
+  QUOTE_SENT: "Devis envoyé",
+  CONFIRMED: "Confirmée",
   IN_PRODUCTION: "En fabrication",
   IN_DESIGN: "En conception",
   DESIGN_APPROVAL: "Validation design",
-  QUALITY_CHECK: "ContrÃ´le qualitÃ©",
-  READY: "PrÃªte",
-  DELIVERED: "LivrÃ©e",
-  CLOSED: "ClÃ´turÃ©e",
-  new: "Commande reÃ§ue",
+  QUALITY_CHECK: "Contrôle qualité",
+  READY: "Prête",
+  DELIVERED: "Livrée",
+  CLOSED: "Clôturée",
+  new: "Commande reçue",
   processing: "En cours",
-  shipped: "ExpÃ©diÃ©e",
-  done: "TerminÃ©e",
-  cancelled: "AnnulÃ©e",
+  shipped: "Expédiée",
+  done: "Terminée",
+  cancelled: "Annulée",
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -60,17 +60,17 @@ const IMAGE_EXT_RE = /\.(png|jpg|jpeg|webp|gif)$/i;
 
 const WA_LABELS: Record<string, Record<string, string>> = {
   fr: {
-    SUBMITTED: "reÃ§ue",
-    UNDER_REVIEW: "en Ã©tude",
-    QUOTE_SENT: "devis envoyÃ©",
-    CONFIRMED: "confirmÃ©e",
+    SUBMITTED: "reçue",
+    UNDER_REVIEW: "en étude",
+    QUOTE_SENT: "devis envoyé",
+    CONFIRMED: "confirmée",
     IN_PRODUCTION: "en fabrication",
     IN_DESIGN: "en conception",
     DESIGN_APPROVAL: "en validation du design",
-    QUALITY_CHECK: "en contrÃ´le qualitÃ©",
-    READY: "prÃªte",
-    DELIVERED: "livrÃ©e",
-    CLOSED: "clÃ´turÃ©e",
+    QUALITY_CHECK: "en contrôle qualité",
+    READY: "prête",
+    DELIVERED: "livrée",
+    CLOSED: "clôturée",
   },
   en: {
     SUBMITTED: "received",
@@ -86,27 +86,27 @@ const WA_LABELS: Record<string, Record<string, string>> = {
     CLOSED: "closed",
   },
   ar: {
-    SUBMITTED: "ØªÙ… Ø§Ø³ØªÙ„Ø§Ù…Ù‡Ø§",
-    UNDER_REVIEW: "Ù‚ÙŠØ¯ Ø§Ù„Ø¯Ø±Ø§Ø³Ø©",
-    QUOTE_SENT: "ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø¹Ø±Ø¶",
-    CONFIRMED: "Ù…Ø¤ÙƒØ¯Ø©",
-    IN_PRODUCTION: "Ù‚ÙŠØ¯ Ø§Ù„ØªØµÙ†ÙŠØ¹",
-    IN_DESIGN: "Ù‚ÙŠØ¯ Ø§Ù„ØªØµÙ…ÙŠÙ…",
-    DESIGN_APPROVAL: "Ù‚ÙŠØ¯ Ø§Ø¹ØªÙ…Ø§Ø¯ Ø§Ù„ØªØµÙ…ÙŠÙ…",
-    QUALITY_CHECK: "Ù‚ÙŠØ¯ Ù…Ø±Ø§Ù‚Ø¨Ø© Ø§Ù„Ø¬ÙˆØ¯Ø©",
-    READY: "Ø¬Ø§Ù‡Ø²Ø©",
-    DELIVERED: "ØªÙ… Ø§Ù„ØªØ³Ù„ÙŠÙ…",
-    CLOSED: "Ù…ØºÙ„Ù‚Ø©",
+    SUBMITTED: "تم استلامها",
+    UNDER_REVIEW: "قيد الدراسة",
+    QUOTE_SENT: "تم إرسال العرض",
+    CONFIRMED: "مؤكدة",
+    IN_PRODUCTION: "قيد التصنيع",
+    IN_DESIGN: "قيد التصميم",
+    DESIGN_APPROVAL: "قيد اعتماد التصميم",
+    QUALITY_CHECK: "قيد مراقبة الجودة",
+    READY: "جاهزة",
+    DELIVERED: "تم التسليم",
+    CLOSED: "مغلقة",
   },
 };
 
 const WA_TEMPLATES: Record<string, (o: Order) => string> = {
   fr: (o) =>
-    `Bonjour ${o.firstName} ${o.lastName},\nvotre commande ${o.code} est passÃ©e au statut Â« ${WA_LABELS.fr[o.status] ?? o.status} Â».\nVous pouvez la suivre ici : `,
+    `Bonjour ${o.firstName} ${o.lastName},\nvotre commande ${o.code} est passée au statut « ${WA_LABELS.fr[o.status] ?? o.status} ».\nVous pouvez la suivre ici : `,
   en: (o) =>
     `Hello ${o.firstName} ${o.lastName},\nyour order ${o.code} is now ${WA_LABELS.en[o.status] ?? o.status}.\nTrack it here: `,
   ar: (o) =>
-    `Ù…Ø±Ø­Ø¨Ø§Ù‹ ${o.firstName} ${o.lastName}ØŒ\nØ£ØµØ¨Ø­Øª Ø­Ø§Ù„Ø© Ø·Ù„Ø¨ÙƒÙ… ${o.code} Â« ${WA_LABELS.ar[o.status] ?? o.status} Â».\nÙŠÙ…ÙƒÙ†ÙƒÙ… Ù…ØªØ§Ø¨Ø¹ØªÙ‡ Ù‡Ù†Ø§: `,
+    `مرحباً ${o.firstName} ${o.lastName}،\nأصبحت حالة طلبكم ${o.code} « ${WA_LABELS.ar[o.status] ?? o.status} ».\nيمكنكم متابعته هنا: `,
 };
 
 function formatBytes(bytes: number): string {
@@ -170,7 +170,7 @@ export function OrdersPanel({
   return (
     <div className="space-y-6">
       {loading ? (
-        <p className="py-10 text-center text-[#9a97a6]">Chargementâ€¦</p>
+        <p className="py-10 text-center text-[#9a97a6]">Chargement…</p>
       ) : orders.length === 0 ? (
         <p
           className={cn(panelCard, "py-14 text-center text-[#6b6878]")}
@@ -323,13 +323,13 @@ function OrderCard({
             </span>
           </div>
           <p className="mt-1.5 text-sm font-semibold text-[#2b2b46]">
-            {order.firstName} {order.lastName} Â·{" "}
+            {order.firstName} {order.lastName} ·{" "}
             <span dir="ltr">{order.phone}</span>
           </p>
           <p className="mt-0.5 text-xs text-[#6b6878]">
-            {new Date(order.createdAt).toLocaleString("fr-FR")} Â·{" "}
+            {new Date(order.createdAt).toLocaleString("fr-FR")} ·{" "}
             {order.serviceType.replace(/_/g, " ")}
-            {order.orderDate ? ` Â· ${order.orderDate}` : ""}
+            {order.orderDate ? ` · ${order.orderDate}` : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -356,14 +356,14 @@ function OrderCard({
                 className="flex h-7 items-center px-2 text-xs font-semibold text-green-700 transition hover:bg-green-50"
                 title="Envoyer en arabe"
               >
-                Ø¹Ø±Ø¨ÙŠ
+                عربي
               </a>
               <a
                 href={waLink(order, "fr")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-7 items-center px-2 text-xs font-semibold text-green-700 transition hover:bg-green-50"
-                title="Envoyer en franÃ§ais"
+                title="Envoyer en français"
               >
                 FR
               </a>
@@ -384,7 +384,7 @@ function OrderCard({
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-medium text-[#6b6878]">
-            Prix (visible du client dÃ¨s Â« Devis envoyÃ© Â»)
+            Prix (visible du client dès « Devis envoyé »)
           </label>
           <input
             type="number"
@@ -392,7 +392,7 @@ function OrderCard({
             step="any"
             value={priceDraft}
             onChange={(e) => setPriceDraft(e.target.value)}
-            placeholder="â€”"
+            placeholder="—"
             className={inputClass}
           />
         </div>
@@ -412,7 +412,7 @@ function OrderCard({
           </div>
         ) : (
           <p className="flex items-center justify-center rounded-md border border-[#f0e6d2] bg-[#fdfaf3] px-3 py-1.5 text-xs text-[#6b6878]">
-            Retrait sur place â€” gratuit
+            Retrait sur place — gratuit
           </p>
         )}
       </div>
@@ -423,8 +423,8 @@ function OrderCard({
           Livraison :{" "}
           {order.delivery.method === "courier"
             ? order.delivery.option === "home"
-              ? `Ã€ domicile${order.delivery.address ? ` â€” ${order.delivery.address}` : ""}${order.delivery.communeName ? ` / ${order.delivery.communeName}` : ""}`
-              : `Bureau du coursier â€” ${order.delivery.wilayaId ?? order.delivery.officeId ?? "â€”"}`
+              ? `À domicile${order.delivery.address ? ` — ${order.delivery.address}` : ""}${order.delivery.communeName ? ` / ${order.delivery.communeName}` : ""}`
+              : `Bureau du coursier — ${order.delivery.wilayaId ?? order.delivery.officeId ?? "—"}`
             : "Retrait sur place"}
         </p>
       )}
@@ -480,7 +480,7 @@ function OrderCard({
                     className="flex h-8 items-center gap-1 rounded-md border border-[#f0e6d2] bg-white px-2.5 text-xs font-medium text-[#5f5975] transition hover:border-dzb-amber hover:text-dzb-amberink"
                   >
                     <DownloadIcon className="h-3.5 w-3.5" />
-                    TÃ©lÃ©charger
+                    Télécharger
                   </button>
                   <button
                     type="button"
@@ -521,7 +521,7 @@ function OrderCard({
                 {index < order.history.length - 1 && (
                   <button
                     type="button"
-                    aria-label={`Supprimer l'Ã©tape ${STATUS_LABELS[entry.status] ?? entry.status}`}
+                    aria-label={`Supprimer l'étape ${STATUS_LABELS[entry.status] ?? entry.status}`}
                     onClick={() => onHistoryRemove(order.code, index)}
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#f0e6d2] text-[#9a97a6] transition hover:border-red-300 hover:text-red-500"
                   >
@@ -539,10 +539,10 @@ function OrderCard({
         <p className="text-xs">
           {savedFlash ? (
             <span className="text-emerald-600">
-              Modifications enregistrÃ©es âœ“
+              Modifications enregistrées ✓
             </span>
           ) : hasUnsaved ? (
-            <span className="text-amber-600">Modifications non enregistrÃ©es</span>
+            <span className="text-amber-600">Modifications non enregistrées</span>
           ) : (
             <span className="text-[#9a97a6]">Aucune modification</span>
           )}
@@ -565,7 +565,7 @@ function OrderCard({
         >
           <img
             src={viewer}
-            alt="AperÃ§u"
+            alt="Aperçu"
             className="max-h-full max-w-full rounded-lg"
             onClick={(e) => e.stopPropagation()}
           />

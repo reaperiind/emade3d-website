@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 import type { Commune, Wilaya } from "@/lib/settings-store";
@@ -221,7 +221,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
       if (res.ok && json?.ok && json?.counts) {
         setImportMsg({
           ok: true,
-          text: `ImportÃ© : ${json.counts.wilayas} wilayas, ${json.counts.communes} communes, ${json.counts.offices} bureaux. Totals : ${json.total?.wilayas} / ${json.total?.communes} / ${json.total?.offices}.${json.log?.length ? ` ${json.log.join(" ")}` : ""}`,
+          text: `Importé : ${json.counts.wilayas} wilayas, ${json.counts.communes} communes, ${json.counts.offices} bureaux. Totals : ${json.total?.wilayas} / ${json.total?.communes} / ${json.total?.offices}.${json.log?.length ? ` ${json.log.join(" ")}` : ""}`,
         });
         const sres = await fetch("/api/settings");
         const sjson = await sres.json();
@@ -230,7 +230,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
         setImportMsg({ ok: false, text: `Erreur : ${json?.error ?? "inconnue"}` });
       }
     } catch {
-      setImportMsg({ ok: false, text: "Erreur rÃ©seau." });
+      setImportMsg({ ok: false, text: "Erreur réseau." });
     } finally {
       setImporting(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -241,7 +241,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
   if (!settings) {
     return (
       <p className="mt-10 text-center text-[#9a97a6]">
-        Chargement des paramÃ¨tresâ€¦
+        Chargement des paramètres…
       </p>
     );
   }
@@ -259,11 +259,11 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
   return (
     <div className="space-y-6">
       <div className={panelCard}>
-        <h2 className={panelHeading}>DonnÃ©es de livraison</h2>
+        <h2 className={panelHeading}>Données de livraison</h2>
         <p className={panelMuted}>
           Saisissez manuellement les wilayas et les communes, ou importez-les
-          depuis un fichier Excel. Chaque wilaya a un prix Ã  domicile et un prix
-          bureau (stop-desk), tous deux utilisÃ©s par la page commande.
+          depuis un fichier Excel. Chaque wilaya a un prix à domicile et un prix
+          bureau (stop-desk), tous deux utilisés par la page commande.
         </p>
 
         {/* Excel import */}
@@ -272,10 +272,10 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
             Importer depuis Excel (.xlsx / .xls / .csv)
           </p>
           <p className="mt-1 text-xs leading-relaxed text-[#6b6878]">
-            Le fichier peut contenir des feuilles ou colonnes nommÃ©es : wilayas
-            (nom, prix Ã  domicile, prix bureau), communes (commune + wilaya).
-            Format Guepex pris en charge. Les colonnes sont dÃ©tectÃ©es
-            automatiquement (franÃ§ais, arabe ou anglais).
+            Le fichier peut contenir des feuilles ou colonnes nommées : wilayas
+            (nom, prix à domicile, prix bureau), communes (commune + wilaya).
+            Format Guepex pris en charge. Les colonnes sont détectées
+            automatiquement (français, arabe ou anglais).
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <input
@@ -294,11 +294,11 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
               htmlFor="of-excel-file"
               className="cursor-pointer rounded-md border border-[#e6d9bf] bg-white px-3 py-2 text-sm font-medium text-[#4a4560] shadow-sm transition hover:border-dzb-amber hover:text-dzb-amberink"
             >
-              Choisir un fichierâ€¦
+              Choisir un fichier…
             </label>
             {chosenFile && (
               <span className="max-w-[220px] truncate text-sm text-[#5f5975]">
-                ðŸ“Ž {chosenFile.name}
+                📎 {chosenFile.name}
               </span>
             )}
             <button
@@ -309,7 +309,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
               disabled={!chosenFile || importing}
               className={saveButton}
             >
-              {importing ? "Import en coursâ€¦" : "âŸ³ Importer le fichier"}
+              {importing ? "Import en cours…" : "⟳ Importer le fichier"}
             </button>
           </div>
           {importMsg && (
@@ -328,7 +328,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
         <div className="mt-6">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-[#4a4560]">
-              Wilayas ({wilayas.length}) â€” prix domicile &amp; bureau
+              Wilayas ({wilayas.length}) — prix domicile &amp; bureau
             </p>
             <button type="button" onClick={addWilaya} className={secondaryButton}>
               <PlusIcon className="h-4 w-4" />
@@ -337,8 +337,8 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
           </div>
           {hasCommuneWithoutHomeFee && (
             <p className="mt-2 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              Certaines wilayas n&apos;ont pas de prix : le tarif gÃ©nÃ©ral sera
-              utilisÃ© pour elles.
+              Certaines wilayas n&apos;ont pas de prix : le tarif général sera
+              utilisé pour elles.
             </p>
           )}
           <div className="mt-3 space-y-2.5">
@@ -377,7 +377,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
                     onChange={(e) =>
                       updateWilaya(index, { nameAr: e.target.value })
                     }
-                    placeholder="Ø§Ù„Ø¬Ø²Ø§Ø¦Ø±"
+                    placeholder="الجزائر"
                     dir="rtl"
                     className={inputClass}
                   />
@@ -426,7 +426,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
             ))}
             {wilayas.length === 0 && (
               <p className="rounded-lg bg-[#fdfaf3] px-3 py-3 text-xs text-[#6b6878]">
-                Aucune wilaya : la livraison ne sera pas proposÃ©e tant que le
+                Aucune wilaya : la livraison ne sera pas proposée tant que le
                 catalogue n&apos;est pas rempli (manuellement ou via Excel).
               </p>
             )}
@@ -468,7 +468,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
             </div>
           </div>
           <p className="mt-1 text-xs text-[#6b6878]">
-            SÃ©lectionnez une wilaya pour gÃ©rer ses communes puis Â« Ajouter Â».
+            Sélectionnez une wilaya pour gérer ses communes puis « Ajouter ».
           </p>
           <div className="mt-3 space-y-2">
             {visibleCommunes.map((c, index) => {
@@ -476,7 +476,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
                 (x) => x.id === c.id && x.wilayaId === c.wilayaId
               );
               const wilayaName =
-                wilayas.find((w) => w.id === c.wilayaId)?.name ?? "â€”";
+                wilayas.find((w) => w.id === c.wilayaId)?.name ?? "—";
               return (
                 <div
                   key={`${c.wilayaId}-${c.id}`}
@@ -499,7 +499,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
                       onChange={(e) =>
                         updateCommune(globalIndex, { nameAr: e.target.value })
                       }
-                      placeholder="Ø¨Ø§Ø¨ Ø§Ù„Ø²ÙˆØ§Ø±"
+                      placeholder="باب الزوار"
                       dir="rtl"
                       className={inputClass}
                     />
@@ -518,7 +518,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
             {visibleCommunes.length === 0 && (
               <p className="rounded-lg bg-[#fdfaf3] px-3 py-3 text-xs text-[#6b6878]">
                 {communeWilayaFilter === "all"
-                  ? "Aucune commune : les clients pourront quand mÃªme choisir une wilaya pour la livraison Ã  domicile."
+                  ? "Aucune commune : les clients pourront quand même choisir une wilaya pour la livraison à domicile."
                   : "Aucune commune pour cette wilaya."}
               </p>
             )}
@@ -531,18 +531,18 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
           disabled={saving}
           className={cn(saveButton, "mt-6")}
         >
-          {saving ? "Enregistrementâ€¦" : "Enregistrer"}
+          {saving ? "Enregistrement…" : "Enregistrer"}
         </button>
       </div>
 
       {error && (
         <p className="rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
-          Impossible d&apos;enregistrer les paramÃ¨tres.
+          Impossible d&apos;enregistrer les paramètres.
         </p>
       )}
       {saved && (
         <p className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
-          ParamÃ¨tres enregistrÃ©s.
+          Paramètres enregistrés.
         </p>
       )}
     </div>

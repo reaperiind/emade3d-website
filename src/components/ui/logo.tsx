@@ -35,7 +35,7 @@ export function Logo({
       </span>
       {showBaseline && (
         <span className="mt-1.5 text-[10px] font-medium uppercase tracking-widest2 text-steel-400">
-          {locale === "ar" ? "Ù‡Ù†Ø¯Ø³Ø© Â· ØªØµÙ…ÙŠÙ… Â· ØªØµÙ†ÙŠØ¹" : "Engineering Â· Design Â· Manufacturing"}
+          {locale === "ar" ? "هندسة · تصميم · صناعة" : "Engineering · Design · Manufacturing"}
         </span>
       )}
     </Link>

@@ -48,7 +48,7 @@ export function ProcessGrid() {
   );
 }
 
-/** Alternating timeline layout â€” used on the "Comment Ã§a marche" page. */
+/** Alternating timeline layout â€” used on the "Comment ça marche" page. */
 export function ProcessTimeline() {
   const { locale } = useI18n();
   return (
