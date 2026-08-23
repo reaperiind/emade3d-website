@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Order, OrderStatus } from "@/lib/orders-store";
 import { statusesFor } from "@/lib/order-flows";
 import { cn } from "@/lib/cn";
@@ -144,6 +144,40 @@ function fromLocalInput(value: string): string {
   return new Date(value).toISOString();
 }
 
+type OrderGroupId = "all" | "pending" | "progress" | "done";
+
+const ORDER_GROUPS: { id: OrderGroupId; label: string; statuses: string[] }[] = [
+  { id: "all", label: "Toutes", statuses: [] },
+  {
+    id: "pending",
+    label: "En attente",
+    statuses: ["SUBMITTED", "UNDER_REVIEW", "QUOTE_SENT"],
+  },
+  {
+    id: "progress",
+    label: "En cours",
+    statuses: [
+      "CONFIRMED",
+      "IN_PRODUCTION",
+      "IN_DESIGN",
+      "DESIGN_APPROVAL",
+      "QUALITY_CHECK",
+    ],
+  },
+  { id: "done", label: "Finalisées", statuses: ["READY", "DELIVERED", "CLOSED"] },
+];
+
+const ORDERS_PER_PAGE = 10;
+
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.8-3.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function OrdersPanel({
   orders,
   loading,
@@ -167,33 +201,164 @@ export function OrdersPanel({
   onDelete: (code: string) => void;
   onFilesChange: (code: string, files: Order["files"]) => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [group, setGroup] = useState<OrderGroupId>("all");
+  const [page, setPage] = useState(1);
+
+  const counts = useMemo(() => {
+    const c: Record<OrderGroupId, number> = {
+      all: orders.length,
+      pending: 0,
+      progress: 0,
+      done: 0,
+    };
+    for (const o of orders) {
+      if (ORDER_GROUPS[1].statuses.includes(o.status)) c.pending += 1;
+      else if (ORDER_GROUPS[2].statuses.includes(o.status)) c.progress += 1;
+      else if (ORDER_GROUPS[3].statuses.includes(o.status)) c.done += 1;
+    }
+    return c;
+  }, [orders]);
+
+  // Newest first, then narrowed by the search box and the active group.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const active = ORDER_GROUPS.find((g) => g.id === group);
+    return orders
+      .filter((o) => {
+        if (active && active.statuses.length > 0 && !active.statuses.includes(o.status))
+          return false;
+        if (!q) return true;
+        const hay =
+          `${o.code} ${o.firstName} ${o.lastName} ${o.phone ?? ""}`.toLowerCase();
+        return hay.includes(q);
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+  }, [orders, query, group]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ORDERS_PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * ORDERS_PER_PAGE;
+  const visible = filtered.slice(start, start + ORDERS_PER_PAGE);
+
+  function changeGroup(next: OrderGroupId) {
+    setGroup(next);
+    setPage(1);
+  }
+
+  function changeQuery(value: string) {
+    setQuery(value);
+    setPage(1);
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Toolbar : recherche + filtres de statut */}
+      <div className={cn(panelCard, "p-4 sm:p-5")}>
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+          <div className="relative flex-1">
+            <SearchIcon className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9a97a6]" />
+            <input
+              value={query}
+              onChange={(e) => changeQuery(e.target.value)}
+              placeholder="Rechercher par code, nom ou téléphone…"
+              className={cn(inputClass, "pr-10")}
+            />
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {ORDER_GROUPS.map((g) => {
+              const isActive = group === g.id;
+              return (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => changeGroup(g.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+                    isActive
+                      ? "border-transparent bg-gradient-to-br from-dzb-amber to-dzb-amberdeep text-white shadow-[0_8px_16px_-8px_rgba(247,169,33,0.9)]"
+                      : "border-[#f0e6d2] bg-white text-[#6b6878] hover:border-dzb-amber hover:text-dzb-amberink"
+                  )}
+                >
+                  {g.label}
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none",
+                      isActive ? "bg-white/25 text-white" : "bg-[#f8f2e5] text-[#6b6878]"
+                    )}
+                  >
+                    {counts[g.id]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {loading ? (
         <p className="py-10 text-center text-[#9a97a6]">Chargement…</p>
-      ) : orders.length === 0 ? (
-        <p
-          className={cn(panelCard, "py-14 text-center text-[#6b6878]")}
-        >
-          Aucune commande pour le moment.
+      ) : filtered.length === 0 ? (
+        <p className={cn(panelCard, "py-14 text-center text-[#6b6878]")}>
+          {orders.length === 0
+            ? "Aucune commande pour le moment."
+            : "Aucune commande ne correspond à la recherche."}
         </p>
       ) : (
-        <ul className="space-y-4">
-          {orders.map((order) => (
-            <OrderCard
-              key={order.code}
-              order={order}
-              token={token}
-              onStatus={onStatus}
-              onPrice={onPrice}
-              onDeliveryFee={onDeliveryFee}
-              onHistoryAt={onHistoryAt}
-              onHistoryRemove={onHistoryRemove}
-              onDelete={onDelete}
-              onFilesChange={onFilesChange}
-            />
-          ))}
-        </ul>
+        <>
+          <ul className="space-y-4">
+            {visible.map((order) => (
+              <OrderCard
+                key={order.code}
+                order={order}
+                token={token}
+                onStatus={onStatus}
+                onPrice={onPrice}
+                onDeliveryFee={onDeliveryFee}
+                onHistoryAt={onHistoryAt}
+                onHistoryRemove={onHistoryRemove}
+                onDelete={onDelete}
+                onFilesChange={onFilesChange}
+              />
+            ))}
+          </ul>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[#f0e6d2] bg-white px-4 py-3 shadow-[0_6px_20px_rgba(27,26,45,0.05)] sm:px-5">
+              <p className="text-xs font-medium text-[#9a97a6]">
+                {start + 1}–{Math.min(start + ORDERS_PER_PAGE, filtered.length)}{" "}
+                sur {filtered.length} commandes
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  aria-label="Page précédente"
+                  disabled={safePage === 1}
+                  onClick={() => setPage(safePage - 1)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-dzb-navy/15 text-sm font-bold text-dzb-navy transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-40 disabled:hover:border-dzb-navy/15 disabled:hover:text-dzb-navy"
+                >
+                  ‹
+                </button>
+                <span className="min-w-20 text-center text-sm font-bold text-dzb-navy">
+                  Page {safePage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Page suivante"
+                  disabled={safePage === totalPages}
+                  onClick={() => setPage(safePage + 1)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-dzb-navy/15 text-sm font-bold text-dzb-navy transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-40 disabled:hover:border-dzb-navy/15 disabled:hover:text-dzb-navy"
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
