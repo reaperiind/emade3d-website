@@ -45,11 +45,17 @@ async function sanitizeDelivery(raw: unknown): Promise<DeliveryInfo | undefined>
   const option = d.option === "home" ? "home" : "office";
   const address = clean(d.address, 500);
   const wilayaId = Number(d.wilayaId) || undefined;
+  const communeId = Number(d.communeId) || undefined;
   const settings = await getSettings();
   const wilaya =
     wilayaId != null
       ? settings.delivery.wilayas.find((w) => w.id === wilayaId)
       : undefined;
+  const commune =
+    communeId != null
+      ? settings.delivery.communes.find((c) => c.id === communeId)
+      : undefined;
+  const communeName = clean(d.communeName, 120) || commune?.name;
 
   if (option === "office") {
     const fee = wilaya?.stopDeskFee ?? settings.delivery.homeFee;
@@ -57,7 +63,14 @@ async function sanitizeDelivery(raw: unknown): Promise<DeliveryInfo | undefined>
   }
 
   const fee = wilaya?.homeFee ?? settings.delivery.homeFee;
-  return { method, option, wilayaId, address, fee };
+  return {
+    method,
+    option,
+    wilayaId,
+    ...(communeName ? { communeId, communeName } : {}),
+    address,
+    fee,
+  };
 }
 
 // POST /api/product-orders — public. Records a product purchase request
