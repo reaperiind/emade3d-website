@@ -7,6 +7,7 @@ import type {
   ProductOrder,
   ProductOrderStatus,
 } from "@/lib/product-orders-store";
+import type { Wilaya } from "@/lib/settings-store";
 import { cn } from "@/lib/cn";
 import {
   PlusIcon,
@@ -98,11 +99,18 @@ function orderProductLabel(o: ProductOrder): string {
   return o.productName.fr || o.productName.en || o.productName.ar || o.productSlug;
 }
 
-function deliveryLabel(order: ProductOrder): string {
+function deliveryLabel(
+  order: ProductOrder,
+  wilayaById?: Map<number, Wilaya>
+): string {
   const d = order.delivery;
   if (!d || d.method === "pickup") return "Retrait sur place";
-  if (d.option === "home") return `À domicile${d.address ? ` — ${d.address}` : ""}`;
-  return `Bureau du coursier${d.wilayaId != null ? ` — wilaya ${d.wilayaId}` : ""}`;
+  const w = d.wilayaId != null ? wilayaById?.get(d.wilayaId) : undefined;
+  const place =
+    w?.name ?? (d.wilayaId != null ? `wilaya ${d.wilayaId}` : "");
+  if (d.option === "home")
+    return `À domicile${place ? ` — ${place}` : ""}${d.address ? ` — ${d.address}` : ""}`;
+  return `Bureau du coursier${place ? ` — ${place}` : ""}`;
 }
 
 function orderTotal(o: ProductOrder): number {
@@ -155,6 +163,27 @@ export function ProductsPanel({ token }: { token: string }) {
   const [statusFilter, setStatusFilter] = useState<
     "all" | "online" | "hidden"
   >("all");
+  const [wilayas, setWilayas] = useState<Wilaya[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/settings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (!cancelled && Array.isArray(json?.settings?.delivery?.wilayas)) {
+          setWilayas(json.settings.delivery.wilayas);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const wilayaById = useMemo(
+    () => new Map(wilayas.map((w) => [w.id, w])),
+    [wilayas]
+  );
 
   const bySlug = useMemo(() => {
     const map = new Map<string, Product>();
@@ -484,6 +513,7 @@ export function ProductsPanel({ token }: { token: string }) {
         <ProductOrdersTable
           orders={orders}
           bySlug={bySlug}
+          wilayaById={wilayaById}
           onChangeStatus={patchStatus}
           onDelete={deleteOrder}
           onSelect={setSelected}
@@ -494,6 +524,7 @@ export function ProductsPanel({ token }: { token: string }) {
         <OrderDetailOverlay
           order={selected}
           product={bySlug.get(selected.productSlug)}
+          wilayaById={wilayaById}
           onClose={() => setSelected(null)}
           onChangeStatus={(s) => patchStatus(selected.id, s)}
           onDelete={() => deleteOrder(selected.id)}
@@ -646,12 +677,14 @@ function PencilIcon({ className }: { className?: string }) {
 function ProductOrdersTable({
   orders,
   bySlug,
+  wilayaById,
   onChangeStatus,
   onDelete,
   onSelect,
 }: {
   orders: ProductOrder[] | null;
   bySlug: Map<string, Product>;
+  wilayaById: Map<number, Wilaya>;
   onChangeStatus: (id: string, status: ProductOrderStatus) => void;
   onDelete: (id: string) => void;
   onSelect: (o: ProductOrder) => void;
@@ -804,7 +837,7 @@ function ProductOrdersTable({
                       {fmtMoney(orderTotal(o))} DA
                     </td>
                     <td className="hidden px-3 py-3 lg:table-cell">
-                      <p className="text-[#5f5975]">{deliveryLabel(o)}</p>
+                      <p className="text-[#5f5975]">{deliveryLabel(o, wilayaById)}</p>
                       <p className="text-xs text-[#9a97a6]">
                         Frais : {fmtMoney(o.delivery?.fee ?? 0)} DA
                       </p>
@@ -868,12 +901,14 @@ function ProductOrdersTable({
 function OrderDetailOverlay({
   order,
   product,
+  wilayaById,
   onClose,
   onChangeStatus,
   onDelete,
 }: {
   order: ProductOrder;
   product?: Product;
+  wilayaById: Map<number, Wilaya>;
   onClose: () => void;
   onChangeStatus: (s: ProductOrderStatus) => void;
   onDelete: () => void;
@@ -886,7 +921,7 @@ function OrderDetailOverlay({
   const deliveries: [string, string][] = [
     ["Produit", orderProductLabel(order)],
     [
-      "Qité",
+      "Quantité",
       `${order.quantity} × ${fmtMoney(order.price ?? 0)} DA`,
     ],
     [
@@ -1095,14 +1130,21 @@ function OrderDetailOverlay({
               Livraison
             </p>
             <p className="mt-2 text-sm font-medium text-[#2b2b46]">
-              {deliveryLabel(order)}
+              {deliveryLabel(order, wilayaById)}
             </p>
             <p className="mt-1 text-sm text-[#6b6878]">
               Frais : {fmtMoney(order.delivery?.fee ?? 0)} DA
             </p>
             {order.delivery?.wilayaId != null && (
               <p className="mt-1 text-sm text-[#6b6878]">
-                Wilaya {order.delivery.wilayaId}
+                Wilaya :{" "}
+                <span className="font-semibold text-[#2b2b46]">
+                  {wilayaById.get(order.delivery.wilayaId)?.name ??
+                    `#${order.delivery.wilayaId}`}
+                </span>
+                {order.delivery.communeName != null && (
+                  <> — {order.delivery.communeName}</>
+                )}
               </p>
             )}
             {order.delivery?.address && (
