@@ -151,12 +151,38 @@ export function ProductsPanel({ token }: { token: string }) {
   const [error, setError] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [selected, setSelected] = useState<ProductOrder | null>(null);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "online" | "hidden"
+  >("all");
 
   const bySlug = useMemo(() => {
     const map = new Map<string, Product>();
     for (const p of products ?? []) map.set(p.slug, p);
     return map;
   }, [products]);
+
+  const productCounts = useMemo(() => {
+    const list = products ?? [];
+    return {
+      all: list.length,
+      online: list.filter((p) => p.available).length,
+      hidden: list.filter((p) => !p.available).length,
+    };
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (products ?? []).filter((p) => {
+      if (statusFilter === "online" && !p.available) return false;
+      if (statusFilter === "hidden" && p.available) return false;
+      if (!q) return true;
+      return (
+        productName(p).toLowerCase().includes(q) ||
+        p.slug.toLowerCase().includes(q)
+      );
+    });
+  }, [products, query, statusFilter]);
 
   const loadProducts = useCallback(() => {
     fetch("/api/products")
@@ -322,24 +348,14 @@ export function ProductsPanel({ token }: { token: string }) {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {tab === "products" && (
-              <button
-                type="button"
-                onClick={() => setEditing(blankProduct())}
-                className={secondaryButton}
-              >
-                <PlusIcon className="h-4 w-4" />
-                Nouveau produit
-              </button>
-            )}
             <button
               type="button"
               onClick={() => setTab("products")}
               className={cn(
-                "rounded-md px-3 py-2 text-sm font-medium transition",
+                "rounded-full px-4 py-2 text-sm font-semibold transition",
                 tab === "products"
-                  ? "bg-dzb-amber text-white"
-                  : "border border-[#e6d9bf] bg-white text-[#5f5975]"
+                  ? "bg-gradient-to-br from-dzb-amber to-dzb-amberdeep text-white shadow-[0_8px_16px_-8px_rgba(247,169,33,0.9)]"
+                  : "border border-[#e6d9bf] bg-white text-[#5f5975] hover:border-dzb-amber"
               )}
             >
               Produits
@@ -348,10 +364,10 @@ export function ProductsPanel({ token }: { token: string }) {
               type="button"
               onClick={() => setTab("orders")}
               className={cn(
-                "rounded-md px-3 py-2 text-sm font-medium transition",
+                "rounded-full px-4 py-2 text-sm font-semibold transition",
                 tab === "orders"
-                  ? "bg-dzb-amber text-white"
-                  : "border border-[#e6d9bf] bg-white text-[#5f5975]"
+                  ? "bg-gradient-to-br from-dzb-amber to-dzb-amberdeep text-white shadow-[0_8px_16px_-8px_rgba(247,169,33,0.9)]"
+                  : "border border-[#e6d9bf] bg-white text-[#5f5975] hover:border-dzb-amber"
               )}
             >
               Demandes d&apos;achat
@@ -385,93 +401,80 @@ export function ProductsPanel({ token }: { token: string }) {
             />
           )}
 
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative min-w-56 flex-1">
+              <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9a97a6]" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Rechercher un produit…"
+                className={cn(inputClass, "pl-10")}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditing(blankProduct())}
+              className={saveButton}
+            >
+              <PlusIcon className="h-4 w-4" />
+              Nouveau produit
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {(
+              [
+                { key: "all", label: `Tous (${productCounts.all})` },
+                { key: "online", label: `En ligne (${productCounts.online})` },
+                { key: "hidden", label: `Masqués (${productCounts.hidden})` },
+              ] as const
+            ).map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setStatusFilter(f.key)}
+                className={cn(
+                  "rounded-full border px-3.5 py-1.5 text-sm font-semibold transition",
+                  statusFilter === f.key
+                    ? "border-transparent bg-dzb-tint text-dzb-amberink shadow-[inset_0_0_0_1px_rgba(247,169,33,0.35)]"
+                    : "border-dzb-creamline bg-white text-dzb-muted hover:border-dzb-amber/50"
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
           {products === null ? (
             <p className="py-10 text-center text-[#9a97a6]">Chargement…</p>
-          ) : products.length === 0 ? (
+          ) : filteredProducts.length === 0 ? (
             <p className={cn(panelCard, "py-14 text-center text-[#6b6878]")}>
-              Aucun produit. Cliquez sur « Nouveau produit » pour commencer.
+              {products.length === 0
+                ? "Aucun produit. Cliquez sur « Nouveau produit » pour commencer."
+                : "Aucun produit ne correspond à votre recherche."}
             </p>
           ) : (
-            <ul className="space-y-3">
-              {products.map((product, index) => (
-                <li
-                  key={product.slug}
-                  className={cn(panelCard, "flex items-center gap-4 p-4")}
-                >
-                  <div className="flex flex-col gap-1">
-                    <button
-                      type="button"
-                      aria-label="Monter"
-                      disabled={index === 0}
-                      onClick={() => move(index, -1)}
-                      className="flex h-7 w-7 items-center justify-center rounded border border-[#e6d9bf] text-[#6b6878] transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
-                    >
-                      ▲
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Descendre"
-                      disabled={index === products.length - 1}
-                      onClick={() => move(index, 1)}
-                      className="flex h-7 w-7 items-center justify-center rounded border border-[#e6d9bf] text-[#6b6878] transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
-                    >
-                      ▼
-                    </button>
-                  </div>
-
-                  <div className="h-24 w-32 shrink-0 overflow-hidden rounded-lg border border-[#f0e6d2] bg-[#f8f2e5]">
-                    {product.images?.[0] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={MEDIA_URL(product.images[0])}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-[#9a97a6]">
-                        Sans image
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-[#2b2b46]">
-                      {productName(product)}
-                    </p>
-                    <p className="mt-0.5 truncate text-sm text-[#6b6878]">
-                      {product.price.toLocaleString("fr-DZ")} DA ·{" "}
-                      {product.available ? "Disponible" : "Indisponible"}
-                    </p>
-                    <p className="mt-0.5 truncate font-mono text-xs text-[#9a97a6]">
-                      /{product.slug}
-                    </p>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-2">
-                    <button
-                      type="button"
-                      aria-label="Modifier"
-                      onClick={() =>
-                        setEditing({
-                          ...product,
-                          images: [...(product.images ?? [])],
-                        })
-                      }
-                      className={secondaryButton}
-                    >
-                      Modifier
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Supprimer"
-                      onClick={() => removeProduct(product)}
-                      className={dangerButton}
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                </li>
-              ))}
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredProducts.map((product) => {
+                const index = products.indexOf(product);
+                return (
+                  <ProductCard
+                    key={product.slug}
+                    product={product}
+                    index={index}
+                    total={products.length}
+                    onEdit={() =>
+                      setEditing({
+                        ...product,
+                        images: [...(product.images ?? [])],
+                      })
+                    }
+                    onDelete={() => removeProduct(product)}
+                    onMove={(dir) => move(index, dir)}
+                  />
+                );
+              })}
             </ul>
           )}
         </>
@@ -497,6 +500,142 @@ export function ProductsPanel({ token }: { token: string }) {
         />
       )}
     </div>
+  );
+}
+
+function ProductCard({
+  product,
+  index,
+  total,
+  onEdit,
+  onDelete,
+  onMove,
+}: {
+  product: Product;
+  index: number;
+  total: number;
+  onEdit: () => void;
+  onDelete: () => void;
+  onMove: (dir: -1 | 1) => void;
+}) {
+  const cover = product.images?.[0] ? MEDIA_URL(product.images[0]) : null;
+  const publicUrl = `/fr/produits#${product.slug}`;
+
+  return (
+    <li className="group flex flex-col overflow-hidden rounded-[20px] border border-dzb-creamline bg-white shadow-[0_6px_20px_rgba(27,26,45,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_-20px_rgba(247,169,33,0.5)]">
+      <div className="relative">
+        <div className="aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-dzb-sand/70 to-dzb-tint">
+          {cover ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={cover}
+              alt={productName(product)}
+              loading="lazy"
+              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-xs font-medium text-[#9a97a6]">
+              Sans image
+            </div>
+          )}
+        </div>
+
+        <span
+          className={cn(
+            "absolute left-3 top-3 rounded-full border px-2.5 py-1 text-xs font-bold backdrop-blur-sm",
+            product.available
+              ? "border-emerald-300/80 bg-emerald-50/90 text-emerald-700"
+              : "border-[#e6d9bf] bg-white/85 text-dzb-muted"
+          )}
+        >
+          {product.available ? "En ligne" : "Masqué"}
+        </span>
+
+        <div className="absolute right-2 top-2 flex flex-col gap-1 opacity-0 transition group-hover:opacity-100">
+          <button
+            type="button"
+            aria-label="Monter"
+            disabled={index === 0}
+            onClick={() => onMove(-1)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-dzb-creamline bg-white/90 text-[#6b6878] shadow-sm backdrop-blur-sm transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
+          >
+            ▲
+          </button>
+          <button
+            type="button"
+            aria-label="Descendre"
+            disabled={index === total - 1}
+            onClick={() => onMove(1)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-dzb-creamline bg-white/90 text-[#6b6878] shadow-sm backdrop-blur-sm transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
+          >
+            ▼
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col p-4">
+        <p className="truncate font-semibold text-[#2b2b46]" title={productName(product)}>
+          {productName(product)}
+        </p>
+        <p className="mt-0.5 truncate font-mono text-xs text-[#9a97a6]">
+          /{product.slug}
+        </p>
+
+        <p className="mt-2.5 font-display text-lg font-bold text-dzb-amberink">
+          {fmtMoney(product.price)}{" "}
+          <span className="text-xs font-semibold text-dzb-faint">DA</span>
+        </p>
+
+        <div className="mt-auto flex items-center gap-2 border-t border-[#f8f2e5] pt-3">
+          <a
+            href={publicUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#e6d9bf] px-3 py-2 text-xs font-semibold text-[#5f5975] transition hover:border-dzb-amber hover:text-dzb-amberink"
+          >
+            <EyeIcon className="h-3.5 w-3.5" />
+            Voir
+          </a>
+          <button
+            type="button"
+            onClick={onEdit}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-dzb-tint px-3 py-2 text-xs font-bold text-dzb-amberink transition hover:bg-dzb-sand"
+          >
+            <PencilIcon className="h-3.5 w-3.5" />
+            Modifier
+          </button>
+          <button
+            type="button"
+            aria-label="Supprimer"
+            onClick={onDelete}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-400 transition hover:bg-red-50 hover:text-red-600"
+          >
+            <TrashIcon className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function EyeIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="2.8" />
+    </svg>
+  );
+}
+
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path
+        d="M4 20h4l10.5-10.5a2.1 2.1 0 000-3L17 5a2.1 2.1 0 00-3 0L3.5 15.5V20z"
+        strokeLinejoin="round"
+      />
+      <path d="M13.5 6.5l4 4" />
+    </svg>
   );
 }
 
