@@ -178,6 +178,28 @@ function SearchIcon({ className }: { className?: string }) {
   );
 }
 
+function DotsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+      <circle cx="12" cy="5.5" r="1.7" />
+      <circle cx="12" cy="12" r="1.7" />
+      <circle cx="12" cy="18.5" r="1.7" />
+    </svg>
+  );
+}
+
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path
+        d="M4 20h4l10.5-10.5a2.1 2.1 0 000-3L17 5a2.1 2.1 0 00-3 0L3.5 15.5V20z"
+        strokeLinejoin="round"
+      />
+      <path d="M13.5 6.5l4 4" />
+    </svg>
+  );
+}
+
 export function OrdersPanel({
   orders,
   loading,
@@ -204,6 +226,8 @@ export function OrdersPanel({
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState<OrderGroupId>("all");
   const [page, setPage] = useState(1);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [selectedCode, setSelectedCode] = useState<string | null>(null);
 
   const counts = useMemo(() => {
     const c: Record<OrderGroupId, number> = {
@@ -243,6 +267,9 @@ export function OrdersPanel({
   const safePage = Math.min(page, totalPages);
   const start = (safePage - 1) * ORDERS_PER_PAGE;
   const visible = filtered.slice(start, start + ORDERS_PER_PAGE);
+  const selectedOrder = selectedCode
+    ? orders.find((o) => o.code === selectedCode) ?? null
+    : null;
 
   function changeGroup(next: OrderGroupId) {
     setGroup(next);
@@ -309,20 +336,196 @@ export function OrdersPanel({
         </p>
       ) : (
         <>
-          <ul className="space-y-4">
+          {/* Desktop table */}
+          <div className={cn(panelCard, "hidden overflow-hidden p-0 md:block")}>
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#f0e6d2] bg-[#fdfaf3] text-[11px] font-bold uppercase tracking-widest text-[#9a97a6]">
+                  <th className="px-5 py-3.5">Client</th>
+                  <th className="px-4 py-3.5">Code</th>
+                  <th className="px-4 py-3.5">Date</th>
+                  <th className="px-4 py-3.5">Statut</th>
+                  <th className="px-4 py-3.5" />
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((order) => (
+                  <tr
+                    key={order.code}
+                    className="border-b border-[#f8f2e5] transition last:border-0 hover:bg-[#fffbf0]"
+                  >
+                    <td
+                      className="cursor-pointer px-5 py-4"
+                      onClick={() => setSelectedCode(order.code)}
+                    >
+                      <p className="font-semibold text-[#2b2b46]">
+                        {order.firstName} {order.lastName}
+                      </p>
+                      <p className="text-xs text-[#6b6878]" dir="ltr">
+                        {order.phone}
+                      </p>
+                    </td>
+                    <td
+                      className="cursor-pointer px-4 py-4"
+                      onClick={() => setSelectedCode(order.code)}
+                    >
+                      <span className="font-mono text-xs font-extrabold tracking-wider text-dzb-amberink">
+                        {order.code}
+                      </span>
+                    </td>
+                    <td
+                      className="cursor-pointer whitespace-nowrap px-4 py-4 text-xs text-[#6b6878]"
+                      onClick={() => setSelectedCode(order.code)}
+                    >
+                      {new Date(order.createdAt).toLocaleDateString("fr-FR", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={cn(
+                          "inline-block rounded-full border px-2.5 py-1 text-xs font-semibold",
+                          STATUS_STYLES[order.status] ??
+                            "border-[#e6d9bf] bg-[#f8f2e5] text-[#5f5975]"
+                        )}
+                      >
+                        {STATUS_LABELS[order.status] ?? order.status}
+                      </span>
+                    </td>
+                    <td className="relative px-4 py-4 text-right">
+                      <button
+                        type="button"
+                        aria-label={`Actions pour ${order.code}`}
+                        onClick={() =>
+                          setMenuFor(menuFor === order.code ? null : order.code)
+                        }
+                        className={cn(
+                          "flex h-9 w-9 items-center justify-center rounded-full border transition",
+                          menuFor === order.code
+                            ? "border-dzb-amber bg-dzb-tint text-dzb-amberink"
+                            : "border-transparent text-[#9a97a6] hover:border-[#f0e6d2] hover:text-dzb-navy"
+                        )}
+                      >
+                        <DotsIcon />
+                      </button>
+                      {menuFor === order.code && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-30"
+                            onClick={() => setMenuFor(null)}
+                          />
+                          <div className="absolute right-4 top-full z-40 mt-1 w-44 overflow-hidden rounded-xl border border-[#f0e6d2] bg-white py-1 shadow-[0_16px_40px_-12px_rgba(27,26,45,0.25)]">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMenuFor(null);
+                                setSelectedCode(order.code);
+                              }}
+                              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-[#2b2b46] transition hover:bg-[#fdfaf3]"
+                            >
+                              <PencilIcon className="h-4 w-4 text-dzb-amberink" />
+                              Modifier
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMenuFor(null);
+                                onDelete(order.code);
+                              }}
+                              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                              Supprimer
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile compact cards */}
+          <ul className="space-y-3 md:hidden">
             {visible.map((order) => (
-              <OrderCard
-                key={order.code}
-                order={order}
-                token={token}
-                onStatus={onStatus}
-                onPrice={onPrice}
-                onDeliveryFee={onDeliveryFee}
-                onHistoryAt={onHistoryAt}
-                onHistoryRemove={onHistoryRemove}
-                onDelete={onDelete}
-                onFilesChange={onFilesChange}
-              />
+              <li key={order.code} className={cn(panelCard, "p-4")}>
+                <div className="flex items-start justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCode(order.code)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <p className="truncate font-semibold text-[#2b2b46]">
+                      {order.firstName} {order.lastName}
+                    </p>
+                    <span className="font-mono text-xs font-extrabold tracking-wider text-dzb-amberink">
+                      {order.code}
+                    </span>
+                  </button>
+                  <div className="relative shrink-0">
+                    <button
+                      type="button"
+                      aria-label={`Actions pour ${order.code}`}
+                      onClick={() =>
+                        setMenuFor(menuFor === order.code ? null : order.code)
+                      }
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-transparent text-[#9a97a6] transition hover:border-[#f0e6d2] hover:text-dzb-navy"
+                    >
+                      <DotsIcon />
+                    </button>
+                    {menuFor === order.code && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-30"
+                          onClick={() => setMenuFor(null)}
+                        />
+                        <div className="absolute right-0 top-full z-40 mt-1 w-44 overflow-hidden rounded-xl border border-[#f0e6d2] bg-white py-1 shadow-[0_16px_40px_-12px_rgba(27,26,45,0.25)]">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMenuFor(null);
+                              setSelectedCode(order.code);
+                            }}
+                            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-[#2b2b46]"
+                          >
+                            <PencilIcon className="h-4 w-4 text-dzb-amberink" />
+                            Modifier
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMenuFor(null);
+                              onDelete(order.code);
+                            }}
+                            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-red-600"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                            Supprimer
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+                  <span
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-xs font-semibold",
+                      STATUS_STYLES[order.status] ??
+                        "border-[#e6d9bf] bg-[#f8f2e5] text-[#5f5975]"
+                    )}
+                  >
+                    {STATUS_LABELS[order.status] ?? order.status}
+                  </span>
+                  <span className="text-xs text-[#9a97a6]">
+                    {new Date(order.createdAt).toLocaleDateString("fr-FR")}
+                  </span>
+                </div>
+              </li>
             ))}
           </ul>
 
@@ -358,15 +561,32 @@ export function OrdersPanel({
               </div>
             </div>
           )}
+
+          {/* Details drawer */}
+          {selectedOrder && (
+            <OrderDetailsDrawer
+              order={selectedOrder}
+              token={token}
+              onClose={() => setSelectedCode(null)}
+              onStatus={onStatus}
+              onPrice={onPrice}
+              onDeliveryFee={onDeliveryFee}
+              onHistoryAt={onHistoryAt}
+              onHistoryRemove={onHistoryRemove}
+              onDelete={onDelete}
+              onFilesChange={onFilesChange}
+            />
+          )}
         </>
       )}
     </div>
   );
 }
 
-function OrderCard({
+function OrderDetailsDrawer({
   order,
   token,
+  onClose,
   onStatus,
   onPrice,
   onDeliveryFee,
@@ -377,6 +597,7 @@ function OrderCard({
 }: {
   order: Order;
   token: string;
+  onClose: () => void;
   onStatus: (code: string, status: OrderStatus) => void;
   onPrice: (code: string, raw: string) => void;
   onDeliveryFee: (code: string, raw: string) => void;
@@ -470,80 +691,96 @@ function OrderCard({
   }
 
   return (
-    <li className={panelCard}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <span className="font-mono text-sm font-extrabold tracking-wider text-dzb-amberink">
-              {order.code}
-            </span>
-            <span
-              className={cn(
-                "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
-                STATUS_STYLES[order.status] ??
-                  "border-[#e6d9bf] bg-[#f8f2e5] text-[#5f5975]"
-              )}
-            >
-              {STATUS_LABELS[order.status] ?? order.status}
-            </span>
-          </div>
-          <p className="mt-1.5 text-sm font-semibold text-[#2b2b46]">
-            {order.firstName} {order.lastName} ·{" "}
-            <span dir="ltr">{order.phone}</span>
-          </p>
-          <p className="mt-0.5 text-xs text-[#6b6878]">
-            {new Date(order.createdAt).toLocaleString("fr-FR")} ·{" "}
-            {order.serviceType.replace(/_/g, " ")}
-            {order.orderDate ? ` · ${order.orderDate}` : ""}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={order.status}
-            onChange={(e) => onStatus(order.code, e.target.value as OrderStatus)}
-            className={cn(
-              inputClass,
-              "w-44 appearance-none py-1.5"
-            )}
-          >
-            {options.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABELS[s] ?? s}
-              </option>
-            ))}
-          </select>
-          {waPhoneNumber && (
-            <div className="flex items-center gap-1 rounded-md border border-green-200 p-0.5">
-              <a
-                href={waLink(order, "ar")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-7 items-center px-2 text-xs font-semibold text-green-700 transition hover:bg-green-50"
-                title="Envoyer en arabe"
-              >
-                عربي
-              </a>
-              <a
-                href={waLink(order, "fr")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-7 items-center px-2 text-xs font-semibold text-green-700 transition hover:bg-green-50"
-                title="Envoyer en français"
-              >
-                FR
-              </a>
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-black/45" onClick={onClose} />
+      <aside className="absolute inset-y-0 right-0 flex w-full max-w-2xl flex-col bg-dzb-cream shadow-[0_0_80px_rgba(0,0,0,0.35)]">
+        {/* Sticky header */}
+        <header className="sticky top-0 z-10 border-b border-[#f0e6d2] bg-white/95 px-5 py-4 backdrop-blur sm:px-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="font-mono text-sm font-extrabold tracking-wider text-dzb-amberink">
+                  {order.code}
+                </span>
+                <span
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                    STATUS_STYLES[order.status] ??
+                      "border-[#e6d9bf] bg-[#f8f2e5] text-[#5f5975]"
+                  )}
+                >
+                  {STATUS_LABELS[order.status] ?? order.status}
+                </span>
+              </div>
+              <p className="mt-1.5 text-sm font-semibold text-[#2b2b46]">
+                {order.firstName} {order.lastName} ·{" "}
+                <span dir="ltr">{order.phone}</span>
+              </p>
+              <p className="mt-0.5 text-xs text-[#6b6878]">
+                {new Date(order.createdAt).toLocaleString("fr-FR")} ·{" "}
+                {order.serviceType.replace(/_/g, " ")}
+                {order.orderDate ? ` · ${order.orderDate}` : ""}
+              </p>
             </div>
-          )}
-          <button
-            type="button"
-            aria-label={`Supprimer ${order.code}`}
-            onClick={() => onDelete(order.code)}
-            className="flex h-9 w-9 items-center justify-center rounded-md border border-[#f0e6d2] text-[#9a97a6] transition hover:border-red-300 hover:text-red-500"
-          >
-            <TrashIcon className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+            <button
+              type="button"
+              aria-label="Fermer"
+              onClick={onClose}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#f0e6d2] text-[#6b6878] transition hover:border-red-300 hover:text-red-500"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        {/* Scrollable body */}
+        <div className="flex-1 px-5 py-5 sm:px-6">
+          {/* Status + contact actions */}
+          <div className={cn(panelCard, "flex flex-wrap items-center gap-2.5")}>
+            <select
+              value={order.status}
+              onChange={(e) => onStatus(order.code, e.target.value as OrderStatus)}
+              className={cn(inputClass, "w-auto min-w-44 appearance-none py-2")}
+            >
+              {options.map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_LABELS[s] ?? s}
+                </option>
+              ))}
+            </select>
+            {waPhoneNumber && (
+              <div className="flex items-center gap-1 rounded-full border-2 border-green-200 p-0.5">
+                <a
+                  href={waLink(order, "ar")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-8 items-center rounded-full px-3 text-xs font-bold text-green-700 transition hover:bg-green-50"
+                  title="Envoyer en arabe"
+                >
+                  واتساب عربي
+                </a>
+                <a
+                  href={waLink(order, "fr")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-8 items-center rounded-full px-3 text-xs font-bold text-green-700 transition hover:bg-green-50"
+                  title="Envoyer en français"
+                >
+                  WhatsApp FR
+                </a>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => onDelete(order.code)}
+              className="mr-auto flex h-9 w-9 items-center justify-center rounded-full border border-[#f0e6d2] text-[#9a97a6] transition hover:border-red-300 hover:text-red-500"
+              aria-label={`Supprimer ${order.code}`}
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          </div>
 
       {/* Price + delivery fee */}
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -721,11 +958,12 @@ function OrderCard({
           Enregistrer
         </button>
       </div>
+      </div>
 
       {/* Image viewer */}
       {viewer && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4"
           onClick={() => setViewer(null)}
         >
           <img
@@ -736,6 +974,7 @@ function OrderCard({
           />
         </div>
       )}
-    </li>
+      </aside>
+    </div>
   );
 }
