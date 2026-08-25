@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import AdminShell from "./admin-shell";
 import "@/app/globals.css";
 
 const fontSans = Inter({
@@ -26,7 +27,9 @@ export default function AdminLayout({
 }) {
   return (
     <html lang="fr" dir="ltr" className={`${fontSans.variable} ${fontDisplay.variable}`}>
-      <body>{children}</body>
+      <body>
+        <AdminShell>{children}</AdminShell>
+      </body>
     </html>
   );
 }
