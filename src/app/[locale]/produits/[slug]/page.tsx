@@ -60,18 +60,12 @@ export default async function ProductPage({
         images,
       }}
       delivery={{
-        pickupAvailable: settings.delivery.pickupAvailable,
         homeFee: settings.delivery.homeFee,
         wilayas: settings.delivery.wilayas.map((w) => ({
           id: w.id,
           name: locale === "ar" && w.nameAr ? w.nameAr : w.name,
           homeFee: w.homeFee,
           stopDeskFee: w.stopDeskFee ?? w.homeFee,
-        })),
-        communes: settings.delivery.communes.map((c) => ({
-          id: c.id,
-          wilayaId: c.wilayaId,
-          name: locale === "ar" && c.nameAr ? c.nameAr : c.name,
         })),
       }}
       currency={currency}

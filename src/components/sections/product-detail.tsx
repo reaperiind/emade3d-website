@@ -22,12 +22,6 @@ interface DetailWilaya {
   stopDeskFee: number;
 }
 
-interface DetailCommune {
-  id: number;
-  wilayaId: number;
-  name: string;
-}
-
 const LABELS = {
   fr: {
     back: "Tous les produits",
@@ -42,13 +36,10 @@ const LABELS = {
     phonePlaceholder: "05 XX XX XX XX",
     quantity: "Quantité",
     delivery: "Livraison",
-    pickup: "Retrait sur place",
     homeOption: "À domicile",
     officeOption: "Bureau (Stop Desk)",
     wilaya: "Wilaya",
     selectWilaya: "Choisir la wilaya",
-    commune: "Commune",
-    selectCommune: "Choisir la commune",
     address: "Adresse",
     addressPlaceholder: "Adresse complète de livraison",
     subtotal: "Sous-total",
@@ -77,13 +68,10 @@ const LABELS = {
     phonePlaceholder: "05 XX XX XX XX",
     quantity: "Quantity",
     delivery: "Delivery",
-    pickup: "Pickup on site",
     homeOption: "Home delivery",
     officeOption: "Office (Stop Desk)",
     wilaya: "Wilaya",
     selectWilaya: "Choose the wilaya",
-    commune: "Commune",
-    selectCommune: "Choose the commune",
     address: "Address",
     addressPlaceholder: "Full delivery address",
     subtotal: "Subtotal",
@@ -110,13 +98,10 @@ const LABELS = {
     phonePlaceholder: "05 XX XX XX XX",
     quantity: "الكمية",
     delivery: "التوصيل",
-    pickup: "الاستلام من المقر",
     homeOption: "إلى المنزل",
     officeOption: "مكتب التوصيل (Stop Desk)",
     wilaya: "الولاية",
     selectWilaya: "اختر الولاية",
-    commune: "البلدية",
-    selectCommune: "اختر البلدية",
     address: "العنوان",
     addressPlaceholder: "عنوان التوصيل الكامل",
     subtotal: "المجموع الفرعي",
@@ -143,10 +128,8 @@ export function ProductDetail({
 }: {
   product: DetailProduct;
   delivery: {
-    pickupAvailable: boolean;
     homeFee: number;
     wilayas: DetailWilaya[];
-    communes: DetailCommune[];
   };
   currency: string;
   locale: Locale;
@@ -155,32 +138,19 @@ export function ProductDetail({
   const [imageIndex, setImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  const [deliveryMethod, setDeliveryMethod] = useState<"courier" | "pickup">(
-    delivery.pickupAvailable ? "pickup" : "courier"
-  );
   const [option, setOption] = useState<"home" | "office">("home");
   const [wilayaId, setWilayaId] = useState<number | null>(null);
-  const [communeId, setCommuneId] = useState<number | null>(null);
   const [address, setAddress] = useState("");
 
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const communes = useMemo(
-    () =>
-      wilayaId == null
-        ? []
-        : delivery.communes.filter((c) => c.wilayaId === wilayaId),
-    [wilayaId, delivery.communes]
-  );
-
   const fee = useMemo(() => {
-    if (deliveryMethod === "pickup") return 0;
     const w = delivery.wilayas.find((x) => x.id === wilayaId);
     if (!w) return -1;
     return option === "office" ? w.stopDeskFee : w.homeFee;
-  }, [deliveryMethod, option, wilayaId, delivery.wilayas]);
+  }, [option, wilayaId, delivery.wilayas]);
 
   const hasDeliveryData = delivery.wilayas.length > 0;
   const subtotal = product.price * quantity;
@@ -212,18 +182,14 @@ export function ProductDetail({
           ).value.trim(),
           quantity,
           locale,
-          delivery:
-            deliveryMethod === "pickup"
-              ? { method: "pickup" }
-              : {
-                  method: "courier",
-                  option,
-                  ...(wilayaId != null ? { wilayaId } : {}),
-                  ...(communeId != null ? { communeId } : {}),
-                  ...(option === "home" && address.trim()
-                    ? { address: address.trim() }
-                    : {}),
-                },
+          delivery: {
+            method: "courier",
+            option,
+            ...(wilayaId != null ? { wilayaId } : {}),
+            ...(option === "home" && address.trim()
+              ? { address: address.trim() }
+              : {}),
+          },
         }),
       });
       if (res.ok) {
@@ -412,119 +378,65 @@ export function ProductDetail({
                       <p className="text-sm font-bold text-dzb-navy">
                         {L.delivery}
                       </p>
-                      {delivery.pickupAvailable && (
-                        <div className="mt-3 grid grid-cols-2 gap-2">
-                          <MethodChip
-                            active={deliveryMethod === "pickup"}
-                            onClick={() => setDeliveryMethod("pickup")}
-                            label={L.pickup}
-                          />
-                          <MethodChip
-                            active={deliveryMethod === "courier"}
-                            onClick={() => setDeliveryMethod("courier")}
-                            label={L.delivery}
-                          />
-                        </div>
-                      )}
 
-                      {deliveryMethod === "courier" && (
-                        <>
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            <MethodChip
-                              active={option === "home"}
-                              onClick={() => setOption("home")}
-                              label={L.homeOption}
-                            />
-                            <MethodChip
-                              active={option === "office"}
-                              onClick={() => setOption("office")}
-                              label={L.officeOption}
-                            />
-                          </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <MethodChip
+                          active={option === "home"}
+                          onClick={() => setOption("home")}
+                          label={L.homeOption}
+                        />
+                        <MethodChip
+                          active={option === "office"}
+                          onClick={() => setOption("office")}
+                          label={L.officeOption}
+                        />
+                      </div>
 
-                          {hasDeliveryData ? (
-                            <div className="mt-3 space-y-3">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                  <label className="mb-1.5 block text-xs font-semibold text-dzb-muted">
-                                    {L.wilaya} *
-                                  </label>
-                                  <select
-                                    required
-                                    value={wilayaId ?? ""}
-                                    onChange={(e) => {
-                                      setWilayaId(
-                                        e.target.value
-                                          ? Number(e.target.value)
-                                          : null
-                                      );
-                                      setCommuneId(null);
-                                    }}
-                                    className={cn(inputClass, "appearance-none")}
-                                  >
-                                    <option value="" disabled>
-                                      {L.selectWilaya}
-                                    </option>
-                                    {delivery.wilayas.map((w) => (
-                                      <option key={w.id} value={w.id}>
-                                        {w.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="mb-1.5 block text-xs font-semibold text-dzb-muted">
-                                    {L.commune}
-                                  </label>
-                                  <select
-                                    value={communeId ?? ""}
-                                    onChange={(e) =>
-                                      setCommuneId(
-                                        e.target.value
-                                          ? Number(e.target.value)
-                                          : null
-                                      )
-                                    }
-                                    disabled={!communes.length}
-                                    className={cn(
-                                      inputClass,
-                                      "appearance-none disabled:opacity-50"
-                                    )}
-                                  >
-                                    <option value="">
-                                      {L.selectCommune}
-                                    </option>
-                                    {communes.map((c) => (
-                                      <option key={c.id} value={c.id}>
-                                        {c.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
+                      {hasDeliveryData ? (
+                        <div className="mt-3">
+                          <label className="mb-1.5 block text-xs font-semibold text-dzb-muted">
+                            {L.wilaya} *
+                          </label>
+                          <select
+                            required
+                            value={wilayaId ?? ""}
+                            onChange={(e) =>
+                              setWilayaId(
+                                e.target.value ? Number(e.target.value) : null
+                              )
+                            }
+                            className={cn(inputClass, "appearance-none")}
+                          >
+                            <option value="" disabled>
+                              {L.selectWilaya}
+                            </option>
+                            {delivery.wilayas.map((w) => (
+                              <option key={w.id} value={w.id}>
+                                {w.name}
+                              </option>
+                            ))}
+                          </select>
 
-                              {option === "home" && (
-                                <div>
-                                  <label className="mb-1.5 block text-xs font-semibold text-dzb-muted">
-                                    {L.address} *
-                                  </label>
-                                  <textarea
-                                    required
-                                    rows={2}
-                                    value={address}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    placeholder={L.addressPlaceholder}
-                                    className={cn(inputClass, "resize-none")}
-                                  />
-                                </div>
-                              )}
+                          {option === "home" && (
+                            <div className="mt-3">
+                              <label className="mb-1.5 block text-xs font-semibold text-dzb-muted">
+                                {L.address} *
+                              </label>
+                              <textarea
+                                required
+                                rows={2}
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                                placeholder={L.addressPlaceholder}
+                                className={cn(inputClass, "resize-none")}
+                              />
                             </div>
-                          ) : (
-                            <p className="mt-3 rounded-xl bg-white px-3 py-2.5 text-xs text-dzb-muted">
-                              {L.unconfigured}
-                            </p>
                           )}
-                        </>
+                        </div>
+                      ) : (
+                        <p className="mt-3 rounded-xl bg-white px-3 py-2.5 text-xs text-dzb-muted">
+                          {L.unconfigured}
+                        </p>
                       )}
 
                       {/* Totals */}
@@ -535,16 +447,12 @@ export function ProductDetail({
                             {fmt(subtotal)} {currency}
                           </span>
                         </div>
-                        {deliveryMethod === "courier" && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-dzb-muted">
-                              {L.deliveryFee}
-                            </span>
-                            <span className="font-semibold text-dzb-navy">
-                              {fee < 0 ? "—" : `${fmt(fee)} ${currency}`}
-                            </span>
-                          </div>
-                        )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-dzb-muted">{L.deliveryFee}</span>
+                          <span className="font-semibold text-dzb-navy">
+                            {fee < 0 ? "—" : `${fmt(fee)} ${currency}`}
+                          </span>
+                        </div>
                         <div className="flex items-center justify-between pt-1.5">
                           <span className="font-display font-bold text-dzb-navy">
                             {L.total}
@@ -564,7 +472,7 @@ export function ProductDetail({
 
                     <button
                       type="submit"
-                      disabled={sending || (deliveryMethod === "courier" && !hasDeliveryData)}
+                      disabled={sending || !hasDeliveryData}
                       className="w-full rounded-full bg-gradient-to-br from-dzb-amber to-dzb-amberdeep py-4 font-display text-base font-bold text-white shadow-[0_14px_30px_-12px_rgba(247,169,33,0.9)] transition hover:brightness-105 disabled:opacity-50"
                     >
                       {sending ? L.sending : L.submit}
