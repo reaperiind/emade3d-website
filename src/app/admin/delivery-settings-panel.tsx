@@ -13,6 +13,7 @@ import {
   panelMuted,
   saveButton,
   secondaryButton,
+  dangerButton,
 } from "./admin-types";
 
 export function DeliverySettingsPanel({ token }: { token: string }) {
@@ -29,6 +30,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
   const [communeWilayaFilter, setCommuneWilayaFilter] = useState<number | "all">(
     "all"
   );
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     fetch("/api/settings")
@@ -240,7 +242,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
 
   if (!settings) {
     return (
-      <p className="mt-10 text-center text-[#9a97a6]">
+      <p className="mt-10 text-center text-dzb-faint">
         Chargement des paramètres…
       </p>
     );
@@ -266,18 +268,36 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
           bureau (stop-desk), tous deux utilisés par la page commande.
         </p>
 
-        {/* Excel import */}
-        <div className="mt-4 rounded-lg border border-dashed border-[#e6d9bf] bg-[#fdfaf3] p-4">
-          <p className="text-sm font-medium text-[#4a4560]">
-            Importer depuis Excel (.xlsx / .xls / .csv)
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-[#6b6878]">
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-dzb-navy">Import Excel</h3>
+          <p className="mt-1 text-xs text-dzb-muted">
             Le fichier peut contenir des feuilles ou colonnes nommées : wilayas
             (nom, prix à domicile, prix bureau), communes (commune + wilaya).
             Format Guepex pris en charge. Les colonnes sont détectées
             automatiquement (français, arabe ou anglais).
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              const f = e.dataTransfer.files[0];
+              if (f) {
+                setChosenFile(f);
+                setImportMsg(null);
+              }
+            }}
+            className={cn(
+              "mt-3 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 transition-colors",
+              dragOver
+                ? "border-dzb-amber bg-dzb-cream/50"
+                : "border-dzb-creamline bg-dzb-cream/30"
+            )}
+          >
             <input
               ref={fileRef}
               type="file"
@@ -292,13 +312,13 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
             />
             <label
               htmlFor="of-excel-file"
-              className="cursor-pointer rounded-md border border-[#e6d9bf] bg-white px-3 py-2 text-sm font-medium text-[#4a4560] shadow-sm transition hover:border-dzb-amber hover:text-dzb-amberink"
+              className="cursor-pointer rounded-lg border border-dzb-creamline bg-white px-4 py-2 text-sm font-medium text-dzb-navy shadow-sm transition hover:border-dzb-amber hover:text-dzb-amberink"
             >
               Choisir un fichier…
             </label>
             {chosenFile && (
-              <span className="max-w-[220px] truncate text-sm text-[#5f5975]">
-                📎 {chosenFile.name}
+              <span className="max-w-[260px] truncate text-sm text-dzb-muted">
+                {chosenFile.name}
               </span>
             )}
             <button
@@ -309,14 +329,16 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
               disabled={!chosenFile || importing}
               className={saveButton}
             >
-              {importing ? "Import en cours…" : "⟳ Importer le fichier"}
+              {importing ? "Import en cours…" : "Importer le fichier"}
             </button>
           </div>
           {importMsg && (
             <p
               className={cn(
-                "mt-2 text-sm",
-                importMsg.ok ? "text-emerald-600" : "text-red-600"
+                "mt-2 rounded-lg border px-3 py-2 text-sm",
+                importMsg.ok
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-red-200 bg-red-50 text-red-600"
               )}
             >
               {importMsg.text}
@@ -324,121 +346,112 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
           )}
         </div>
 
-        {/* Wilayas */}
-        <div className="mt-6">
+        <div className="mt-8">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-[#4a4560]">
-              Wilayas ({wilayas.length}) — prix domicile &amp; bureau
-            </p>
+            <h3 className="text-sm font-semibold text-dzb-navy">
+              Wilayas ({wilayas.length})
+            </h3>
             <button type="button" onClick={addWilaya} className={secondaryButton}>
               <PlusIcon className="h-4 w-4" />
               Ajouter
             </button>
           </div>
           {hasCommuneWithoutHomeFee && (
-            <p className="mt-2 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              Certaines wilayas n&apos;ont pas de prix : le tarif général sera
-              utilisé pour elles.
-            </p>
+            <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-medium text-amber-700">
+              Certaines wilayas n&apos;ont pas de prix domicile : le tarif général
+              sera utilisé pour elles.
+            </div>
           )}
-          <div className="mt-3 space-y-2.5">
+          <div className="mt-3 overflow-hidden rounded-xl border border-dzb-creamline">
+            <div className="grid grid-cols-[70px_1.2fr_1.2fr_100px_100px_40px] gap-2 bg-dzb-cream/60 px-4 py-2.5 text-[13px] font-semibold text-dzb-navy">
+              <span>Id</span>
+              <span>Nom</span>
+              <span>Nom arabe</span>
+              <span>Prix domicile</span>
+              <span>Prix bureau</span>
+              <span />
+            </div>
             {wilayas.map((w, index) => (
               <div
                 key={w.id}
-                className="grid gap-2.5 rounded-lg border border-[#f0e6d2] bg-white p-3 sm:grid-cols-[90px_1.2fr_1.2fr_110px_110px_auto]"
+                className="grid grid-cols-[70px_1.2fr_1.2fr_100px_100px_40px] items-center gap-2 border-t border-dzb-creamline px-4 py-2.5 transition-colors hover:bg-dzb-cream/30"
               >
-                <div>
-                  <label className={labelClass}>Id</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={w.id}
-                    onChange={(e) =>
-                      updateWilaya(index, { id: Number(e.target.value) || 0 })
-                    }
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Nom</label>
-                  <input
-                    value={w.name}
-                    onChange={(e) =>
-                      updateWilaya(index, { name: e.target.value })
-                    }
-                    placeholder="Alger"
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Nom arabe (optionnel)</label>
-                  <input
-                    value={w.nameAr ?? ""}
-                    onChange={(e) =>
-                      updateWilaya(index, { nameAr: e.target.value })
-                    }
-                    placeholder="الجزائر"
-                    dir="rtl"
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Prix domicile</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={w.homeFee}
-                    onChange={(e) =>
-                      updateWilaya(index, {
-                        homeFee: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    placeholder="0"
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Prix bureau</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={w.stopDeskFee ?? ""}
-                    onChange={(e) =>
-                      updateWilaya(index, {
-                        stopDeskFee: parseFloat(e.target.value) || undefined,
-                      })
-                    }
-                    placeholder="0"
-                    className={inputClass}
-                  />
-                </div>
+                <input
+                  type="number"
+                  min="1"
+                  value={w.id}
+                  onChange={(e) =>
+                    updateWilaya(index, { id: Number(e.target.value) || 0 })
+                  }
+                  className={cn(inputClass, "py-1.5 text-xs")}
+                />
+                <input
+                  value={w.name}
+                  onChange={(e) =>
+                    updateWilaya(index, { name: e.target.value })
+                  }
+                  placeholder="Alger"
+                  className={cn(inputClass, "py-1.5 text-xs")}
+                />
+                <input
+                  value={w.nameAr ?? ""}
+                  onChange={(e) =>
+                    updateWilaya(index, { nameAr: e.target.value })
+                  }
+                  placeholder="الجزائر"
+                  dir="rtl"
+                  className={cn(inputClass, "py-1.5 text-xs")}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={w.homeFee}
+                  onChange={(e) =>
+                    updateWilaya(index, {
+                      homeFee: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  placeholder="0"
+                  className={cn(inputClass, "py-1.5 text-xs")}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={w.stopDeskFee ?? ""}
+                  onChange={(e) =>
+                    updateWilaya(index, {
+                      stopDeskFee: parseFloat(e.target.value) || undefined,
+                    })
+                  }
+                  placeholder="0"
+                  className={cn(inputClass, "py-1.5 text-xs")}
+                />
                 <button
                   type="button"
                   aria-label="Supprimer la wilaya"
                   onClick={() => removeWilaya(index)}
-                  className="mt-5 flex h-8 w-8 items-center justify-center self-start rounded-md border border-[#e6d9bf] text-[#9a97a6] transition hover:border-red-300 hover:text-red-500"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-dzb-faint transition-colors hover:bg-red-50 hover:text-red-500"
                 >
                   <TrashIcon className="h-3.5 w-3.5" />
                 </button>
               </div>
             ))}
             {wilayas.length === 0 && (
-              <p className="rounded-lg bg-[#fdfaf3] px-3 py-3 text-xs text-[#6b6878]">
+              <div className="px-4 py-6 text-center text-xs text-dzb-muted">
                 Aucune wilaya : la livraison ne sera pas proposée tant que le
                 catalogue n&apos;est pas rempli (manuellement ou via Excel).
-              </p>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Communes */}
-        <div className="mt-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-medium text-[#4a4560]">
+        <div className="mt-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold text-dzb-navy">
               Communes ({communes.length})
-            </p>
+            </h3>
             <div className="flex items-center gap-2">
               <select
                 value={communeWilayaFilter}
@@ -447,7 +460,7 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
                     e.target.value === "all" ? "all" : Number(e.target.value)
                   )
                 }
-                className={cn(inputClass, "w-56 appearance-none")}
+                className={cn(inputClass, "w-56 appearance-none py-2 text-xs")}
               >
                 <option value="all">Toutes les wilayas</option>
                 {wilayas.map((w) => (
@@ -460,18 +473,24 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
                 type="button"
                 onClick={addCommune}
                 disabled={wilayas.length === 0}
-                className={cn(secondaryButton, "disabled:opacity-50")}
+                className={cn(secondaryButton, "disabled:opacity-50 disabled:cursor-not-allowed")}
               >
                 <PlusIcon className="h-4 w-4" />
                 Ajouter
               </button>
             </div>
           </div>
-          <p className="mt-1 text-xs text-[#6b6878]">
+          <p className="mt-1 text-xs text-dzb-muted">
             Sélectionnez une wilaya pour gérer ses communes puis « Ajouter ».
           </p>
-          <div className="mt-3 space-y-2">
-            {visibleCommunes.map((c, index) => {
+          <div className="mt-3 overflow-hidden rounded-xl border border-dzb-creamline">
+            <div className="grid grid-cols-[120px_1fr_1fr_40px] gap-2 bg-dzb-cream/60 px-4 py-2.5 text-[13px] font-semibold text-dzb-navy">
+              <span>Wilaya</span>
+              <span>Commune</span>
+              <span>Nom arabe</span>
+              <span />
+            </div>
+            {visibleCommunes.map((c) => {
               const globalIndex = communes.findIndex(
                 (x) => x.id === c.id && x.wilayaId === c.wilayaId
               );
@@ -480,35 +499,31 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
               return (
                 <div
                   key={`${c.wilayaId}-${c.id}`}
-                  className="grid grid-cols-[110px_1fr_1.2fr_auto] items-center gap-2.5 rounded-lg border border-[#f0e6d2] bg-white p-3"
+                  className="grid grid-cols-[120px_1fr_1fr_40px] items-center gap-2 border-t border-dzb-creamline px-4 py-2.5 transition-colors hover:bg-dzb-cream/30"
                 >
-                  <span className="text-xs text-[#6b6878]">{wilayaName}</span>
-                  <div>
-                    <input
-                      value={c.name}
-                      onChange={(e) =>
-                        updateCommune(globalIndex, { name: e.target.value })
-                      }
-                      placeholder="Bab Ezzouar"
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <input
-                      value={c.nameAr ?? ""}
-                      onChange={(e) =>
-                        updateCommune(globalIndex, { nameAr: e.target.value })
-                      }
-                      placeholder="باب الزوار"
-                      dir="rtl"
-                      className={inputClass}
-                    />
-                  </div>
+                  <span className="truncate text-xs text-dzb-muted">{wilayaName}</span>
+                  <input
+                    value={c.name}
+                    onChange={(e) =>
+                      updateCommune(globalIndex, { name: e.target.value })
+                    }
+                    placeholder="Bab Ezzouar"
+                    className={cn(inputClass, "py-1.5 text-xs")}
+                  />
+                  <input
+                    value={c.nameAr ?? ""}
+                    onChange={(e) =>
+                      updateCommune(globalIndex, { nameAr: e.target.value })
+                    }
+                    placeholder="باب الزوار"
+                    dir="rtl"
+                    className={cn(inputClass, "py-1.5 text-xs")}
+                  />
                   <button
                     type="button"
                     aria-label="Supprimer la commune"
                     onClick={() => removeCommune(globalIndex)}
-                    className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e6d9bf] text-[#9a97a6] transition hover:border-red-300 hover:text-red-500"
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-dzb-faint transition-colors hover:bg-red-50 hover:text-red-500"
                   >
                     <TrashIcon className="h-3.5 w-3.5" />
                   </button>
@@ -516,35 +531,36 @@ export function DeliverySettingsPanel({ token }: { token: string }) {
               );
             })}
             {visibleCommunes.length === 0 && (
-              <p className="rounded-lg bg-[#fdfaf3] px-3 py-3 text-xs text-[#6b6878]">
+              <div className="px-4 py-6 text-center text-xs text-dzb-muted">
                 {communeWilayaFilter === "all"
                   ? "Aucune commune : les clients pourront quand même choisir une wilaya pour la livraison à domicile."
                   : "Aucune commune pour cette wilaya."}
-              </p>
+              </div>
             )}
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saving}
-          className={cn(saveButton, "mt-6")}
-        >
-          {saving ? "Enregistrement…" : "Enregistrer"}
-        </button>
+        <div className="mt-8 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving}
+            className={saveButton}
+          >
+            {saving ? "Enregistrement…" : "Enregistrer"}
+          </button>
+          {saved && (
+            <span className="text-sm font-medium text-emerald-600">
+              Paramètres enregistrés.
+            </span>
+          )}
+          {error && (
+            <span className="text-sm font-medium text-red-600">
+              Impossible d&apos;enregistrer les paramètres.
+            </span>
+          )}
+        </div>
       </div>
-
-      {error && (
-        <p className="rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
-          Impossible d&apos;enregistrer les paramètres.
-        </p>
-      )}
-      {saved && (
-        <p className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
-          Paramètres enregistrés.
-        </p>
-      )}
     </div>
   );
 }

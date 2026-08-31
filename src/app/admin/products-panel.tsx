@@ -368,23 +368,24 @@ export function ProductsPanel({ token }: { token: string }) {
   return (
     <div className="space-y-6">
       <div className={panelCard}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className={panelHeading}>Produits — Boutique</h2>
+            <h2 className={panelHeading}>Boutique</h2>
             <p className={panelMuted}>
               Gérez les produits affichés sur la page « Produits » et suivez les
               demandes d&apos;achat reçues, de l&apos;appel de confirmation à la livraison.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+
+          <div className="rounded-lg bg-dzb-cream p-1">
             <button
               type="button"
               onClick={() => setTab("products")}
               className={cn(
-                "rounded-full px-4 py-2 text-sm font-semibold transition",
+                "rounded-md px-4 py-2 text-sm font-semibold transition",
                 tab === "products"
-                  ? "bg-gradient-to-br from-dzb-amber to-dzb-amberdeep text-white shadow-[0_8px_16px_-8px_rgba(247,169,33,0.9)]"
-                  : "border border-[#e6d9bf] bg-white text-[#5f5975] hover:border-dzb-amber"
+                  ? "bg-white text-dzb-navy shadow-sm"
+                  : "text-dzb-muted hover:text-dzb-amberink"
               )}
             >
               Produits
@@ -393,10 +394,10 @@ export function ProductsPanel({ token }: { token: string }) {
               type="button"
               onClick={() => setTab("orders")}
               className={cn(
-                "rounded-full px-4 py-2 text-sm font-semibold transition",
+                "rounded-md px-4 py-2 text-sm font-semibold transition",
                 tab === "orders"
-                  ? "bg-gradient-to-br from-dzb-amber to-dzb-amberdeep text-white shadow-[0_8px_16px_-8px_rgba(247,169,33,0.9)]"
-                  : "border border-[#e6d9bf] bg-white text-[#5f5975] hover:border-dzb-amber"
+                  ? "bg-white text-dzb-navy shadow-sm"
+                  : "text-dzb-muted hover:text-dzb-amberink"
               )}
             >
               Demandes d&apos;achat
@@ -432,7 +433,7 @@ export function ProductsPanel({ token }: { token: string }) {
 
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative min-w-56 flex-1">
-              <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9a97a6]" />
+              <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-dzb-faint" />
               <input
                 type="search"
                 value={query}
@@ -466,7 +467,7 @@ export function ProductsPanel({ token }: { token: string }) {
                 className={cn(
                   "rounded-full border px-3.5 py-1.5 text-sm font-semibold transition",
                   statusFilter === f.key
-                    ? "border-transparent bg-dzb-tint text-dzb-amberink shadow-[inset_0_0_0_1px_rgba(247,169,33,0.35)]"
+                    ? "border-dzb-amber bg-dzb-tint text-dzb-amberink"
                     : "border-dzb-creamline bg-white text-dzb-muted hover:border-dzb-amber/50"
                 )}
               >
@@ -476,13 +477,15 @@ export function ProductsPanel({ token }: { token: string }) {
           </div>
 
           {products === null ? (
-            <p className="py-10 text-center text-[#9a97a6]">Chargement…</p>
+            <p className="py-10 text-center text-dzb-faint">Chargement…</p>
           ) : filteredProducts.length === 0 ? (
-            <p className={cn(panelCard, "py-14 text-center text-[#6b6878]")}>
-              {products.length === 0
-                ? "Aucun produit. Cliquez sur « Nouveau produit » pour commencer."
-                : "Aucun produit ne correspond à votre recherche."}
-            </p>
+            <div className={cn(panelCard, "py-14 text-center")}>
+              <p className="text-sm text-dzb-muted">
+                {products.length === 0
+                  ? "Aucun produit. Cliquez sur « Nouveau produit » pour commencer."
+                  : "Aucun produit ne correspond à votre recherche."}
+              </p>
+            </div>
           ) : (
             <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {filteredProducts.map((product) => {
@@ -553,19 +556,19 @@ function ProductCard({
   const publicUrl = `/fr/produits#${product.slug}`;
 
   return (
-    <li className="group flex flex-col overflow-hidden rounded-[20px] border border-dzb-creamline bg-white shadow-[0_6px_20px_rgba(27,26,45,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_-20px_rgba(247,169,33,0.5)]">
+    <li className="group flex flex-col overflow-hidden rounded-xl border border-dzb-creamline bg-white shadow-sm transition hover:shadow-md">
       <div className="relative">
-        <div className="aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-dzb-sand/70 to-dzb-tint">
+        <div className="aspect-[4/3] w-full overflow-hidden bg-dzb-cream">
           {cover ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={cover}
               alt={productName(product)}
               loading="lazy"
-              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs font-medium text-[#9a97a6]">
+            <div className="flex h-full w-full items-center justify-center text-xs font-medium text-dzb-faint">
               Sans image
             </div>
           )}
@@ -573,10 +576,10 @@ function ProductCard({
 
         <span
           className={cn(
-            "absolute left-3 top-3 rounded-full border px-2.5 py-1 text-xs font-bold backdrop-blur-sm",
+            "absolute left-3 top-3 rounded-full border px-2.5 py-1 text-xs font-bold",
             product.available
-              ? "border-emerald-300/80 bg-emerald-50/90 text-emerald-700"
-              : "border-[#e6d9bf] bg-white/85 text-dzb-muted"
+              ? "border-emerald-300 bg-emerald-50/90 text-emerald-700"
+              : "border-dzb-creamline bg-white/90 text-dzb-muted"
           )}
         >
           {product.available ? "En ligne" : "Masqué"}
@@ -588,7 +591,7 @@ function ProductCard({
             aria-label="Monter"
             disabled={index === 0}
             onClick={() => onMove(-1)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-dzb-creamline bg-white/90 text-[#6b6878] shadow-sm backdrop-blur-sm transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-dzb-creamline bg-white/90 text-dzb-muted shadow-sm backdrop-blur-sm transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
           >
             ▲
           </button>
@@ -597,7 +600,7 @@ function ProductCard({
             aria-label="Descendre"
             disabled={index === total - 1}
             onClick={() => onMove(1)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-dzb-creamline bg-white/90 text-[#6b6878] shadow-sm backdrop-blur-sm transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-dzb-creamline bg-white/90 text-dzb-muted shadow-sm backdrop-blur-sm transition hover:border-dzb-amber hover:text-dzb-amberink disabled:opacity-30"
           >
             ▼
           </button>
@@ -605,10 +608,10 @@ function ProductCard({
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <p className="truncate font-semibold text-[#2b2b46]" title={productName(product)}>
+        <p className="truncate font-semibold text-dzb-navy" title={productName(product)}>
           {productName(product)}
         </p>
-        <p className="mt-0.5 truncate font-mono text-xs text-[#9a97a6]">
+        <p className="mt-0.5 truncate font-mono text-xs text-dzb-faint">
           /{product.slug}
         </p>
 
@@ -617,12 +620,12 @@ function ProductCard({
           <span className="text-xs font-semibold text-dzb-faint">DA</span>
         </p>
 
-        <div className="mt-auto flex items-center gap-2 border-t border-[#f8f2e5] pt-3">
+        <div className="mt-auto flex items-center gap-2 border-t border-dzb-creamline pt-3">
           <a
             href={publicUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#e6d9bf] px-3 py-2 text-xs font-semibold text-[#5f5975] transition hover:border-dzb-amber hover:text-dzb-amberink"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-dzb-creamline px-3 py-2 text-xs font-semibold text-dzb-muted transition hover:border-dzb-amber hover:text-dzb-amberink"
           >
             <EyeIcon className="h-3.5 w-3.5" />
             Voir
@@ -630,7 +633,7 @@ function ProductCard({
           <button
             type="button"
             onClick={onEdit}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-dzb-tint px-3 py-2 text-xs font-bold text-dzb-amberink transition hover:bg-dzb-sand"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-dzb-tint px-3 py-2 text-xs font-bold text-dzb-amberink transition hover:bg-dzb-sand"
           >
             <PencilIcon className="h-3.5 w-3.5" />
             Modifier
@@ -639,7 +642,7 @@ function ProductCard({
             type="button"
             aria-label="Supprimer"
             onClick={onDelete}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-400 transition hover:bg-red-50 hover:text-red-600"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-200 text-red-400 transition hover:bg-red-50 hover:text-red-600"
           >
             <TrashIcon className="h-4 w-4" />
           </button>
@@ -669,10 +672,6 @@ function PencilIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-
-/* ------------------------------------------------------------------------- */
-/*  Product orders          – table + status pipeline + timeline             */
-/* ------------------------------------------------------------------------- */
 
 function ProductOrdersTable({
   orders,
@@ -718,10 +717,9 @@ function ProductOrdersTable({
 
   return (
     <div className={panelCard}>
-      {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-0 flex-1 sm:max-w-xs">
-          <SearchIcon className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9a97a6]" />
+          <SearchIcon className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-dzb-faint" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -741,7 +739,6 @@ function ProductOrdersTable({
         </select>
       </div>
 
-      {/* Status pills */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {(["all", ...STATUS_FLOW, "CANCELLED"] as const).map((s) => (
           <button
@@ -753,7 +750,7 @@ function ProductOrdersTable({
               statusFilter === s
                 ? "border-dzb-amber bg-dzb-amber text-white"
                 : s === "all"
-                  ? "border-[#e6d9bf] bg-white text-[#5f5975] hover:border-dzb-amber"
+                  ? "border-dzb-creamline bg-white text-dzb-muted hover:border-dzb-amber"
                   : cn(
                       STATUS_META[s as ProductOrderStatus].pill,
                       "hover:opacity-80"
@@ -765,18 +762,17 @@ function ProductOrdersTable({
         ))}
       </div>
 
-      {/* Table */}
       <div className="mt-4 overflow-x-auto">
         {orders === null ? (
-          <p className="py-12 text-center text-[#9a97a6]">Chargement…</p>
+          <p className="py-12 text-center text-dzb-faint">Chargement…</p>
         ) : filtered.length === 0 ? (
-          <p className="py-14 text-center text-[#6b6878]">
+          <p className="py-14 text-center text-sm text-dzb-muted">
             Aucune demande ne correspond aux filtres.
           </p>
         ) : (
           <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-[#f0e6d2] text-left text-xs font-semibold uppercase tracking-widest text-[#9a97a6]">
+              <tr className="border-b border-dzb-creamline text-left text-xs font-semibold uppercase tracking-widest text-dzb-faint">
                 <th className="px-3 py-2.5">Produit</th>
                 <th className="px-3 py-2.5">Client</th>
                 <th className="px-3 py-2.5 text-end">Qté × Prix</th>
@@ -796,11 +792,11 @@ function ProductOrdersTable({
                   <tr
                     key={o.id}
                     onClick={() => onSelect(o)}
-                    className="group cursor-pointer border-b border-[#f8f2e5] transition hover:bg-[#fdfaf3]"
+                    className="group cursor-pointer border-b border-dzb-creamline transition hover:bg-dzb-cream/40"
                   >
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="h-11 w-11 shrink-0 overflow-hidden rounded-md border border-[#f0e6d2] bg-[#f8f2e5]">
+                        <div className="h-11 w-11 shrink-0 overflow-hidden rounded-md border border-dzb-creamline bg-dzb-cream">
                           {cover ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -809,36 +805,36 @@ function ProductOrdersTable({
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center text-[10px] text-[#9a97a6]">
+                            <div className="flex h-full w-full items-center justify-center text-[10px] text-dzb-faint">
                               —
                             </div>
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="max-w-[12rem] truncate font-medium text-[#2b2b46]">
+                          <p className="max-w-[12rem] truncate font-medium text-dzb-navy">
                             {orderProductLabel(o)}
                           </p>
-                          <p className="text-xs text-[#9a97a6]">
+                          <p className="text-xs text-dzb-faint">
                             {o.productSlug}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-3 py-3">
-                      <p className="font-medium text-[#2b2b46]">{o.customerName}</p>
-                      <p className="text-xs text-[#6b6878]" dir="ltr">
+                      <p className="font-medium text-dzb-navy">{o.customerName}</p>
+                      <p className="text-xs text-dzb-muted" dir="ltr">
                         {o.phone}
                       </p>
                     </td>
-                    <td className="px-3 py-3 text-end tabular-nums text-[#5f5975]">
+                    <td className="px-3 py-3 text-end tabular-nums text-dzb-muted">
                       {o.quantity} × {fmtMoney(o.price ?? 0)} DA
                     </td>
-                    <td className="px-3 py-3 text-end font-semibold tabular-nums text-[#2b2b46]">
+                    <td className="px-3 py-3 text-end font-semibold tabular-nums text-dzb-navy">
                       {fmtMoney(orderTotal(o))} DA
                     </td>
                     <td className="hidden px-3 py-3 lg:table-cell">
-                      <p className="text-[#5f5975]">{deliveryLabel(o, wilayaById)}</p>
-                      <p className="text-xs text-[#9a97a6]">
+                      <p className="text-dzb-muted">{deliveryLabel(o, wilayaById)}</p>
+                      <p className="text-xs text-dzb-faint">
                         Frais : {fmtMoney(o.delivery?.fee ?? 0)} DA
                       </p>
                     </td>
@@ -852,7 +848,7 @@ function ProductOrdersTable({
                         {meta.label}
                       </span>
                     </td>
-                    <td className="hidden px-3 py-3 text-xs text-[#6b6878] md:table-cell">
+                    <td className="hidden px-3 py-3 text-xs text-dzb-muted md:table-cell">
                       {fmtDate(o.createdAt)}
                     </td>
                     <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
@@ -869,7 +865,7 @@ function ProductOrdersTable({
                           target="_blank"
                           rel="noopener noreferrer"
                           title="WhatsApp"
-                          className="flex h-8 w-8 items-center justify-center rounded-md border border-[#f0e6d2] bg-white text-[#6b6878] transition hover:border-emerald-300 hover:text-emerald-600"
+                          className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline bg-white text-dzb-muted transition hover:border-emerald-300 hover:text-emerald-600"
                         >
                           <WhatsAppIcon className="h-4 w-4" />
                         </a>
@@ -877,7 +873,7 @@ function ProductOrdersTable({
                           type="button"
                           title="Supprimer"
                           onClick={() => onDelete(o.id)}
-                          className="flex h-8 w-8 items-center justify-center rounded-md border border-[#f0e6d2] bg-white text-[#9a97a6] transition hover:border-red-200 hover:text-red-500"
+                          className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline bg-white text-dzb-faint transition hover:border-red-200 hover:text-red-500"
                         >
                           <TrashIcon className="h-4 w-4" />
                         </button>
@@ -893,10 +889,6 @@ function ProductOrdersTable({
     </div>
   );
 }
-
-/* ------------------------------------------------------------------------- */
-/*  Order detail overlay — status pipeline, totals, timeline                 */
-/* ------------------------------------------------------------------------- */
 
 function OrderDetailOverlay({
   order,
@@ -939,19 +931,19 @@ function OrderDetailOverlay({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b2b46]/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-dzb-navy/60 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-[#f0e6d2] bg-white p-6 shadow-2xl"
+        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-dzb-creamline bg-white p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="font-display text-lg font-bold text-[#2b2b46]">
+            <h3 className="font-display text-lg font-bold text-dzb-navy">
               {orderProductLabel(order)}
             </h3>
-            <p className="mt-0.5 text-sm text-[#6b6878]">
+            <p className="mt-0.5 text-sm text-dzb-muted">
               {order.customerName} ·{" "}
               <span dir="ltr">{order.phone}</span> · {fmtDate(order.createdAt)}
             </p>
@@ -960,14 +952,13 @@ function OrderDetailOverlay({
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#e6d9bf] text-[#6b6878] transition hover:border-[#9a97a6] hover:text-[#2b2b46]"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-dzb-creamline text-dzb-muted transition hover:border-dzb-faint hover:text-dzb-navy"
           >
             <CloseIcon className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Status pipeline */}
-        <div className="mt-5 rounded-xl border border-[#f0e6d2] bg-[#fdfaf3]/60 p-4">
+        <div className="mt-5 rounded-xl border border-dzb-creamline bg-dzb-cream/40 p-4">
           <div className="flex items-center">
             {STATUS_FLOW.map((s, i) => {
               const reached = order.status === s || currentIdx > i;
@@ -983,7 +974,7 @@ function OrderDetailOverlay({
                           ? "border-emerald-400 bg-emerald-500 text-white"
                           : active && isCancelled
                             ? "border-red-400 bg-red-500 text-white"
-                            : "border-[#e6d9bf] bg-white text-[#9a97a6]"
+                            : "border-dzb-creamline bg-white text-dzb-faint"
                       )}
                     >
                       {reached && !isCancelled ? <CheckIcon className="h-4 w-4" /> : i + 1}
@@ -991,7 +982,7 @@ function OrderDetailOverlay({
                     <span
                       className={cn(
                         "mt-1.5 hidden text-[10px] font-semibold sm:block",
-                        active ? "text-[#2b2b46]" : "text-[#9a97a6]"
+                        active ? "text-dzb-navy" : "text-dzb-faint"
                       )}
                     >
                       {STATUS_META[s].label}
@@ -1001,21 +992,20 @@ function OrderDetailOverlay({
                     <div
                       className={cn(
                         "mx-1 h-0.5 flex-1 rounded",
-                        reached && !isCancelled ? "bg-emerald-400" : "bg-[#f0e6d2]"
+                        reached && !isCancelled ? "bg-emerald-400" : "bg-dzb-creamline"
                       )}
                     />
                   )}
                 </div>
               );
             })}
-            {/* Cancelled branch */}
             <div className="ms-1 flex items-center">
               <span
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold",
                   order.status === "CANCELLED"
                     ? "border-red-400 bg-red-500 text-white"
-                    : "border-[#e6d9bf] bg-white text-[#9a97a6]"
+                    : "border-dzb-creamline bg-white text-dzb-faint"
                 )}
               >
                 ✕
@@ -1023,7 +1013,7 @@ function OrderDetailOverlay({
               <span
                 className={cn(
                   "mt-1.5 hidden text-[10px] font-semibold sm:block",
-                  order.status === "CANCELLED" ? "text-red-600" : "text-[#9a97a6]"
+                  order.status === "CANCELLED" ? "text-red-600" : "text-dzb-faint"
                 )}
               >
                 Annulé
@@ -1031,7 +1021,7 @@ function OrderDetailOverlay({
             </div>
           </div>
 
-          <p className="mt-4 flex items-center gap-2 text-sm text-[#5f5975]">
+          <p className="mt-4 flex items-center gap-2 text-sm text-dzb-muted">
             Statut actuel :{" "}
             <span
               className={cn(
@@ -1043,7 +1033,6 @@ function OrderDetailOverlay({
             </span>
           </p>
 
-          {/* Status actions */}
           <div className="mt-3 flex flex-wrap gap-2">
             {STATUS_FLOW.map((s) => (
               <button
@@ -1054,8 +1043,8 @@ function OrderDetailOverlay({
                 className={cn(
                   "rounded-md border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-40",
                   s === order.status
-                    ? "border-[#e6d9bf] bg-[#f8f2e5] text-[#6b6878]"
-                    : "border-[#e6d9bf] bg-white text-[#5f5975] hover:border-dzb-amber hover:text-dzb-amberink"
+                    ? "border-dzb-creamline bg-dzb-cream text-dzb-muted"
+                    : "border-dzb-creamline bg-white text-dzb-muted hover:border-dzb-amber hover:text-dzb-amberink"
                 )}
               >
                 {STATUS_META[s].label}
@@ -1075,13 +1064,12 @@ function OrderDetailOverlay({
         </div>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {/* Contact */}
-          <div className="rounded-xl border border-[#f0e6d2] p-4">
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#9a97a6]">
+          <div className="rounded-xl border border-dzb-creamline p-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-dzb-faint">
               Contact
             </p>
-            <p className="mt-2 font-medium text-[#2b2b46]">{order.customerName}</p>
-            <p className="text-sm text-[#6b6878]" dir="ltr">
+            <p className="mt-2 font-medium text-dzb-navy">{order.customerName}</p>
+            <p className="text-sm text-dzb-muted" dir="ltr">
               {order.phone}
             </p>
             <div className="mt-3 flex gap-2">
@@ -1104,41 +1092,40 @@ function OrderDetailOverlay({
             </div>
             {product && (
               <div className="mt-4 flex items-center gap-3">
-                <div className="h-12 w-12 overflow-hidden rounded-md border border-[#f0e6d2]">
+                <div className="h-12 w-12 overflow-hidden rounded-md border border-dzb-creamline">
                   {cover ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={MEDIA_URL(cover)} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-[10px] text-[#9a97a6]">
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-dzb-faint">
                       —
                     </div>
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-[#2b2b46]">
+                  <p className="truncate text-sm font-medium text-dzb-navy">
                     {productName(product)}
                   </p>
-                  <p className="text-xs text-[#9a97a6]">/{product.slug}</p>
+                  <p className="text-xs text-dzb-faint">/{product.slug}</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Delivery */}
-          <div className="rounded-xl border border-[#f0e6d2] p-4">
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#9a97a6]">
+          <div className="rounded-xl border border-dzb-creamline p-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-dzb-faint">
               Livraison
             </p>
-            <p className="mt-2 text-sm font-medium text-[#2b2b46]">
+            <p className="mt-2 text-sm font-medium text-dzb-navy">
               {deliveryLabel(order, wilayaById)}
             </p>
-            <p className="mt-1 text-sm text-[#6b6878]">
+            <p className="mt-1 text-sm text-dzb-muted">
               Frais : {fmtMoney(order.delivery?.fee ?? 0)} DA
             </p>
             {order.delivery?.wilayaId != null && (
-              <p className="mt-1 text-sm text-[#6b6878]">
+              <p className="mt-1 text-sm text-dzb-muted">
                 Wilaya :{" "}
-                <span className="font-semibold text-[#2b2b46]">
+                <span className="font-semibold text-dzb-navy">
                   {wilayaById.get(order.delivery.wilayaId)?.name ??
                     `#${order.delivery.wilayaId}`}
                 </span>
@@ -1148,26 +1135,25 @@ function OrderDetailOverlay({
               </p>
             )}
             {order.delivery?.address && (
-              <p className="mt-1 text-sm text-[#6b6878]">
+              <p className="mt-1 text-sm text-dzb-muted">
                 {order.delivery.address}
               </p>
             )}
           </div>
         </div>
 
-        {/* Totals */}
-        <div className="mt-4 overflow-hidden rounded-xl border border-[#f0e6d2]">
+        <div className="mt-4 overflow-hidden rounded-xl border border-dzb-creamline">
           <table className="w-full text-sm">
             <tbody>
               {deliveries.map(([label, value]) => (
-                <tr key={label} className="border-b border-[#f8f2e5] last:border-0">
-                  <td className="px-4 py-2.5 text-[#6b6878]">{label}</td>
+                <tr key={label} className="border-b border-dzb-creamline last:border-0">
+                  <td className="px-4 py-2.5 text-dzb-muted">{label}</td>
                   <td
                     className={cn(
                       "px-4 py-2.5 text-end tabular-nums",
                       label === "Total"
-                        ? "font-bold text-[#2b2b46]"
-                        : "text-[#4a4560]"
+                        ? "font-bold text-dzb-navy"
+                        : "text-dzb-muted"
                     )}
                   >
                     {value}
@@ -1178,9 +1164,8 @@ function OrderDetailOverlay({
           </table>
         </div>
 
-        {/* Timeline */}
         <div className="mt-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#9a97a6]">
+          <p className="text-xs font-semibold uppercase tracking-widest text-dzb-faint">
             Historique
           </p>
           <ol className="mt-3 space-y-3">
@@ -1188,17 +1173,17 @@ function OrderDetailOverlay({
               <li key={`${h.at}-${i}`} className="flex items-start gap-3">
                 <span className="mt-1 flex h-2 w-2 shrink-0 rounded-full bg-dzb-amber" />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#3a3550]">
+                  <p className="text-sm font-medium text-dzb-inkdark">
                     {STATUS_META[h.status]?.label ?? h.status}
                   </p>
-                  <p className="text-xs text-[#9a97a6]">{fmtDate(h.at)}</p>
+                  <p className="text-xs text-dzb-faint">{fmtDate(h.at)}</p>
                 </div>
               </li>
             ))}
           </ol>
         </div>
 
-        <div className="mt-6 flex items-center justify-between border-t border-[#f8f2e5] pt-4">
+        <div className="mt-6 flex items-center justify-between border-t border-dzb-creamline pt-4">
           <button
             type="button"
             onClick={onDelete}
@@ -1215,10 +1200,6 @@ function OrderDetailOverlay({
     </div>
   );
 }
-
-/* ------------------------------------------------------------------------- */
-/*  Product editor                                                           */
-/* ------------------------------------------------------------------------- */
 
 function ProductEditor({
   product,
@@ -1284,14 +1265,14 @@ function ProductEditor({
           />
         </div>
         <div className="flex items-end">
-          <label className={cn(labelClass, "flex cursor-pointer items-center gap-2 text-sm font-medium text-[#4a4560]")}>
+          <label className={cn(labelClass, "flex cursor-pointer items-center gap-2 text-sm font-medium text-dzb-muted")}>
             <input
               type="checkbox"
               checked={product.available}
               onChange={(e) =>
                 onChange({ ...product, available: e.target.checked })
               }
-              className="h-4 w-4 rounded border-[#e6d9bf] text-dzb-amberink focus:ring-dzb-amber"
+              className="h-4 w-4 rounded border-dzb-creamline text-dzb-amberink focus:ring-dzb-amber"
             />
             Disponible à la vente
           </label>
@@ -1300,7 +1281,7 @@ function ProductEditor({
 
       <ProductImageManager product={product} token={token} onChange={onChange} />
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[#f8f2e5] pt-4">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-dzb-creamline pt-4">
         <button
           type="button"
           onClick={onCancel}
@@ -1442,9 +1423,9 @@ function ProductImageManager({
   }
 
   return (
-    <div className="mt-5 rounded-lg border border-[#f0e6d2] bg-[#fdfaf3]/60 p-4">
-      <p className="text-sm font-medium text-[#4a4560]">Images du produit</p>
-      <p className="mt-0.5 text-xs text-[#6b6878]">
+    <div className="mt-5 rounded-lg border border-dzb-creamline bg-dzb-cream/40 p-4">
+      <p className="text-sm font-medium text-dzb-muted">Images du produit</p>
+      <p className="mt-0.5 text-xs text-dzb-muted">
         La première image sert d&apos;image principale sur la fiche produit.
       </p>
       {images.length > 0 && (
@@ -1452,7 +1433,7 @@ function ProductImageManager({
           {images.map((key, i) => (
             <div
               key={key}
-              className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-[#e6d9bf] bg-white"
+              className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-dzb-creamline bg-white"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={MEDIA_URL(key)} alt="" className="h-full w-full object-cover" />
@@ -1490,7 +1471,7 @@ function ProductImageManager({
       )}
       <label
         htmlFor="product-files"
-        className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#e6d9bf] bg-white px-3 py-2 text-sm font-medium text-[#4a4560] shadow-sm transition hover:border-dzb-amber hover:text-dzb-amberink"
+        className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-dzb-creamline bg-white px-3 py-2 text-sm font-medium text-dzb-muted shadow-sm transition hover:border-dzb-amber hover:text-dzb-amberink"
       >
         <PlusIcon className="h-4 w-4" />
         {uploading ? "Chargement…" : "Ajouter des images"}
