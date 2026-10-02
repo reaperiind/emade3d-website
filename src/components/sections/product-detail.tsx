@@ -13,6 +13,14 @@ interface DetailProduct {
   price: number;
   available: boolean;
   images: string[];
+  options?: DetailOption[];
+}
+
+interface DetailOption {
+  /** Localized option label, e.g. "Forme" / "شكل". */
+  label: string;
+  /** Localized choices, each already localized for the current locale. */
+  values: string[];
 }
 
 interface DetailWilaya {
@@ -42,6 +50,8 @@ const LABELS = {
     selectWilaya: "Choisir la wilaya",
     address: "Adresse",
     addressPlaceholder: "Adresse complète de livraison",
+    options: "Options",
+    optionsHint: "Sélectionnez une valeur pour chaque option.",
     subtotal: "Sous-total",
     deliveryFee: "Livraison",
     total: "Total à payer",
@@ -74,6 +84,8 @@ const LABELS = {
     selectWilaya: "Choose the wilaya",
     address: "Address",
     addressPlaceholder: "Full delivery address",
+    options: "Options",
+    optionsHint: "Select a value for each option.",
     subtotal: "Subtotal",
     deliveryFee: "Delivery",
     total: "Total",
@@ -104,6 +116,8 @@ const LABELS = {
     selectWilaya: "اختر الولاية",
     address: "العنوان",
     addressPlaceholder: "عنوان التوصيل الكامل",
+    options: "الخيارات",
+    optionsHint: "اختر قيمة لكل خيار.",
     subtotal: "المجموع الفرعي",
     deliveryFee: "التوصيل",
     total: "المجموع الكلي",
@@ -141,6 +155,7 @@ export function ProductDetail({
   const [option, setOption] = useState<"home" | "office">("home");
   const [wilayaId, setWilayaId] = useState<number | null>(null);
   const [address, setAddress] = useState("");
+  const [selections, setSelections] = useState<Record<string, string>>({});
 
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(false);
@@ -182,6 +197,14 @@ export function ProductDetail({
           ).value.trim(),
           quantity,
           locale,
+          ...(Object.keys(selections).length > 0
+            ? {
+                selections: Object.entries(selections).map(([label, value]) => ({
+                  label,
+                  value,
+                })),
+              }
+            : {}),
           delivery: {
             method: "courier",
             option,
@@ -372,6 +395,42 @@ export function ProductDetail({
                         className={cn(inputClass, "text-start")}
                       />
                     </div>
+
+                    {product.options && product.options.length > 0 && (
+                      <div className="rounded-2xl border border-[#f0e6d2] bg-dzb-cream/60 p-4">
+                        <p className="text-sm font-bold text-dzb-navy">{L.options}</p>
+                        <p className="mt-0.5 text-xs text-dzb-faint">{L.optionsHint}</p>
+                        <div className="mt-3 space-y-3">
+                          {product.options.map((opt) => (
+                            <div key={opt.label}>
+                              <p className="text-xs font-semibold text-dzb-muted">{opt.label}</p>
+                              <div className="mt-1.5 flex flex-wrap gap-2">
+                                {opt.values.map((val) => {
+                                  const active = selections[opt.label] === val;
+                                  return (
+                                    <button
+                                      key={val}
+                                      type="button"
+                                      onClick={() =>
+                                        setSelections((s) => ({ ...s, [opt.label]: val }))
+                                      }
+                                      className={cn(
+                                        "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+                                        active
+                                          ? "border-dzb-amber bg-dzb-tint text-dzb-amberink"
+                                          : "border-[#e6d9bf] bg-white text-dzb-muted hover:border-dzb-amber/50"
+                                      )}
+                                    >
+                                      {val}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Delivery */}
                     <div className="rounded-2xl border border-[#f0e6d2] bg-dzb-cream/60 p-4">

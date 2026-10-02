@@ -100,6 +100,16 @@ export interface HistoryEntry {
   at: string;
 }
 
+/** Admin notes visible to the customer on the tracking page. */
+export interface OrderAdminNotes {
+  text: string;
+}
+
+/** Production progress steps for IN_PRODUCTION status. */
+export type ProductionProgressStep = 0 | 25 | 50 | 75 | 100;
+
+export const PRODUCTION_PROGRESS_STEPS: ProductionProgressStep[] = [0, 25, 50, 75, 100];
+
 /** A design/3D file attached to an order by the customer. */
 export interface OrderFile {
   /** Storage key in the "order-files" blob store. */

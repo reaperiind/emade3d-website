@@ -298,6 +298,15 @@ const en: Dictionary = {
       "Every step your order went through, with date and time.",
     trackingHelp:
       "This code is provided when your order is confirmed.",
+    productionProgress: {
+      label: "Production progress",
+      step0: "Waiting",
+      step25: "Material preparation",
+      step50: "In printing/manufacturing",
+      step75: "Post-processing",
+      step100: "Completed",
+    },
+    adminNotesLabel: "Team note",
   },
 
   products: {

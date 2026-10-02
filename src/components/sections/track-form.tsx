@@ -10,6 +10,7 @@ import {
   MapPinIcon,
   BoxIcon,
   ClockIcon,
+  AlertCircleIcon,
 } from "@/components/ui/icons";
 
 const inputClass =
@@ -180,6 +181,38 @@ export function TrackForm() {
             {order.code}
           </p>
         </div>
+
+        {/* Admin Notes */}
+        {order.adminNotes && (
+          <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+            <div className="flex items-start gap-2.5">
+              <AlertCircleIcon className="mt-0.5 h-5 w-5 text-amber-400 shrink-0" />
+              <div>
+                <p className="text-xs font-medium uppercase tracking-widest text-amber-300">
+                  {track.adminNotesLabel}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-steel-100 whitespace-pre-wrap">
+                  {order.adminNotes}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Production Progress Bar - Only for IN_PRODUCTION status */}
+        {order.status === "IN_PRODUCTION" && order.productionProgress !== undefined && (
+          <div className="mt-4 rounded-lg border border-white/10 bg-ink-800 px-4 py-3">
+            <div className="h-3 w-full overflow-hidden rounded-full bg-ink-900">
+              <div
+                className="h-full bg-accent transition-all duration-500 ease-out"
+                style={{ width: `${order.productionProgress}%` }}
+              />
+            </div>
+            <p className="mt-1 text-right text-sm font-semibold text-accent">
+              {order.productionProgress}%
+            </p>
+          </div>
+        )}
 
         <div className="mt-5 grid gap-3">
           {[

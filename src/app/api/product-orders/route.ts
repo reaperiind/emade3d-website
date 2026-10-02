@@ -108,6 +108,17 @@ export async function POST(request: Request) {
   const price = Math.max(0, Number(payload.price) || 0);
   const now = new Date().toISOString();
 
+  const selections: { label: string; value: string }[] = [];
+  if (Array.isArray(payload.selections)) {
+    for (const sel of payload.selections) {
+      if (!sel || typeof sel !== "object") continue;
+      const s = sel as Record<string, unknown>;
+      const label = clean(s.label, 120);
+      const value = clean(s.value, 300);
+      if (label && value) selections.push({ label, value });
+    }
+  }
+
   const order: ProductOrder = {
     id: `PO-${Date.now()}`,
     createdAt: now,
@@ -121,6 +132,7 @@ export async function POST(request: Request) {
     locale,
     status: "NEW",
     history: [{ status: "NEW", at: now }],
+    ...(selections.length > 0 ? { selections } : {}),
   };
 
   try {

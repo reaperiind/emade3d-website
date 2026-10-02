@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Order, OrderStatus } from "@/lib/orders-store";
-import { statusesFor } from "@/lib/order-flows";
+import { statusesFor, type ProductionProgressStep, PRODUCTION_PROGRESS_STEPS } from "@/lib/order-flows";
 import { cn } from "@/lib/cn";
 import { localizePath } from "@/i18n/config";
 import {
@@ -636,6 +636,10 @@ function OrderDetailsDrawer({
   const [feeDraft, setFeeDraft] = useState<string>(() =>
     String(order.delivery?.fee ?? 0)
   );
+  const [notesDraft, setNotesDraft] = useState<string>(order.adminNotes ?? "");
+  const [progressDraft, setProgressDraft] = useState<ProductionProgressStep | "">(
+    order.productionProgress ?? ""
+  );
   const [savedFlash, setSavedFlash] = useState(false);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [viewer, setViewer] = useState<string | null>(null);
@@ -674,11 +678,33 @@ function OrderDetailsDrawer({
     priceDraft.trim() === ""
       ? order.price != null
       : Number(priceDraft) !== order.price ||
-        String(order.delivery?.fee ?? 0) !== feeDraft;
+        String(order.delivery?.fee ?? 0) !== feeDraft ||
+        notesDraft !== (order.adminNotes ?? "") ||
+        progressDraft !== (order.productionProgress ?? "");
 
   async function saveOrder() {
     onPrice(order.code, priceDraft);
     if (isCourier) onDeliveryFee(order.code, feeDraft);
+    if (notesDraft !== (order.adminNotes ?? "")) {
+      await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ adminNotes: notesDraft.trim() || null }),
+      });
+    }
+    if (progressDraft !== "" && progressDraft !== (order.productionProgress ?? "")) {
+      await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ productionProgress: progressDraft }),
+      });
+    }
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2500);
   }
@@ -839,6 +865,41 @@ function OrderDetailsDrawer({
                 </div>
               )}
             </div>
+
+            {/* Admin Notes */}
+            <div>
+              <label className="mb-1.5 block text-[13px] font-medium text-dzb-muted">
+                Note pour le client
+              </label>
+              <textarea
+                value={notesDraft}
+                onChange={(e) => setNotesDraft(e.target.value)}
+                placeholder="Note visible par le client sur la page de suivi…"
+                rows={3}
+                className={cn(inputClass, "resize-y min-h-[80px]")}
+              />
+            </div>
+
+            {/* Production Progress - only show for IN_PRODUCTION status */}
+            {order.status === "IN_PRODUCTION" && (
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-dzb-muted">
+                  Progrès de fabrication
+                </label>
+                <select
+                  value={progressDraft}
+                  onChange={(e) => setProgressDraft(e.target.value as ProductionProgressStep | "")}
+                  className={cn(inputClass, "w-auto min-w-44 appearance-none py-2")}
+                >
+                  <option value="">— Sélectionner —</option>
+                  {PRODUCTION_PROGRESS_STEPS.map((step) => (
+                    <option key={step} value={step}>
+                      {step}%
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {order.delivery && (
               <div className="rounded-lg border border-dzb-creamline bg-dzb-cream/40 px-4 py-3 text-xs leading-relaxed text-dzb-muted">

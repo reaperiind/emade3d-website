@@ -51,14 +51,20 @@ export default async function ProductPage({
 
   return (
     <ProductDetail
-      product={{
-        slug: product.slug,
-        name: localized(product.name, locale),
-        description: localized(product.description, locale),
-        price: product.price,
-        available: product.available,
-        images,
-      }}
+        product={{
+          slug: product.slug,
+          name: localized(product.name, locale),
+          description: localized(product.description, locale),
+          price: product.price,
+          available: product.available,
+          images,
+          options: (product.options ?? [])
+            .map((o) => ({
+              label: localized(o.label, locale),
+              values: (o.values ?? []).map((v) => localized(v, locale)).filter(Boolean),
+            }))
+            .filter((o) => o.label && o.values.length > 0),
+        }}
       delivery={{
         homeFee: settings.delivery.homeFee,
         wilayas: settings.delivery.wilayas.map((w) => ({

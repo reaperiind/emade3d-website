@@ -13,6 +13,7 @@ import {
   type HistoryEntry,
   type OrderFile,
   type OrderStatus,
+  type ProductionProgressStep,
 } from "@/lib/order-flows";
 
 export type { OrderStatus, HistoryEntry, DeliveryInfo, OrderFile } from "@/lib/order-flows";
@@ -41,6 +42,10 @@ export interface Order {
   delivery?: DeliveryInfo;
   /** Design files attached by the customer when placing the order. */
   files?: OrderFile[];
+  /** Admin notes visible to customer on tracking page. */
+  adminNotes?: string;
+  /** Production progress (0-100) for IN_PRODUCTION status. */
+  productionProgress?: ProductionProgressStep;
 }
 
 /** Courier parcel created for an order. */
@@ -152,6 +157,10 @@ export interface OrderPatch {
   shipment?: ShipmentInfo | null;
   /** Attached design files (admin may add/remove them). */
   files?: OrderFile[];
+  /** Admin notes visible to customer on tracking page. */
+  adminNotes?: string;
+  /** Production progress (0-100) for IN_PRODUCTION status. */
+  productionProgress?: ProductionProgressStep;
   /** Status change is appended to the history at this time (ISO) — default now. */
   at?: string;
 }
@@ -184,6 +193,8 @@ export async function updateOrder(
   if (patch.shipment !== undefined) {
     updated.shipment = patch.shipment ?? undefined;
   }
+  if (patch.adminNotes !== undefined) updated.adminNotes = patch.adminNotes;
+  if (patch.productionProgress !== undefined) updated.productionProgress = patch.productionProgress;
 
   const store = resolveStore();
   if (store) {

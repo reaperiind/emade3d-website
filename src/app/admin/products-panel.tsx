@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Product } from "@/data/products";
+import type { Product, ProductOption } from "@/data/products";
 import type { LocalizedText } from "@/lib/localize";
 import type {
   ProductOrder,
@@ -134,6 +134,7 @@ function waLink(o: ProductOrder): string {
   const lines = [
     `Bonjour ${o.customerName},`,
     `${o.quantity} × ${orderProductLabel(o)}`,
+    ...((o.selections ?? []).map((s) => `${s.label} : ${s.value}`)),
     "Merci pour votre demande sur notre site Emade3D.",
   ];
   return `https://wa.me/${waPhone(o)}?text=${encodeURIComponent(lines.join("\n"))}`;
@@ -1110,6 +1111,23 @@ function OrderDetailOverlay({
                 </div>
               </div>
             )}
+            {(order.selections ?? []).length > 0 && (
+              <div className="mt-4 border-t border-dzb-creamline pt-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-dzb-faint">
+                  Options choisies
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {(order.selections ?? []).map((s, i) => (
+                    <li key={i} className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-dzb-muted">{s.label}</span>
+                      <span className="rounded-md bg-dzb-tint px-2 py-0.5 text-sm font-semibold text-dzb-amberink">
+                        {s.value}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div className="rounded-xl border border-dzb-creamline p-4">
@@ -1281,6 +1299,12 @@ function ProductEditor({
 
       <ProductImageManager product={product} token={token} onChange={onChange} />
 
+      <ProductOptionsEditor
+        options={product.options ?? []}
+        onChange={(options) => onChange({ ...product, options })}
+      />
+
+
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-dzb-creamline pt-4">
         <button
           type="button"
@@ -1355,6 +1379,175 @@ function LangInput({
       placeholder={lang}
       className={inputClass}
     />
+  );
+}
+
+function ProductOptionsEditor({
+  options,
+  onChange,
+}: {
+  options: ProductOption[];
+  onChange: (options: ProductOption[]) => void;
+}) {
+  function setOption(index: number, next: ProductOption) {
+    const copy = options.slice();
+    copy[index] = next;
+    onChange(copy);
+  }
+  function removeOption(index: number) {
+    onChange(options.filter((_, i) => i !== index));
+  }
+  function addOption() {
+    onChange([...options, { label: EMPTY_LANG, values: [] }]);
+  }
+  function setValue(optIdx: number, valIdx: number, value: LocalizedRecord) {
+    const copy = options.slice();
+    const values = (copy[optIdx].values ?? []).slice();
+    values[valIdx] = value;
+    copy[optIdx] = { ...copy[optIdx], values };
+    onChange(copy);
+  }
+  function addValue(optIdx: number) {
+    const copy = options.slice();
+    const values = (copy[optIdx].values ?? []).slice();
+    values.push({ ...EMPTY_LANG });
+    copy[optIdx] = { ...copy[optIdx], values };
+    onChange(copy);
+  }
+  function removeValue(optIdx: number, valIdx: number) {
+    const copy = options.slice();
+    const values = (copy[optIdx].values ?? []).slice();
+    values.splice(valIdx, 1);
+    copy[optIdx] = { ...copy[optIdx], values };
+    onChange(copy);
+  }
+
+  return (
+    <div className="mt-5 rounded-lg border border-dzb-creamline bg-dzb-cream/40 p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-dzb-muted">Options du produit</p>
+          <p className="mt-0.5 text-xs text-dzb-muted">
+            Ex. forme, couleur, taille… Chaque option a un libellé et une liste de valeurs.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={addOption}
+          className="inline-flex items-center gap-1.5 rounded-md border border-dzb-creamline bg-white px-3 py-2 text-sm font-medium text-dzb-muted shadow-sm transition hover:border-dzb-amber hover:text-dzb-amberink"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Ajouter
+        </button>
+      </div>
+
+      {options.length === 0 && (
+        <p className="mt-3 text-xs text-dzb-faint">
+          Aucune option définie. Cliquez sur «&nbsp;Ajouter&nbsp;» pour en créer une.
+        </p>
+      )}
+
+      {options.map((opt, oi) => (
+        <div key={oi} className="mt-3 rounded-lg border border-dzb-creamline bg-white p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-dzb-muted">Libellé (FR, EN, AR)</p>
+              <div className="mt-1.5 grid gap-2 sm:grid-cols-3">
+                <input
+                  value={(opt.label as LocalizedRecord)?.fr ?? ""}
+                  onChange={(e) =>
+                    setOption(oi, {
+                      ...opt,
+                      label: { ...(opt.label as LocalizedRecord), fr: e.target.value },
+                    })
+                  }
+                  placeholder="FR"
+                  className={inputClass}
+                />
+                <input
+                  value={(opt.label as LocalizedRecord)?.en ?? ""}
+                  onChange={(e) =>
+                    setOption(oi, {
+                      ...opt,
+                      label: { ...(opt.label as LocalizedRecord), en: e.target.value },
+                    })
+                  }
+                  placeholder="EN"
+                  className={inputClass}
+                />
+                <input
+                  value={(opt.label as LocalizedRecord)?.ar ?? ""}
+                  onChange={(e) =>
+                    setOption(oi, {
+                      ...opt,
+                      label: { ...(opt.label as LocalizedRecord), ar: e.target.value },
+                    })
+                  }
+                  placeholder="AR"
+                  className={inputClass}
+                />
+              </div>
+
+              <p className="mt-3 text-xs font-semibold text-dzb-muted">Valeurs</p>
+              {(opt.values ?? []).map((val, vi) => (
+                <div key={vi} className="mt-1.5 flex items-start gap-2">
+                  <div className="grid flex-1 gap-2 sm:grid-cols-3">
+                    <input
+                      value={(val as LocalizedRecord)?.fr ?? ""}
+                      onChange={(e) =>
+                        setValue(oi, vi, { ...(val as LocalizedRecord), fr: e.target.value })
+                      }
+                      placeholder="FR"
+                      className={inputClass}
+                    />
+                    <input
+                      value={(val as LocalizedRecord)?.en ?? ""}
+                      onChange={(e) =>
+                        setValue(oi, vi, { ...(val as LocalizedRecord), en: e.target.value })
+                      }
+                      placeholder="EN"
+                      className={inputClass}
+                    />
+                    <input
+                      value={(val as LocalizedRecord)?.ar ?? ""}
+                      onChange={(e) =>
+                        setValue(oi, vi, { ...(val as LocalizedRecord), ar: e.target.value })
+                      }
+                      placeholder="AR"
+                      className={inputClass}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeValue(oi, vi)}
+                    aria-label="Supprimer la valeur"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-500 transition hover:bg-red-100"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addValue(oi)}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-dzb-creamline bg-white px-2.5 py-1.5 text-xs font-medium text-dzb-muted transition hover:border-dzb-amber hover:text-dzb-amberink"
+              >
+                <PlusIcon className="h-3.5 w-3.5" />
+                Ajouter une valeur
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => removeOption(oi)}
+              aria-label="Supprimer l'option"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-500 transition hover:bg-red-100"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

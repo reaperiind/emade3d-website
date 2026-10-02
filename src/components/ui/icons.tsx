@@ -156,6 +156,15 @@ export function CheckIcon(props: IconProps) {
   );
 }
 
+export function AlertCircleIcon(props: IconProps) {
+  return (
+    <svg {...stroke} {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 8v4M12 16h.01" />
+    </svg>
+  );
+}
+
 export function ChevronDownIcon(props: IconProps) {
   return (
     <svg {...stroke} {...props}>

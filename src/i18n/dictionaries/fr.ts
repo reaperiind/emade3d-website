@@ -299,6 +299,15 @@ const fr = {
       "Chaque étape franchie par votre commande, avec la date et l'heure.",
     trackingHelp:
       "Ce code est communiqué lors de la confirmation de votre commande.",
+    productionProgress: {
+      label: "Progrès de fabrication",
+      step0: "En attente",
+      step25: "Préparation matériaux",
+      step50: "En impression/fabrication",
+      step75: "Post-traitement",
+      step100: "Terminé",
+    },
+    adminNotesLabel: "Note de l'équipe",
   },
 
   products: {

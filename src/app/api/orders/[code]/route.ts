@@ -16,6 +16,7 @@ import {
   type OrderStatus,
   type HistoryEntry,
   type DeliveryInfo,
+  type ProductionProgressStep,
 } from "@/lib/order-flows";
 
 export const runtime = "nodejs";
@@ -102,6 +103,18 @@ export async function PATCH(request: Request, { params }: Ctx) {
           .slice(0, 5)
       : [];
     patch.files = files;
+  }
+
+  if (typeof body.adminNotes === "string") {
+    patch.adminNotes = body.adminNotes.trim() || undefined;
+  }
+
+  if (body.productionProgress !== undefined && body.productionProgress !== null) {
+    const progress = Number(body.productionProgress);
+    const validSteps: ProductionProgressStep[] = [0, 25, 50, 75, 100];
+    if (validSteps.includes(progress as ProductionProgressStep)) {
+      patch.productionProgress = progress as ProductionProgressStep;
+    }
   }
 
   const updated = await updateOrder(code, patch);

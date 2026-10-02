@@ -60,6 +60,10 @@ export async function notifyProductOrder(
     auth: { user: USER, pass: PASS },
   });
 
+  const selectionLines = (order.selections ?? []).map(
+    (s) => `Option ${s.label} : ${s.value}`
+  );
+
   const subject = `Nouvelle demande produit — ${name} · ${order.customerName}`;
   const text = [
     "Une nouvelle demande de produit vient d'être reçue.",
@@ -69,6 +73,7 @@ export async function notifyProductOrder(
     `Client : ${order.customerName}`,
     `Téléphone : ${order.phone}`,
     `Quantité : ${order.quantity}`,
+    ...selectionLines,
     `Livraison : ${deliveryLabel(order)}`,
     "",
     `Consulter dans l'admin : ${ADMIN_URL}`,
@@ -76,6 +81,9 @@ export async function notifyProductOrder(
     .filter(Boolean)
     .join("\n");
 
+  const selectionRows = (order.selections ?? []).map(
+    (s) => `<tr><td style="padding:12px 16px;border-bottom:1px solid #eef1f5;color:#5b6470;font-size:13px;white-space:nowrap;">${esc(s.label)}</td><td style="padding:12px 16px;border-bottom:1px solid #eef1f5;color:#101828;font-size:13px;font-weight:600;">${esc(s.value)}</td></tr>`
+  ).join("");
   const html = `<!DOCTYPE html>
 <html lang="fr" dir="ltr">
   <head><meta charset="utf-8" /></head>
@@ -108,6 +116,7 @@ export async function notifyProductOrder(
                   <td style="padding:12px 16px;border-bottom:1px solid #eef1f5;color:#5b6470;font-size:13px;white-space:nowrap;">Quantité</td>
                   <td style="padding:12px 16px;border-bottom:1px solid #eef1f5;color:#101828;font-size:13px;font-weight:600;">${order.quantity}</td>
                 </tr>
+                ${selectionRows}
                 <tr>
                   <td style="padding:12px 16px;color:#5b6470;font-size:13px;white-space:nowrap;">Livraison</td>
                   <td style="padding:12px 16px;color:#101828;font-size:13px;font-weight:600;">${esc(deliveryLabel(order))}</td>

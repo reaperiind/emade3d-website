@@ -36,6 +36,8 @@ export interface ProductOrder {
   customerName: string;
   phone: string;
   quantity: number;
+  /** Selected option values, e.g. [{label:"Forme",value:"Carré"}]. */
+  selections?: { label: string; value: string }[];
   /** Delivery chosen by the customer (same options as the order form). */
   delivery: DeliveryInfo;
   locale: string;
