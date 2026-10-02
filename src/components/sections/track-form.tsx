@@ -129,6 +129,44 @@ export function TrackForm() {
     ? SERVICE_MAP[order.serviceType] ?? order.serviceType.replace(/_/g, " ")
     : "";
 
+  // Build merged timeline: history entries + production notes (for IN_PRODUCTION)
+  const mergedTimeline = useMemo(() => {
+    if (!order) return [];
+    const items: Array<{
+      type: "status" | "note";
+      id: string;
+      label: string;
+      at: string;
+      isCurrent?: boolean;
+    }> = [];
+
+    // Add history entries
+    order.history.forEach((entry, index) => {
+      items.push({
+        type: "status",
+        id: `${entry.status}-${index}`,
+        label: track.statuses[entry.status] ?? entry.status,
+        at: entry.at,
+        isCurrent: index === order.history.length - 1,
+      });
+    });
+
+    // Add production notes (only for IN_PRODUCTION status)
+    if (order.status === "IN_PRODUCTION" && order.productionNotes) {
+      order.productionNotes.forEach((note) => {
+        items.push({
+          type: "note",
+          id: note.id,
+          label: note.text,
+          at: note.at,
+        });
+      });
+    }
+
+    // Sort by timestamp ascending (oldest first)
+    return items.sort((a, b) => a.at.localeCompare(b.at));
+  }, [order, track.statuses, locale]);
+
   if (order) {
     const delivery = order.delivery;
     const deliveryFee = delivery?.fee ?? 0;
@@ -356,18 +394,18 @@ export function TrackForm() {
           </div>
         </div>
 
-        {/* History timeline */}
+        {/* History timeline (merged with production notes) */}
         <div className="mt-6">
           <h3 className="font-display text-lg font-semibold text-white">
             {track.historyTitle}
           </h3>
           <p className="text-muted mt-0.5 text-sm">{track.historySubtitle}</p>
           <ol className="mt-4 space-y-0">
-            {order.history.map((entry, index) => {
-              const isCurrent = index === order.history.length - 1;
-              const isLast = index === order.history.length - 1;
+            {mergedTimeline.map((item, index) => {
+              const isLast = index === mergedTimeline.length - 1;
+              const isNote = item.type === "note";
               return (
-                <li key={`${entry.status}-${index}`} className="relative flex gap-3.5 pb-6 last:pb-0">
+                <li key={item.id} className="relative flex gap-3.5 pb-6 last:pb-0">
                   {/* line */}
                   {!isLast && (
                     <span
@@ -379,29 +417,39 @@ export function TrackForm() {
                   <span
                     className={cn(
                       "mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
-                      isCurrent
+                      isNote
+                        ? "border-amber-500 bg-amber-500/20"
+                        : item.isCurrent
                         ? "border-accent bg-accent/20"
                         : "border-white/20 bg-ink-800"
                     )}
                   >
-                    {isCurrent && <span className="h-1.5 w-1.5 rounded-full bg-accent" />}
+                    {isNote ? (
+                      <span className="h-2 w-2 rounded-full bg-amber-500" />
+                    ) : item.isCurrent && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                    )}
                   </span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between gap-3">
                       <p
                         className={cn(
                           "text-sm font-semibold",
-                          isCurrent ? "text-accent" : "text-white"
+                          isNote
+                            ? "text-amber-300"
+                            : item.isCurrent
+                            ? "text-accent"
+                            : "text-white"
                         )}
                       >
-                        {track.statuses[entry.status]}
+                        {item.label}
                       </p>
                       <p
                         dir="ltr"
                         className="flex items-center gap-1.5 text-xs text-steel-400"
                       >
                         <ClockIcon className="h-3.5 w-3.5" />
-                        {dateFmt.format(new Date(entry.at))}
+                        {dateFmt.format(new Date(item.at))}
                       </p>
                     </div>
                   </div>
