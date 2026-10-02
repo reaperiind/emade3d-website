@@ -11,6 +11,8 @@ import {
   DownloadIcon,
   SearchIcon,
   CloseIcon,
+  CopyIcon,
+  CheckIcon,
 } from "@/components/ui/icons";
 import {
   inputClass,
@@ -219,6 +221,13 @@ export function OrdersPanel({
   const [page, setPage] = useState(1);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedCode(text);
+    setTimeout(() => setCopiedCode(null), 1500);
+  }
 
   const counts = useMemo(() => {
     const c: Record<OrderGroupId, number> = {
@@ -359,9 +368,17 @@ export function OrdersPanel({
                       </p>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="font-mono text-xs font-extrabold tracking-wider text-dzb-amberink">
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(order.code)}
+                        className="font-mono text-xs font-extrabold tracking-wider text-dzb-amberink hover:underline flex items-center gap-1"
+                        title="نسخ رقم التتبع"
+                      >
                         {order.code}
-                      </span>
+                        {copiedCode === order.code && (
+                          <CheckIcon className="h-3.5 w-3.5 text-emerald-500" />
+                        )}
+                      </button>
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-xs text-dzb-muted">
                       {new Date(order.createdAt).toLocaleDateString("fr-FR", {
@@ -456,9 +473,20 @@ export function OrdersPanel({
                     <p className="truncate font-semibold text-dzb-navy">
                       {order.firstName} {order.lastName}
                     </p>
-                    <span className="font-mono text-xs font-extrabold tracking-wider text-dzb-amberink">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyToClipboard(order.code);
+                      }}
+                      className="font-mono text-xs font-extrabold tracking-wider text-dzb-amberink hover:underline flex items-center gap-1"
+                      title="نسخ رقم التتبع"
+                    >
                       {order.code}
-                    </span>
+                      {copiedCode === order.code && (
+                        <CheckIcon className="h-3.5 w-3.5 text-emerald-500" />
+                      )}
+                    </button>
                   </button>
                   <div className="relative shrink-0">
                     <button
@@ -597,6 +625,8 @@ export function OrdersPanel({
               onHistoryRemove={onHistoryRemove}
               onDelete={onDelete}
               onFilesChange={onFilesChange}
+              onCopyCode={copyToClipboard}
+              copiedCode={copiedCode}
             />
           )}
         </>
@@ -616,6 +646,8 @@ function OrderDetailsDrawer({
   onHistoryRemove,
   onDelete,
   onFilesChange,
+  onCopyCode,
+  copiedCode,
 }: {
   order: Order;
   token: string;
@@ -627,6 +659,8 @@ function OrderDetailsDrawer({
   onHistoryRemove: (code: string, index: number) => void;
   onDelete: (code: string) => void;
   onFilesChange: (code: string, files: Order["files"]) => void;
+  onCopyCode: (code: string) => void;
+  copiedCode: string | null;
 }) {
   const options = statusesFor(order.serviceType);
   const isCourier = order.delivery?.method === "courier";
@@ -746,9 +780,17 @@ function OrderDetailsDrawer({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
-                <span className="font-mono text-sm font-extrabold tracking-wider text-dzb-amberink">
+                <button
+                  type="button"
+                  onClick={() => onCopyCode(order.code)}
+                  className="font-mono text-sm font-extrabold tracking-wider text-dzb-amberink hover:underline flex items-center gap-1"
+                  title="نسخ رقم التتبع"
+                >
                   {order.code}
-                </span>
+                  {copiedCode === order.code && (
+                    <CheckIcon className="h-3.5 w-3.5 text-emerald-500" />
+                  )}
+                </button>
                 <span
                   className={cn(
                     "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold",
