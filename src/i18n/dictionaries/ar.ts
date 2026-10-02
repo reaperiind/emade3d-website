@@ -302,6 +302,7 @@ const ar: Dictionary = {
       step100: "مكتمل",
     },
     adminNotesLabel: "ملاحظة من الفريق",
+    productionNotesLabel: "ملاحظات التصنيع",
   },
 
   products: {

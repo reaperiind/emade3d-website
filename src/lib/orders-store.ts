@@ -14,6 +14,7 @@ import {
   type OrderFile,
   type OrderStatus,
   type ProductionProgressStep,
+  type ProductionNote,
 } from "@/lib/order-flows";
 
 export type { OrderStatus, HistoryEntry, DeliveryInfo, OrderFile } from "@/lib/order-flows";
@@ -46,6 +47,8 @@ export interface Order {
   adminNotes?: string;
   /** Production progress (0-100) for IN_PRODUCTION status. */
   productionProgress?: ProductionProgressStep;
+  /** Production notes visible to customer as timeline under progress bar (IN_PRODUCTION only). */
+  productionNotes?: ProductionNote[];
 }
 
 /** Courier parcel created for an order. */
@@ -161,6 +164,8 @@ export interface OrderPatch {
   adminNotes?: string;
   /** Production progress (0-100) for IN_PRODUCTION status. */
   productionProgress?: ProductionProgressStep;
+  /** Production notes visible to customer as timeline (IN_PRODUCTION only). */
+  productionNotes?: ProductionNote[];
   /** Status change is appended to the history at this time (ISO) — default now. */
   at?: string;
 }
@@ -195,6 +200,7 @@ export async function updateOrder(
   }
   if (patch.adminNotes !== undefined) updated.adminNotes = patch.adminNotes;
   if (patch.productionProgress !== undefined) updated.productionProgress = patch.productionProgress;
+  if (patch.productionNotes !== undefined) updated.productionNotes = patch.productionNotes;
 
   const store = resolveStore();
   if (store) {

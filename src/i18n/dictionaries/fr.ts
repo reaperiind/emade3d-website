@@ -308,6 +308,7 @@ const fr = {
       step100: "Terminé",
     },
     adminNotesLabel: "Note de l'équipe",
+    productionNotesLabel: "Notes de fabrication",
   },
 
   products: {

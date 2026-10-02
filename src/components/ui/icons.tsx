@@ -197,6 +197,15 @@ export function CloseIcon(props: IconProps) {
   );
 }
 
+export function PencilIcon(props: IconProps) {
+  return (
+    <svg {...stroke} {...props}>
+      <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0 0-3L17 5a2.1 2.1 0 0 0-3 0L3.5 15.5V20z" strokeLinejoin="round" />
+      <path d="M13.5 6.5l4 4" />
+    </svg>
+  );
+}
+
 export function GlobeIcon(props: IconProps) {
   return (
     <svg {...stroke} {...props}>

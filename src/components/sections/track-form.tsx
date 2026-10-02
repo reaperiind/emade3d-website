@@ -214,6 +214,39 @@ export function TrackForm() {
           </div>
         )}
 
+        {/* Production Notes Timeline - Only for IN_PRODUCTION status */}
+        {order.status === "IN_PRODUCTION" && order.productionNotes && order.productionNotes.length > 0 && (
+          <div className="mt-4 rounded-lg border border-white/10 bg-ink-800 px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-widest text-steel-400">
+              {track.productionNotesLabel}
+            </p>
+            <ul className="mt-3 space-y-3">
+              {order.productionNotes.map((note) => (
+                <li key={note.id} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <span className="h-2 w-2 rounded-full bg-accent" />
+                    <span className="h-6 w-px bg-white/10" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm leading-relaxed text-steel-100 whitespace-pre-wrap">
+                      {note.text}
+                    </p>
+                    <p className="mt-0.5 text-xs text-steel-400">
+                      {new Date(note.at).toLocaleString(locale === "ar" ? "ar-DZ" : locale, {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="mt-5 grid gap-3">
           {[
             [track.client, `${order.firstName} ${order.lastName}`],
@@ -240,7 +273,7 @@ export function TrackForm() {
             <p className="text-xs font-medium uppercase tracking-widest text-steel-400">
               {track.description}
             </p>
-            <p className="mt-1 text-sm leading-relaxed text-steel-100">
+            <p className="mt-1 text-sm leading-relaxed text-steel-100 whitespace-pre-wrap">
               {order.description}
             </p>
           </div>

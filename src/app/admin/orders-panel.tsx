@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Order, OrderStatus } from "@/lib/orders-store";
-import { statusesFor, type ProductionProgressStep, PRODUCTION_PROGRESS_STEPS } from "@/lib/order-flows";
+import { statusesFor, type ProductionProgressStep, PRODUCTION_PROGRESS_STEPS, type ProductionNote } from "@/lib/order-flows";
 import { cn } from "@/lib/cn";
 import { localizePath } from "@/i18n/config";
 import {
@@ -13,6 +13,8 @@ import {
   CloseIcon,
   CopyIcon,
   CheckIcon,
+  PlusIcon,
+  PencilIcon,
 } from "@/components/ui/icons";
 import {
   inputClass,
@@ -177,18 +179,6 @@ function DotsIcon() {
       <circle cx="12" cy="5.5" r="1.7" />
       <circle cx="12" cy="12" r="1.7" />
       <circle cx="12" cy="18.5" r="1.7" />
-    </svg>
-  );
-}
-
-function PencilIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path
-        d="M4 20h4l10.5-10.5a2.1 2.1 0 000-3L17 5a2.1 2.1 0 00-3 0L3.5 15.5V20z"
-        strokeLinejoin="round"
-      />
-      <path d="M13.5 6.5l4 4" />
     </svg>
   );
 }
@@ -674,6 +664,9 @@ function OrderDetailsDrawer({
   const [progressDraft, setProgressDraft] = useState<ProductionProgressStep | "">(
     order.productionProgress ?? ""
   );
+  const [productionNotes, setProductionNotes] = useState<ProductionNote[]>(order.productionNotes ?? []);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [viewer, setViewer] = useState<string | null>(null);
@@ -714,7 +707,8 @@ function OrderDetailsDrawer({
       : Number(priceDraft) !== order.price ||
         String(order.delivery?.fee ?? 0) !== feeDraft ||
         notesDraft !== (order.adminNotes ?? "") ||
-        progressDraft !== (order.productionProgress ?? "");
+        progressDraft !== (order.productionProgress ?? "") ||
+        JSON.stringify(productionNotes) !== JSON.stringify(order.productionNotes ?? []);
 
   async function saveOrder() {
     onPrice(order.code, priceDraft);
@@ -739,8 +733,54 @@ function OrderDetailsDrawer({
         body: JSON.stringify({ productionProgress: progressDraft }),
       });
     }
+    if (JSON.stringify(productionNotes) !== JSON.stringify(order.productionNotes ?? [])) {
+      await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ productionNotes }),
+      });
+    }
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2500);
+  }
+
+  function addProductionNote() {
+    const text = noteDraft.trim();
+    if (!text) return;
+    const newNote: ProductionNote = {
+      id: crypto.randomUUID(),
+      text,
+      at: new Date().toISOString(),
+    };
+    setProductionNotes((prev) => [newNote, ...prev]);
+    setNoteDraft("");
+  }
+
+  function startEditNote(note: ProductionNote) {
+    setEditingNoteId(note.id);
+    setNoteDraft(note.text);
+  }
+
+  function saveEditNote() {
+    const text = noteDraft.trim();
+    if (!text || !editingNoteId) return;
+    setProductionNotes((prev) =>
+      prev.map((n) => (n.id === editingNoteId ? { ...n, text, at: new Date().toISOString() } : n))
+    );
+    setEditingNoteId(null);
+    setNoteDraft("");
+  }
+
+  function cancelEditNote() {
+    setEditingNoteId(null);
+    setNoteDraft("");
+  }
+
+  function deleteProductionNote(id: string) {
+    setProductionNotes((prev) => prev.filter((n) => n.id !== id));
   }
 
   async function downloadFile(key: string) {
@@ -943,6 +983,99 @@ function OrderDetailsDrawer({
               </div>
             )}
 
+            {/* Production Notes - only show for IN_PRODUCTION status */}
+            {order.status === "IN_PRODUCTION" && (
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-dzb-muted">
+                  Notes de fabrication (visibles par le client)
+                </label>
+                {/* Add note form */}
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={noteDraft}
+                    onChange={(e) => setNoteDraft(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !editingNoteId && addProductionNote()}
+                    placeholder={editingNoteId ? "Modifier la note…" : "Ajouter une note (ex: Début impression lot 1)…"}
+                    className={cn(inputClass, "flex-1")}
+                  />
+                  {editingNoteId ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={saveEditNote}
+                        className={cn(saveButton, "whitespace-nowrap")}
+                      >
+                        Enregistrer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEditNote}
+                        className="flex h-9 items-center justify-center rounded-lg border border-dzb-creamline px-4 text-sm font-medium text-dzb-muted transition hover:bg-dzb-cream"
+                      >
+                        Annuler
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={addProductionNote}
+                      disabled={!noteDraft.trim()}
+                      className={cn(saveButton, "whitespace-nowrap", "disabled:opacity-50")}
+                    >
+                      <PlusIcon className="h-4 w-4 mr-1" />
+                      Ajouter
+                    </button>
+                  )}
+                </div>
+                {/* Notes list */}
+                {productionNotes.length > 0 && (
+                  <ul className="space-y-2 max-h-60 overflow-y-auto">
+                    {productionNotes.map((note) => (
+                      <li
+                        key={note.id}
+                        className="relative flex gap-2 rounded-lg border border-dzb-creamline bg-dzb-cream/30 px-3 py-2.5 transition hover:bg-dzb-cream/60"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-dzb-navy whitespace-pre-wrap">{note.text}</p>
+                          <p className="text-xs text-dzb-faint mt-0.5">
+                            {new Date(note.at).toLocaleString("fr-FR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => startEditNote(note)}
+                            className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-dzb-amber hover:text-dzb-amberink"
+                            title="Modifier"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteProductionNote(note.id)}
+                            className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
+                            title="Supprimer"
+                          >
+                            <TrashIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {productionNotes.length === 0 && (
+                  <p className="text-xs text-dzb-faint italic">Aucune note de fabrication</p>
+                )}
+              </div>
+            )}
+
             {order.delivery && (
               <div className="rounded-lg border border-dzb-creamline bg-dzb-cream/40 px-4 py-3 text-xs leading-relaxed text-dzb-muted">
                 <span className="font-semibold text-dzb-navy">Livraison : </span>
@@ -955,7 +1088,7 @@ function OrderDetailsDrawer({
             )}
 
             {order.description && (
-              <div className="rounded-lg border border-dzb-creamline bg-dzb-cream/40 px-4 py-3 text-sm leading-relaxed text-dzb-muted">
+              <div className="rounded-lg border border-dzb-creamline bg-dzb-cream/40 px-4 py-3 text-sm leading-relaxed text-dzb-muted whitespace-pre-wrap">
                 {order.description}
               </div>
             )}

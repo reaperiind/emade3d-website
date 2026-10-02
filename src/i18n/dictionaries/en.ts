@@ -307,6 +307,7 @@ const en: Dictionary = {
       step100: "Completed",
     },
     adminNotesLabel: "Team note",
+    productionNotesLabel: "Production notes",
   },
 
   products: {

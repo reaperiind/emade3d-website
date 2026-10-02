@@ -105,6 +105,13 @@ export interface OrderAdminNotes {
   text: string;
 }
 
+/** Production note for IN_PRODUCTION status - visible to customer as timeline. */
+export interface ProductionNote {
+  id: string;
+  text: string;
+  at: string;
+}
+
 /** Production progress steps for IN_PRODUCTION status. */
 export type ProductionProgressStep = 0 | 25 | 50 | 75 | 100;
 
