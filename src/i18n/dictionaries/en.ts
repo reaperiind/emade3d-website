@@ -308,6 +308,7 @@ const en: Dictionary = {
     },
     adminNotesLabel: "Team note",
     productionNotesLabel: "Production notes",
+    statusNotesLabel: "Status notes",
   },
 
   products: {

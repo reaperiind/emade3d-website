@@ -990,41 +990,39 @@ function OrderDetailsDrawer({
               </div>
             )}
 
-            {/* Production Notes - only show for IN_PRODUCTION status */}
-            {order.status === "IN_PRODUCTION" && (
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-dzb-muted">
-                  Notes de fabrication (visibles par le client)
-                </label>
-                {/* Add note form */}
-                <div className="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    value={noteDraft}
-                    onChange={(e) => setNoteDraft(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !editingNoteId && addProductionNote()}
-                    placeholder={editingNoteId ? "Modifier la note…" : "Ajouter une note (ex: Début impression lot 1)…"}
-                    className={cn(inputClass, "flex-1")}
-                  />
-                  {editingNoteId ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={saveEditNote}
-                        className={cn(saveButton, "whitespace-nowrap")}
-                      >
-                        Enregistrer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelEditNote}
-                        className="flex h-9 items-center justify-center rounded-lg border border-dzb-creamline px-4 text-sm font-medium text-dzb-muted transition hover:bg-dzb-cream"
-                      >
-                        Annuler
-                      </button>
-                    </>
-                  ) : (
+            {/* Status Notes - visible to customer in all statuses */}
+            <div>
+              <label className="mb-1.5 block text-[13px] font-medium text-dzb-muted">
+                Notes de statut (visibles par le client)
+              </label>
+              {/* Add note form */}
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  value={noteDraft}
+                  onChange={(e) => setNoteDraft(e.target.value)}
+                  placeholder={editingNoteId ? "Modifier la note…" : "Ajouter une note…"}
+                  className={cn(inputClass, "flex-1")}
+                />
+                {editingNoteId ? (
+                  <>
                     <button
+                      type="button"
+                      onClick={saveEditNote}
+                      className={cn(saveButton, "whitespace-nowrap")}
+                    >
+                      Enregistrer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEditNote}
+                      className="flex h-9 items-center justify-center rounded-lg border border-dzb-creamline px-4 text-sm font-medium text-dzb-muted transition hover:bg-dzb-cream"
+                    >
+                      Annuler
+                    </button>
+                  </>
+                ) : (
+<button
                       type="button"
                       onClick={addProductionNote}
                       disabled={!noteDraft.trim()}
@@ -1033,100 +1031,99 @@ function OrderDetailsDrawer({
                       <PlusIcon className="h-4 w-4 mr-1" />
                       Ajouter
                     </button>
-                  )}
-                </div>
-                {/* Notes list */}
-                {productionNotes.length > 0 && (
-                  <ul className="space-y-2 max-h-60 overflow-y-auto">
-                    {productionNotes.map((note) => {
-                      const isEditing = editingNoteId === note.id;
-                      return (
-                        <li
-                          key={note.id}
-                          className="relative flex gap-2 rounded-lg border border-dzb-creamline bg-dzb-cream/30 px-3 py-2.5 transition hover:bg-dzb-cream/60"
-                        >
-                          <div className="flex-1 min-w-0">
-                            {isEditing ? (
-                              <div className="space-y-2">
-                                <input
-                                  type="text"
-                                  value={noteDraft}
-                                  onChange={(e) => setNoteDraft(e.target.value)}
-                                  className={cn(inputClass, "text-sm")}
-                                />
-                                <input
-                                  type="datetime-local"
-                                  value={editingNoteAt}
-                                  onChange={(e) => setEditingNoteAt(e.target.value)}
-                                  className={cn(inputClass, "text-sm")}
-                                />
-                              </div>
-                            ) : (
-                              <>
-                                <p className="text-sm text-dzb-navy whitespace-pre-wrap">{note.text}</p>
-                                <p className="text-xs text-dzb-faint mt-0.5">
-                                  {new Date(note.at).toLocaleString("fr-FR", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </p>
-                              </>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {isEditing ? (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={saveEditNote}
-                                  className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-emerald-500 hover:text-emerald-500"
-                                  title="Enregistrer"
-                                >
-                                  <CheckIcon className="h-4 w-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={cancelEditNote}
-                                  className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
-                                  title="Annuler"
-                                >
-                                  <CloseIcon className="h-4 w-4" />
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => startEditNote(note)}
-                                  className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-dzb-amber hover:text-dzb-amberink"
-                                  title="Modifier"
-                                >
-                                  <PencilIcon className="h-4 w-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => deleteProductionNote(note.id)}
-                                  className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
-                                  title="Supprimer"
-                                >
-                                  <TrashIcon className="h-3.5 w-3.5" />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-                {productionNotes.length === 0 && (
-                  <p className="text-xs text-dzb-faint italic">Aucune note de fabrication</p>
                 )}
               </div>
-            )}
+              {/* Notes list */}
+              {productionNotes.length > 0 && (
+                <ul className="space-y-2 max-h-60 overflow-y-auto">
+                  {productionNotes.map((note) => {
+                    const isEditing = editingNoteId === note.id;
+                    return (
+                      <li
+                        key={note.id}
+                        className="relative flex gap-2 rounded-lg border border-dzb-creamline bg-dzb-cream/30 px-3 py-2.5 transition hover:bg-dzb-cream/60"
+                      >
+                        <div className="flex-1 min-w-0">
+                          {isEditing ? (
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={noteDraft}
+                                onChange={(e) => setNoteDraft(e.target.value)}
+                                className={cn(inputClass, "text-sm")}
+                              />
+                              <input
+                                type="datetime-local"
+                                value={editingNoteAt}
+                                onChange={(e) => setEditingNoteAt(e.target.value)}
+                                className={cn(inputClass, "text-sm")}
+                              />
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-sm text-dzb-navy whitespace-pre-wrap">{note.text}</p>
+                              <p className="text-xs text-dzb-faint mt-0.5">
+                                {new Date(note.at).toLocaleString("fr-FR", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {isEditing ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={saveEditNote}
+                                className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-emerald-500 hover:text-emerald-500"
+                                title="Enregistrer"
+                              >
+                                <CheckIcon className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelEditNote}
+                                className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
+                                title="Annuler"
+                              >
+                                <CloseIcon className="h-4 w-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => startEditNote(note)}
+                                className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-dzb-amber hover:text-dzb-amberink"
+                                title="Modifier"
+                              >
+                                <PencilIcon className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deleteProductionNote(note.id)}
+                                className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
+                                title="Supprimer"
+                              >
+                                <TrashIcon className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              {productionNotes.length === 0 && (
+                <p className="text-xs text-dzb-faint italic">Aucune note de statut</p>
+              )}
+            </div>
 
             {order.delivery && (
               <div className="rounded-lg border border-dzb-creamline bg-dzb-cream/40 px-4 py-3 text-xs leading-relaxed text-dzb-muted">
