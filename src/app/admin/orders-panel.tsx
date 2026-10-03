@@ -708,16 +708,6 @@ function OrderDetailsDrawer({
     setStatusDraft(order.status);
   }, [order.status]);
 
-  // Sync progressDraft when order.productionProgress changes from parent
-  useEffect(() => {
-    setProgressDraft(order.productionProgress ?? "");
-  }, [order.productionProgress]);
-
-  // Sync productionNotes when order.productionNotes changes from parent
-  useEffect(() => {
-    setProductionNotes(order.productionNotes ?? []);
-  }, [order.productionNotes]);
-
   const hasUnsaved =
     priceDraft.trim() === ""
       ? order.price != null
@@ -785,8 +775,6 @@ function OrderDetailsDrawer({
     };
     setProductionNotes((prev) => [newNote, ...prev]);
     setNoteDraft("");
-    // Auto-save notes
-    saveNotes();
   }
 
   function startEditNote(note: ProductionNote) {
@@ -807,7 +795,6 @@ function OrderDetailsDrawer({
     setEditingNoteId(null);
     setEditingNoteAt("");
     setNoteDraft("");
-    saveNotes();
   }
 
   function cancelEditNote() {
@@ -818,30 +805,6 @@ function OrderDetailsDrawer({
 
   function deleteProductionNote(id: string) {
     setProductionNotes((prev) => prev.filter((n) => n.id !== id));
-    saveNotes();
-  }
-
-  async function saveNotes() {
-    await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ productionNotes }),
-    });
-  }
-
-  async function saveProgress() {
-    if (progressDraft === "") return;
-    await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ productionProgress: progressDraft }),
-    });
   }
 
   async function downloadFile(key: string) {
@@ -1035,11 +998,7 @@ function OrderDetailsDrawer({
                 </label>
                 <select
                   value={progressDraft}
-                  onChange={(e) => {
-                    const val = e.target.value as ProductionProgressStep | "";
-                    setProgressDraft(val);
-                    saveProgress();
-                  }}
+                  onChange={(e) => setProgressDraft(e.target.value as ProductionProgressStep | "")}
                   className={cn(inputClass, "w-auto min-w-44 appearance-none py-2")}
                 >
                   <option value="">— Sélectionner —</option>
