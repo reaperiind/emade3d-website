@@ -719,47 +719,50 @@ function OrderDetailsDrawer({
         statusDraft !== order.status;
 
   async function saveOrder() {
-    onPrice(order.code, priceDraft);
-    if (isCourier) onDeliveryFee(order.code, feeDraft);
+    const body: Record<string, unknown> = {};
+    let hasChanges = false;
+
     if (statusDraft !== order.status) {
-      await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: statusDraft }),
-      });
+      body.status = statusDraft;
+      hasChanges = true;
     }
     if (notesDraft !== (order.adminNotes ?? "")) {
-      await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ adminNotes: notesDraft.trim() || null }),
-      });
+      body.adminNotes = notesDraft.trim() || null;
+      hasChanges = true;
     }
     if (progressDraft !== "" && progressDraft !== (order.productionProgress ?? "")) {
-      await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ productionProgress: progressDraft }),
-      });
+      body.productionProgress = progressDraft;
+      hasChanges = true;
     }
     if (JSON.stringify(productionNotes) !== JSON.stringify(order.productionNotes ?? [])) {
-      await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
+      body.productionNotes = productionNotes;
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
+      const res = await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ productionNotes }),
+        body: JSON.stringify(body),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("Save failed:", err);
+        alert("فشل الحفظ: " + (err.error || "خطأ غير معروف"));
+        return;
+      }
+      const json = await res.json();
+      const updated = json.order as Order | undefined;
+      if (updated) {
+        // Update local states to match saved data
+        if (updated.status) setStatusDraft(updated.status);
+        if (updated.adminNotes !== undefined) setNotesDraft(updated.adminNotes ?? "");
+        if (updated.productionProgress !== undefined) setProgressDraft(updated.productionProgress ?? "");
+        if (updated.productionNotes !== undefined) setProductionNotes(updated.productionNotes ?? []);
+      }
     }
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2500);
