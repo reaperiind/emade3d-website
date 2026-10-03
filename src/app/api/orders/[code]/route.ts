@@ -18,6 +18,7 @@ import {
   type DeliveryInfo,
   type ProductionProgressStep,
   type ProductionNote,
+  type ProgressNote,
 } from "@/lib/order-flows";
 
 export const runtime = "nodejs";
@@ -130,6 +131,20 @@ export async function PATCH(request: Request, { params }: Ctx) {
     // Sort by date descending (newest first)
     notes.sort((a, b) => b.at.localeCompare(a.at));
     patch.productionNotes = notes;
+  }
+
+  if (Array.isArray(body.progressNotes)) {
+    const notes: ProgressNote[] = [];
+    for (const raw of body.progressNotes) {
+      const n = raw as ProgressNote;
+      const status = String(n?.status ?? "");
+      const text = typeof n?.text === "string" ? n.text.trim() : "";
+      const at = typeof n?.at === "string" && n.at ? n.at : new Date().toISOString();
+      if (status && flow.includes(status as OrderStatus) && text) {
+        notes.push({ status: status as OrderStatus, text, at });
+      }
+    }
+    patch.progressNotes = notes;
   }
 
   const updated = await updateOrder(code, patch);

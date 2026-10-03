@@ -310,6 +310,7 @@ const fr = {
     adminNotesLabel: "Note de l'équipe",
     productionNotesLabel: "Notes de fabrication",
     statusNotesLabel: "Notes de statut",
+    progressNoteLabel: "Note de progression",
   },
 
   products: {

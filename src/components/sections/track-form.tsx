@@ -129,7 +129,7 @@ export function TrackForm() {
     ? SERVICE_MAP[order.serviceType] ?? order.serviceType.replace(/_/g, " ")
     : "";
 
-  // Build merged timeline: history entries + production notes (for IN_PRODUCTION)
+  // Build merged timeline: history entries + production notes (for IN_PRODUCTION) + progress notes (all statuses)
   const mergedTimeline = useMemo(() => {
     if (!order) return [];
     const items: Array<{
@@ -157,6 +157,18 @@ export function TrackForm() {
         items.push({
           type: "note",
           id: note.id,
+          label: note.text,
+          at: note.at,
+        });
+      });
+    }
+
+    // Add progress notes for all statuses
+    if (order.progressNotes) {
+      order.progressNotes.forEach((note) => {
+        items.push({
+          type: "note",
+          id: `progress-${note.status}-${note.at}`,
           label: note.text,
           at: note.at,
         });

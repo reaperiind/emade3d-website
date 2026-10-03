@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Order, OrderStatus } from "@/lib/orders-store";
-import { statusesFor } from "@/lib/order-flows";
+import { statusesFor, type ProgressNote } from "@/lib/order-flows";
 import { cn } from "@/lib/cn";
 import { localizePath } from "@/i18n/config";
 import {
@@ -666,6 +666,13 @@ function OrderDetailsDrawer({
     String(order.delivery?.fee ?? 0)
   );
   const [statusDraft, setStatusDraft] = useState<OrderStatus>(order.status);
+  const [progressNotesDraft, setProgressNotesDraft] = useState<Record<string, string>>(() => {
+    const draft: Record<string, string> = {};
+    (order.progressNotes ?? []).forEach((note) => {
+      draft[note.status] = note.text;
+    });
+    return draft;
+  });
   const [savedFlash, setSavedFlash] = useState(false);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [viewer, setViewer] = useState<string | null>(null);
@@ -705,12 +712,24 @@ function OrderDetailsDrawer({
     setStatusDraft(order.status);
   }, [order.status]);
 
+  // Sync progressNotesDraft when order.progressNotes changes from parent
+  useEffect(() => {
+    const draft: Record<string, string> = {};
+    (order.progressNotes ?? []).forEach((note) => {
+      draft[note.status] = note.text;
+    });
+    setProgressNotesDraft(draft);
+  }, [order.progressNotes]);
+
   const hasUnsaved =
     priceDraft.trim() === ""
       ? order.price != null
       : Number(priceDraft) !== order.price ||
         String(order.delivery?.fee ?? 0) !== feeDraft ||
-        statusDraft !== order.status;
+        statusDraft !== order.status ||
+        JSON.stringify(progressNotesDraft) !== JSON.stringify(
+          Object.fromEntries((order.progressNotes ?? []).map((n) => [n.status, n.text]))
+        );
 
   async function saveOrder() {
     const body: Record<string, unknown> = {};
@@ -733,6 +752,16 @@ function OrderDetailsDrawer({
         body.delivery = { ...order.delivery, fee: Number.isFinite(feeValue) ? feeValue : 0 };
         hasChanges = true;
       }
+    }
+    // Progress notes
+    const currentNotes = Object.fromEntries((order.progressNotes ?? []).map((n) => [n.status, n.text]));
+    if (JSON.stringify(progressNotesDraft) !== JSON.stringify(currentNotes)) {
+      body.progressNotes = Object.entries(progressNotesDraft).map(([status, text]) => ({
+        status,
+        text: text.trim(),
+        at: new Date().toISOString(),
+      }));
+      hasChanges = true;
     }
 
     if (hasChanges) {
@@ -757,6 +786,13 @@ function OrderDetailsDrawer({
         if (updated.status) setStatusDraft(updated.status);
         if (updated.price !== undefined) setPriceDraft(updated.price == null ? "" : String(updated.price));
         if (updated.delivery?.fee !== undefined) setFeeDraft(String(updated.delivery.fee));
+        if (updated.progressNotes !== undefined) {
+          const draft: Record<string, string> = {};
+          (updated.progressNotes ?? []).forEach((note) => {
+            draft[note.status] = note.text;
+          });
+          setProgressNotesDraft(draft);
+        }
       }
       onSave();
     }
@@ -1025,34 +1061,59 @@ function OrderDetailsDrawer({
                 Historique
               </p>
               <ul className="mt-2 space-y-2">
-                {order.history.map((entry, index) => (
-                  <li
-                    key={`${entry.status}-${index}`}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dzb-creamline bg-dzb-cream/30 px-3 py-2.5"
-                  >
-                    <span className="text-sm font-medium text-dzb-navy">
-                      {STATUS_LABELS[entry.status] ?? entry.status}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="datetime-local"
-                        value={toLocalInput(entry.at)}
-                        onChange={(e) => onHistoryAt(order.code, index, e.target.value)}
-                        className={cn(inputClass, "w-auto py-1.5 text-xs")}
-                      />
-                      {index < order.history.length - 1 && (
-                        <button
-                          type="button"
-                          aria-label={`Supprimer l'étape ${STATUS_LABELS[entry.status] ?? entry.status}`}
-                          onClick={() => onHistoryRemove(order.code, index)}
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
-                        >
-                          <TrashIcon className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </li>
-                ))}
+                {order.history.map((entry, index) => {
+                  const noteText = progressNotesDraft[entry.status] ?? "";
+                  return (
+                    <li
+                      key={`${entry.status}-${index}`}
+                      className="flex flex-col gap-2 rounded-lg border border-dzb-creamline bg-dzb-cream/30 px-3 py-2.5"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-dzb-navy">
+                          {STATUS_LABELS[entry.status] ?? entry.status}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="datetime-local"
+                            value={toLocalInput(entry.at)}
+                            onChange={(e) => onHistoryAt(order.code, index, e.target.value)}
+                            className={cn(inputClass, "w-auto py-1.5 text-xs")}
+                          />
+                          {index < order.history.length - 1 && (
+                            <button
+                              type="button"
+                              aria-label={`Supprimer l'étape ${STATUS_LABELS[entry.status] ?? entry.status}`}
+                              onClick={() => onHistoryRemove(order.code, index)}
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
+                            >
+                              <TrashIcon className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {/* Progress note for this status */}
+                      <div className="flex gap-2 pt-1">
+                        <textarea
+                          value={noteText}
+                          onChange={(e) => setProgressNotesDraft({ ...progressNotesDraft, [entry.status]: e.target.value })}
+                          placeholder="Ajouter une note pour cette étape (visible par le client)..."
+                          rows={2}
+                          className={cn(inputClass, "flex-1 text-sm min-h-[50px] resize-y")}
+                        />
+                        {noteText && (
+                          <button
+                            type="button"
+                            onClick={() => setProgressNotesDraft({ ...progressNotesDraft, [entry.status]: "" })}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
+                            title="Effacer la note"
+                          >
+                            <TrashIcon className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </li>
+);
+                })}
               </ul>
             </div>
 

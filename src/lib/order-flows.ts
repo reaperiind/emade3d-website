@@ -105,6 +105,13 @@ export interface OrderAdminNotes {
   text: string;
 }
 
+/** Progress note for a specific status - visible to customer as timeline. */
+export interface ProgressNote {
+  status: OrderStatus;
+  text: string;
+  at: string;
+}
+
 /** Production note for IN_PRODUCTION status - visible to customer as timeline. */
 export interface ProductionNote {
   id: string;

@@ -304,6 +304,7 @@ const ar: Dictionary = {
     adminNotesLabel: "ملاحظة من الفريق",
     productionNotesLabel: "ملاحظات التصنيع",
     statusNotesLabel: "ملاحظات الحالة",
+    progressNoteLabel: "ملاحظة تقدم",
   },
 
   products: {
