@@ -129,59 +129,6 @@ export function TrackForm() {
     ? SERVICE_MAP[order.serviceType] ?? order.serviceType.replace(/_/g, " ")
     : "";
 
-  // Build merged timeline: history entries + production notes (for IN_PRODUCTION) + progress notes (all statuses)
-  const mergedTimeline = useMemo(() => {
-    if (!order) return [];
-    const items: Array<{
-      type: "status" | "note";
-      id: string;
-      label: string;
-      at: string;
-      isCurrent?: boolean;
-      status?: OrderStatus; // for progress notes to group under status
-    }> = [];
-
-    // Add history entries
-    order.history.forEach((entry, index) => {
-      items.push({
-        type: "status",
-        id: `${entry.status}-${index}`,
-        label: track.statuses[entry.status] ?? entry.status,
-        at: entry.at,
-        isCurrent: index === order.history.length - 1,
-        status: entry.status,
-      });
-    });
-
-    // Add production notes (only for IN_PRODUCTION status)
-    if (order.status === "IN_PRODUCTION" && order.productionNotes) {
-      order.productionNotes.forEach((note) => {
-        items.push({
-          type: "note",
-          id: note.id,
-          label: note.text,
-          at: note.at,
-        });
-      });
-    }
-
-    // Add progress notes for all statuses
-    if (order.progressNotes) {
-      order.progressNotes.forEach((note) => {
-        items.push({
-          type: "note",
-          id: `progress-${note.id}`,
-          label: note.text,
-          at: note.at,
-          status: note.status,
-        });
-      });
-    }
-
-    // Sort by timestamp ascending (oldest first)
-    return items.sort((a, b) => a.at.localeCompare(b.at));
-  }, [order, track.statuses, locale]);
-
   if (order) {
     const delivery = order.delivery;
     const deliveryFee = delivery?.fee ?? 0;
@@ -409,19 +356,19 @@ export function TrackForm() {
           </div>
         </div>
 
-        {/* History timeline (merged with production notes) */}
+        {/* History timeline with progress notes grouped under each status */}
         <div className="mt-6">
           <h3 className="font-display text-lg font-semibold text-white">
             {track.historyTitle}
           </h3>
           <p className="text-muted mt-0.5 text-sm">{track.historySubtitle}</p>
           <ol className="mt-4 space-y-0">
-            {mergedTimeline.map((item, index) => {
-              const isLast = index === mergedTimeline.length - 1;
-              const isNote = item.type === "note";
-              const isProgressNote = isNote && item.status;
+            {order.history.map((entry, index) => {
+              const isLast = index === order.history.length - 1;
+              const isCurrent = index === order.history.length - 1;
+              const statusNotes = order.progressNotes?.filter((n) => n.status === entry.status) ?? [];
               return (
-                <li key={item.id} className="relative flex gap-3.5 pb-6 last:pb-0">
+                <li key={`${entry.status}-${index}`} className="relative flex gap-3.5 pb-6 last:pb-0">
                   {/* line */}
                   {!isLast && (
                     <span
@@ -433,51 +380,49 @@ export function TrackForm() {
                   <span
                     className={cn(
                       "mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
-                      isNote
-                        ? "border-amber-500 bg-amber-500/20"
-                        : item.isCurrent
+                      isCurrent
                         ? "border-accent bg-accent/20"
                         : "border-white/20 bg-ink-800"
                     )}
                   >
-                    {isNote ? (
-                      <span className="h-2 w-2 rounded-full bg-amber-500" />
-                    ) : item.isCurrent && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                    )}
+                    {isCurrent && <span className="h-1.5 w-1.5 rounded-full bg-accent" />}
                   </span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between gap-3">
                       <p
                         className={cn(
                           "text-sm font-semibold",
-                          isNote
-                            ? "text-amber-300"
-                            : item.isCurrent
-                            ? "text-accent"
-                            : "text-white"
+                          isCurrent ? "text-accent" : "text-white"
                         )}
                       >
-                        {item.label}
+                        {track.statuses[entry.status]}
                       </p>
                       <p
                         dir="ltr"
                         className="flex items-center gap-1.5 text-xs text-steel-400"
                       >
                         <ClockIcon className="h-3.5 w-3.5" />
-                        {dateFmt.format(new Date(item.at))}
+                        {dateFmt.format(new Date(entry.at))}
                       </p>
                     </div>
-                    {/* Show status indicator for progress notes */}
-                    {isProgressNote && (
-                      <div className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-400">
-                        <span className="flex items-center gap-1">
-                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1 0-4h13a2 2 0 0 1 2 2z" />
-                            <path d="M22 13V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h13" />
-                          </svg>
-                          <span>{track.statuses[item.status!] ?? item.status!}</span>
-                        </span>
+                    {/* Progress notes for this status */}
+                    {statusNotes.length > 0 && (
+                      <div className="mt-2 space-y-2 ml-10">
+                        {statusNotes.map((note) => (
+                          <div key={note.id} className="flex gap-2.5 items-start">
+                            <span className="text-amber-400 shrink-0">↳</span>
+                            <div className="flex-1">
+                              <p className="text-sm leading-relaxed text-steel-100 whitespace-pre-wrap">
+                                <span className="text-amber-400 mr-1">📝</span>
+                                {note.text}
+                              </p>
+                              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-steel-400">
+                                <ClockIcon className="h-3.5 w-3.5" />
+                                {dateFmt.format(new Date(note.at))}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

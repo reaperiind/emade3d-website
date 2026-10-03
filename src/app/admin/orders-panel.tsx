@@ -1090,32 +1090,49 @@ function OrderDetailsDrawer({
                         return (
                           <div className="space-y-2 pt-1">
                             {statusNotes.map((note) => (
-                              <div key={note.id} className="flex gap-2">
-                                <textarea
-                                  value={note.text}
-                                  onChange={(e) =>
-                                    setProgressNotesDraft(
-                                      progressNotesDraft.map((n) =>
-                                        n.id === note.id ? { ...n, text: e.target.value } : n
+                              <div key={note.id} className="flex flex-col gap-2">
+                                <div className="flex gap-2">
+                                  <textarea
+                                    value={note.text}
+                                    onChange={(e) =>
+                                      setProgressNotesDraft(
+                                        progressNotesDraft.map((n) =>
+                                          n.id === note.id ? { ...n, text: e.target.value } : n
+                                        )
                                       )
-                                    )
-                                  }
-                                  placeholder="Ajouter une note pour cette étape (visible par le client)..."
-                                  rows={2}
-                                  className={cn(inputClass, "flex-1 text-sm min-h-[50px] resize-y")}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setProgressNotesDraft(
-                                      progressNotesDraft.filter((n) => n.id !== note.id)
-                                    )
-                                  }
-                                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
-                                  title="Supprimer cette note"
-                                >
-                                  <TrashIcon className="h-3.5 w-3.5" />
-                                </button>
+                                    }
+                                    placeholder="Ajouter une note pour cette étape (visible par le client)..."
+                                    rows={2}
+                                    className={cn(inputClass, "flex-1 text-sm min-h-[50px] resize-y")}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setProgressNotesDraft(
+                                        progressNotesDraft.filter((n) => n.id !== note.id)
+                                      )
+                                    }
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
+                                    title="Supprimer cette note"
+                                  >
+                                    <TrashIcon className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <label className="text-xs text-dzb-muted">Date/Heure :</label>
+                                  <input
+                                    type="datetime-local"
+                                    value={note.at.slice(0, 16)}
+                                    onChange={(e) =>
+                                      setProgressNotesDraft(
+                                        progressNotesDraft.map((n) =>
+                                          n.id === note.id ? { ...n, at: new Date(e.target.value).toISOString() } : n
+                                        )
+                                      )
+                                    }
+                                    className={cn(inputClass, "w-auto text-sm")}
+                                  />
+                                </div>
                               </div>
                             ))}
                             <button
