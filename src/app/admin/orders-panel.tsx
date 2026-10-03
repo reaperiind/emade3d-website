@@ -206,7 +206,7 @@ export function OrdersPanel({
   onHistoryRemove: (code: string, index: number) => void;
   onDelete: (code: string) => void;
   onFilesChange: (code: string, files: Order["files"]) => void;
-  onSave: () => void;
+  onSave: (updatedOrder: Order) => void;
 }) {
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState<OrderGroupId>("all");
@@ -654,7 +654,7 @@ function OrderDetailsDrawer({
   onDelete: (code: string) => void;
   onFilesChange: (code: string, files: Order["files"]) => void;
   onCopyCode: (code: string) => void;
-  onSave: () => void;
+  onSave: (updatedOrder: Order) => void;
   copiedCode: string | null;
 }) {
   const options = statusesFor(order.serviceType);
@@ -794,7 +794,7 @@ function OrderDetailsDrawer({
           setProgressNotesDraft(draft);
         }
       }
-      onSave();
+      onSave(updated!);
     }
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2500);

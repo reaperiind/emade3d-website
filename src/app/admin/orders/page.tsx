@@ -171,6 +171,14 @@ export default function AdminOrdersPage() {
       .catch(() => undefined);
   }
 
+  function onOrderSaved(updatedOrder: Order) {
+    setOrders((prev) =>
+      prev.map((o) => (o.code === updatedOrder.code ? updatedOrder : o))
+    );
+    // Also trigger background refresh to ensure full sync
+    refreshOrders();
+  }
+
   return (
     <OrdersPanel
       orders={orders}
@@ -183,7 +191,7 @@ export default function AdminOrdersPage() {
       onHistoryRemove={removeHistoryAt}
       onDelete={onDelete}
       onFilesChange={setFiles}
-      onSave={refreshOrders}
+      onSave={onOrderSaved}
     />
   );
 }
