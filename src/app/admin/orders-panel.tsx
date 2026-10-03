@@ -666,13 +666,7 @@ function OrderDetailsDrawer({
     String(order.delivery?.fee ?? 0)
   );
   const [statusDraft, setStatusDraft] = useState<OrderStatus>(order.status);
-  const [progressNotesDraft, setProgressNotesDraft] = useState<Record<string, string>>(() => {
-    const draft: Record<string, string> = {};
-    (order.progressNotes ?? []).forEach((note) => {
-      draft[note.status] = note.text;
-    });
-    return draft;
-  });
+  const [progressNotesDraft, setProgressNotesDraft] = useState<ProgressNote[]>(() => (order.progressNotes ?? []).slice());
   const [savedFlash, setSavedFlash] = useState(false);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [viewer, setViewer] = useState<string | null>(null);
@@ -712,13 +706,8 @@ function OrderDetailsDrawer({
     setStatusDraft(order.status);
   }, [order.status]);
 
-  // Sync progressNotesDraft when order.progressNotes changes from parent
   useEffect(() => {
-    const draft: Record<string, string> = {};
-    (order.progressNotes ?? []).forEach((note) => {
-      draft[note.status] = note.text;
-    });
-    setProgressNotesDraft(draft);
+    setProgressNotesDraft((order.progressNotes ?? []).slice());
   }, [order.progressNotes]);
 
   const hasUnsaved =
@@ -754,12 +743,18 @@ function OrderDetailsDrawer({
       }
     }
     // Progress notes
-    const currentNotes = Object.fromEntries((order.progressNotes ?? []).map((n) => [n.status, n.text]));
-    if (JSON.stringify(progressNotesDraft) !== JSON.stringify(currentNotes)) {
-      body.progressNotes = Object.entries(progressNotesDraft).map(([status, text]) => ({
-        status,
-        text: text.trim(),
-        at: new Date().toISOString(),
+    const notesChanged = progressNotesDraft.length !== (order.progressNotes ?? []).length ||
+      progressNotesDraft.some((note, i) =>
+        note.id !== (order.progressNotes ?? [])[i]?.id ||
+        note.status !== (order.progressNotes ?? [])[i]?.status ||
+        note.text !== (order.progressNotes ?? [])[i]?.text
+      );
+    if (notesChanged) {
+      body.progressNotes = progressNotesDraft.map((note) => ({
+        id: note.id,
+        status: note.status,
+        text: note.text.trim(),
+        at: note.at,
       }));
       hasChanges = true;
     }
@@ -787,11 +782,9 @@ function OrderDetailsDrawer({
         if (updated.price !== undefined) setPriceDraft(updated.price == null ? "" : String(updated.price));
         if (updated.delivery?.fee !== undefined) setFeeDraft(String(updated.delivery.fee));
         if (updated.progressNotes !== undefined) {
-          const draft: Record<string, string> = {};
-          (updated.progressNotes ?? []).forEach((note) => {
-            draft[note.status] = note.text;
-          });
-          setProgressNotesDraft(draft);
+          if (updated.progressNotes !== undefined) {
+          setProgressNotesDraft((updated.progressNotes ?? []).slice());
+        }
         }
       }
       onSave(updated!);
@@ -1062,7 +1055,7 @@ function OrderDetailsDrawer({
               </p>
               <ul className="mt-2 space-y-2">
                 {order.history.map((entry, index) => {
-                  const noteText = progressNotesDraft[entry.status] ?? "";
+                  const statusNotes = progressNotesDraft.filter((n) => n.status === entry.status);
                   return (
                     <li
                       key={`${entry.status}-${index}`}
@@ -1091,26 +1084,61 @@ function OrderDetailsDrawer({
                           )}
                         </div>
                       </div>
-                      {/* Progress note for this status */}
-                      <div className="flex gap-2 pt-1">
-                        <textarea
-                          value={noteText}
-                          onChange={(e) => setProgressNotesDraft({ ...progressNotesDraft, [entry.status]: e.target.value })}
-                          placeholder="Ajouter une note pour cette étape (visible par le client)..."
-                          rows={2}
-                          className={cn(inputClass, "flex-1 text-sm min-h-[50px] resize-y")}
-                        />
-                        {noteText && (
-                          <button
-                            type="button"
-                            onClick={() => setProgressNotesDraft({ ...progressNotesDraft, [entry.status]: "" })}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
-                            title="Effacer la note"
-                          >
-                            <TrashIcon className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
+                      {/* Progress notes for this status */}
+                      {(() => {
+                        const statusNotes = progressNotesDraft.filter((n) => n.status === entry.status);
+                        return (
+                          <div className="space-y-2 pt-1">
+                            {statusNotes.map((note) => (
+                              <div key={note.id} className="flex gap-2">
+                                <textarea
+                                  value={note.text}
+                                  onChange={(e) =>
+                                    setProgressNotesDraft(
+                                      progressNotesDraft.map((n) =>
+                                        n.id === note.id ? { ...n, text: e.target.value } : n
+                                      )
+                                    )
+                                  }
+                                  placeholder="Ajouter une note pour cette étape (visible par le client)..."
+                                  rows={2}
+                                  className={cn(inputClass, "flex-1 text-sm min-h-[50px] resize-y")}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setProgressNotesDraft(
+                                      progressNotesDraft.filter((n) => n.id !== note.id)
+                                    )
+                                  }
+                                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
+                                  title="Supprimer cette note"
+                                >
+                                  <TrashIcon className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setProgressNotesDraft([
+                                  ...progressNotesDraft,
+                                  {
+                                    id: crypto.randomUUID(),
+                                    status: entry.status,
+                                    text: "",
+                                    at: new Date().toISOString(),
+                                  },
+                                ])
+                              }
+                              className="flex items-center gap-1.5 text-sm text-dzb-amberink hover:text-dzb-amber font-medium"
+                            >
+                              <PlusIcon className="h-4 w-4" />
+                              Ajouter une note
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </li>
 );
                 })}

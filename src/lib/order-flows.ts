@@ -110,6 +110,7 @@ export interface ProgressNote {
   status: OrderStatus;
   text: string;
   at: string;
+  id: string;
 }
 
 /** Production note for IN_PRODUCTION status - visible to customer as timeline. */

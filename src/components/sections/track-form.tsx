@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useI18n } from "@/i18n/provider";
-import type { Order } from "@/lib/orders-store";
+import type { Order, OrderStatus } from "@/lib/orders-store";
 import { cn } from "@/lib/cn";
 import {
   CheckIcon,
@@ -138,6 +138,7 @@ export function TrackForm() {
       label: string;
       at: string;
       isCurrent?: boolean;
+      status?: OrderStatus; // for progress notes to group under status
     }> = [];
 
     // Add history entries
@@ -148,6 +149,7 @@ export function TrackForm() {
         label: track.statuses[entry.status] ?? entry.status,
         at: entry.at,
         isCurrent: index === order.history.length - 1,
+        status: entry.status,
       });
     });
 
@@ -168,9 +170,10 @@ export function TrackForm() {
       order.progressNotes.forEach((note) => {
         items.push({
           type: "note",
-          id: `progress-${note.status}-${note.at}`,
+          id: `progress-${note.id}`,
           label: note.text,
           at: note.at,
+          status: note.status,
         });
       });
     }
@@ -416,6 +419,7 @@ export function TrackForm() {
             {mergedTimeline.map((item, index) => {
               const isLast = index === mergedTimeline.length - 1;
               const isNote = item.type === "note";
+              const isProgressNote = isNote && item.status;
               return (
                 <li key={item.id} className="relative flex gap-3.5 pb-6 last:pb-0">
                   {/* line */}
@@ -464,6 +468,18 @@ export function TrackForm() {
                         {dateFmt.format(new Date(item.at))}
                       </p>
                     </div>
+                    {/* Show status indicator for progress notes */}
+                    {isProgressNote && (
+                      <div className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-400">
+                        <span className="flex items-center gap-1">
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1 0-4h13a2 2 0 0 1 2 2z" />
+                            <path d="M22 13V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h13" />
+                          </svg>
+                          <span>{track.statuses[item.status!] ?? item.status!}</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </li>
               );

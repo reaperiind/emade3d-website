@@ -140,8 +140,9 @@ export async function PATCH(request: Request, { params }: Ctx) {
       const status = String(n?.status ?? "");
       const text = typeof n?.text === "string" ? n.text.trim() : "";
       const at = typeof n?.at === "string" && n.at ? n.at : new Date().toISOString();
+      const id = typeof n?.id === "string" && n.id ? n.id : crypto.randomUUID();
       if (status && flow.includes(status as OrderStatus) && text) {
-        notes.push({ status: status as OrderStatus, text, at });
+        notes.push({ id, status: status as OrderStatus, text, at });
       }
     }
     patch.progressNotes = notes;
