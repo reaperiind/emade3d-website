@@ -726,6 +726,20 @@ function OrderDetailsDrawer({
       body.adminNotes = notesDraft.trim() || null;
       hasChanges = true;
     }
+    // Price
+    const priceValue = priceDraft.trim() === "" ? null : Number(priceDraft);
+    if (priceValue !== order.price) {
+      body.price = priceValue !== null && Number.isFinite(priceValue) && priceValue > 0 ? priceValue : null;
+      hasChanges = true;
+    }
+    // Delivery fee (for courier orders)
+    if (order.delivery?.method === "courier") {
+      const feeValue = Number(feeDraft);
+      if (feeValue !== (order.delivery?.fee ?? 0)) {
+        body.delivery = { ...order.delivery, fee: Number.isFinite(feeValue) ? feeValue : 0 };
+        hasChanges = true;
+      }
+    }
 
     if (hasChanges) {
       const res = await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
@@ -748,6 +762,8 @@ function OrderDetailsDrawer({
         // Update local states to match saved data
         if (updated.status) setStatusDraft(updated.status);
         if (updated.adminNotes !== undefined) setNotesDraft(updated.adminNotes ?? "");
+        if (updated.price !== undefined) setPriceDraft(updated.price == null ? "" : String(updated.price));
+        if (updated.delivery?.fee !== undefined) setFeeDraft(String(updated.delivery.fee));
       }
       onSave();
     }
