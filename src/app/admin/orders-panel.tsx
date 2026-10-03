@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Order, OrderStatus } from "@/lib/orders-store";
-import { statusesFor, type ProductionProgressStep, PRODUCTION_PROGRESS_STEPS, type ProductionNote } from "@/lib/order-flows";
+import { statusesFor } from "@/lib/order-flows";
 import { cn } from "@/lib/cn";
 import { localizePath } from "@/i18n/config";
 import {
@@ -666,13 +666,6 @@ function OrderDetailsDrawer({
     String(order.delivery?.fee ?? 0)
   );
   const [notesDraft, setNotesDraft] = useState<string>(order.adminNotes ?? "");
-  const [progressDraft, setProgressDraft] = useState<ProductionProgressStep | "">(
-    order.productionProgress ?? ""
-  );
-  const [productionNotes, setProductionNotes] = useState<ProductionNote[]>(order.productionNotes ?? []);
-  const [noteDraft, setNoteDraft] = useState("");
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [editingNoteAt, setEditingNoteAt] = useState<string>(""); // datetime-local string for editing timestamp
   const [statusDraft, setStatusDraft] = useState<OrderStatus>(order.status);
   const [savedFlash, setSavedFlash] = useState(false);
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -719,8 +712,6 @@ function OrderDetailsDrawer({
       : Number(priceDraft) !== order.price ||
         String(order.delivery?.fee ?? 0) !== feeDraft ||
         notesDraft !== (order.adminNotes ?? "") ||
-        progressDraft !== (order.productionProgress ?? "") ||
-        JSON.stringify(productionNotes) !== JSON.stringify(order.productionNotes ?? []) ||
         statusDraft !== order.status;
 
   async function saveOrder() {
@@ -733,14 +724,6 @@ function OrderDetailsDrawer({
     }
     if (notesDraft !== (order.adminNotes ?? "")) {
       body.adminNotes = notesDraft.trim() || null;
-      hasChanges = true;
-    }
-    if (progressDraft !== "" && progressDraft !== (order.productionProgress ?? "")) {
-      body.productionProgress = progressDraft;
-      hasChanges = true;
-    }
-    if (JSON.stringify(productionNotes) !== JSON.stringify(order.productionNotes ?? [])) {
-      body.productionNotes = productionNotes;
       hasChanges = true;
     }
 
@@ -765,55 +748,11 @@ function OrderDetailsDrawer({
         // Update local states to match saved data
         if (updated.status) setStatusDraft(updated.status);
         if (updated.adminNotes !== undefined) setNotesDraft(updated.adminNotes ?? "");
-        if (updated.productionProgress !== undefined) setProgressDraft(updated.productionProgress ?? "");
-        if (updated.productionNotes !== undefined) setProductionNotes(updated.productionNotes ?? []);
       }
       onSave();
     }
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2500);
-  }
-
-  function addProductionNote() {
-    const text = noteDraft.trim();
-    if (!text) return;
-    const newNote: ProductionNote = {
-      id: crypto.randomUUID(),
-      text,
-      at: new Date().toISOString(),
-    };
-    setProductionNotes((prev) => [newNote, ...prev]);
-    setNoteDraft("");
-  }
-
-  function startEditNote(note: ProductionNote) {
-    setEditingNoteId(note.id);
-    setNoteDraft(note.text);
-    // Convert ISO to datetime-local format
-    setEditingNoteAt(note.at.slice(0, 16));
-  }
-
-  function saveEditNote() {
-    const text = noteDraft.trim();
-    if (!text || !editingNoteId) return;
-    // Use edited timestamp if provided, otherwise keep original or use now
-    const at = editingNoteAt ? new Date(editingNoteAt).toISOString() : new Date().toISOString();
-    setProductionNotes((prev) =>
-      prev.map((n) => (n.id === editingNoteId ? { ...n, text, at } : n))
-    );
-    setEditingNoteId(null);
-    setEditingNoteAt("");
-    setNoteDraft("");
-  }
-
-  function cancelEditNote() {
-    setEditingNoteId(null);
-    setEditingNoteAt("");
-    setNoteDraft("");
-  }
-
-  function deleteProductionNote(id: string) {
-    setProductionNotes((prev) => prev.filter((n) => n.id !== id));
   }
 
   async function downloadFile(key: string) {
@@ -992,7 +931,7 @@ function OrderDetailsDrawer({
                   </p>
                 </div>
               )}
-            </div>
+</div>
 
             {/* Admin Notes */}
             <div>
@@ -1006,162 +945,6 @@ function OrderDetailsDrawer({
                 rows={3}
                 className={cn(inputClass, "resize-y min-h-[80px]")}
               />
-            </div>
-
-            {/* Production Progress - only show for IN_PRODUCTION status */}
-            {order.status === "IN_PRODUCTION" && (
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-dzb-muted">
-                  Progrès de fabrication
-                </label>
-                <select
-                  value={progressDraft}
-                  onChange={(e) => setProgressDraft(e.target.value as ProductionProgressStep | "")}
-                  className={cn(inputClass, "w-auto min-w-44 appearance-none py-2")}
-                >
-                  <option value="">— Sélectionner —</option>
-                  {PRODUCTION_PROGRESS_STEPS.map((step) => (
-                    <option key={step} value={step}>
-                      {step}%
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Status Notes - visible to customer in all statuses */}
-            <div>
-              <label className="mb-1.5 block text-[13px] font-medium text-dzb-muted">
-                Notes de statut (visibles par le client)
-              </label>
-              {/* Add note form */}
-              <div className="flex gap-2 mb-3">
-                <input
-                  type="text"
-                  value={noteDraft}
-                  onChange={(e) => setNoteDraft(e.target.value)}
-                  placeholder={editingNoteId ? "Modifier la note…" : "Ajouter une note…"}
-                  className={cn(inputClass, "flex-1")}
-                />
-                {editingNoteId ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={saveEditNote}
-                      className={cn(saveButton, "whitespace-nowrap")}
-                    >
-                      Enregistrer
-                    </button>
-                    <button
-                      type="button"
-                      onClick={cancelEditNote}
-                      className="flex h-9 items-center justify-center rounded-lg border border-dzb-creamline px-4 text-sm font-medium text-dzb-muted transition hover:bg-dzb-cream"
-                    >
-                      Annuler
-                    </button>
-                  </>
-                ) : (
-<button
-                      type="button"
-                      onClick={addProductionNote}
-                      disabled={!noteDraft.trim()}
-                      className={cn(saveButton, "whitespace-nowrap", "disabled:opacity-50")}
-                    >
-                      <PlusIcon className="h-4 w-4 mr-1" />
-                      Ajouter
-                    </button>
-                )}
-              </div>
-              {/* Notes list */}
-              {productionNotes.length > 0 && (
-                <ul className="space-y-2 max-h-60 overflow-y-auto">
-                  {productionNotes.map((note) => {
-                    const isEditing = editingNoteId === note.id;
-                    return (
-                      <li
-                        key={note.id}
-                        className="relative flex gap-2 rounded-lg border border-dzb-creamline bg-dzb-cream/30 px-3 py-2.5 transition hover:bg-dzb-cream/60"
-                      >
-                        <div className="flex-1 min-w-0">
-                          {isEditing ? (
-                            <div className="space-y-2">
-                              <input
-                                type="text"
-                                value={noteDraft}
-                                onChange={(e) => setNoteDraft(e.target.value)}
-                                className={cn(inputClass, "text-sm")}
-                              />
-                              <input
-                                type="datetime-local"
-                                value={editingNoteAt}
-                                onChange={(e) => setEditingNoteAt(e.target.value)}
-                                className={cn(inputClass, "text-sm")}
-                              />
-                            </div>
-                          ) : (
-                            <>
-                              <p className="text-sm text-dzb-navy whitespace-pre-wrap">{note.text}</p>
-                              <p className="text-xs text-dzb-faint mt-0.5">
-                                {new Date(note.at).toLocaleString("fr-FR", {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </p>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {isEditing ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={saveEditNote}
-                                className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-emerald-500 hover:text-emerald-500"
-                                title="Enregistrer"
-                              >
-                                <CheckIcon className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={cancelEditNote}
-                                className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
-                                title="Annuler"
-                              >
-                                <CloseIcon className="h-4 w-4" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => startEditNote(note)}
-                                className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-dzb-amber hover:text-dzb-amberink"
-                                title="Modifier"
-                              >
-                                <PencilIcon className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => deleteProductionNote(note.id)}
-                                className="flex h-8 w-8 items-center justify-center rounded-md border border-dzb-creamline text-dzb-faint transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
-                                title="Supprimer"
-                              >
-                                <TrashIcon className="h-3.5 w-3.5" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              {productionNotes.length === 0 && (
-                <p className="text-xs text-dzb-faint italic">Aucune note de statut</p>
-              )}
             </div>
 
             {order.delivery && (
