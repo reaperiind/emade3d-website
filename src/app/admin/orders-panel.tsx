@@ -883,6 +883,15 @@ function OrderDetailsDrawer({
             >
               <CloseIcon className="h-4 w-4" />
             </button>
+            {/* Save button in header */}
+            <button
+              type="button"
+              onClick={saveOrder}
+              disabled={!hasUnsaved}
+              className={cn(saveButton, "disabled:opacity-50 h-9 ml-2")}
+            >
+              Enregistrer
+            </button>
           </div>
         </header>
 
@@ -1274,14 +1283,6 @@ function OrderDetailsDrawer({
                   <span className="text-dzb-faint">Aucune modification</span>
                 )}
               </p>
-              <button
-                type="button"
-                onClick={saveOrder}
-                disabled={!hasUnsaved}
-                className={cn(saveButton, "disabled:opacity-50")}
-              >
-                Enregistrer
-              </button>
             </div>
           </div>
         </div>
