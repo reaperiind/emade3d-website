@@ -668,6 +668,7 @@ function OrderDetailsDrawer({
   const [noteDraft, setNoteDraft] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteAt, setEditingNoteAt] = useState<string>(""); // datetime-local string for editing timestamp
+  const [statusDraft, setStatusDraft] = useState<OrderStatus>(order.status);
   const [savedFlash, setSavedFlash] = useState(false);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [viewer, setViewer] = useState<string | null>(null);
@@ -702,6 +703,11 @@ function OrderDetailsDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order.code]);
 
+  // Sync statusDraft when order.status changes from parent
+  useEffect(() => {
+    setStatusDraft(order.status);
+  }, [order.status]);
+
   const hasUnsaved =
     priceDraft.trim() === ""
       ? order.price != null
@@ -709,11 +715,22 @@ function OrderDetailsDrawer({
         String(order.delivery?.fee ?? 0) !== feeDraft ||
         notesDraft !== (order.adminNotes ?? "") ||
         progressDraft !== (order.productionProgress ?? "") ||
-        JSON.stringify(productionNotes) !== JSON.stringify(order.productionNotes ?? []);
+        JSON.stringify(productionNotes) !== JSON.stringify(order.productionNotes ?? []) ||
+        statusDraft !== order.status;
 
   async function saveOrder() {
     onPrice(order.code, priceDraft);
     if (isCourier) onDeliveryFee(order.code, feeDraft);
+    if (statusDraft !== order.status) {
+      await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: statusDraft }),
+      });
+    }
     if (notesDraft !== (order.adminNotes ?? "")) {
       await fetch(`/api/orders/${encodeURIComponent(order.code)}`, {
         method: "PATCH",
@@ -873,8 +890,12 @@ function OrderDetailsDrawer({
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-2.5">
               <select
-                value={order.status}
-                onChange={(e) => onStatus(order.code, e.target.value as OrderStatus)}
+                value={statusDraft}
+                onChange={(e) => {
+                  const newStatus = e.target.value as OrderStatus;
+                  setStatusDraft(newStatus);
+                  onStatus(order.code, newStatus);
+                }}
                 className={cn(inputClass, "w-auto min-w-44 appearance-none py-2")}
               >
                 {options.map((s) => (

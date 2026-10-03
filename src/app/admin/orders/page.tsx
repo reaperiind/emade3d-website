@@ -37,7 +37,15 @@ export default function AdminOrdersPage() {
 
   const patchOrder = useCallback(
     async (code: string, body: Record<string, unknown>) => {
-      const before = orders;
+      let before: Order[] = [];
+      // Capture current orders at call time, not render time
+      await new Promise<void>((resolve) => {
+        setOrders((prev) => {
+          before = prev;
+          resolve();
+          return prev;
+        });
+      });
       const res = await fetch(`/api/orders/${encodeURIComponent(code)}`, {
         method: "PATCH",
         headers: {
@@ -56,9 +64,10 @@ export default function AdminOrdersPage() {
           return;
         }
       }
+      // Rollback on error
       setOrders(before);
     },
-    [orders, token]
+    [token]
   );
 
   function setStatus(code: string, status: OrderStatus) {
