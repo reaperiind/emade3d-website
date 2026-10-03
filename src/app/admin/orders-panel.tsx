@@ -665,7 +665,6 @@ function OrderDetailsDrawer({
   const [feeDraft, setFeeDraft] = useState<string>(() =>
     String(order.delivery?.fee ?? 0)
   );
-  const [notesDraft, setNotesDraft] = useState<string>(order.adminNotes ?? "");
   const [statusDraft, setStatusDraft] = useState<OrderStatus>(order.status);
   const [savedFlash, setSavedFlash] = useState(false);
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -711,7 +710,6 @@ function OrderDetailsDrawer({
       ? order.price != null
       : Number(priceDraft) !== order.price ||
         String(order.delivery?.fee ?? 0) !== feeDraft ||
-        notesDraft !== (order.adminNotes ?? "") ||
         statusDraft !== order.status;
 
   async function saveOrder() {
@@ -720,10 +718,6 @@ function OrderDetailsDrawer({
 
     if (statusDraft !== order.status) {
       body.status = statusDraft;
-      hasChanges = true;
-    }
-    if (notesDraft !== (order.adminNotes ?? "")) {
-      body.adminNotes = notesDraft.trim() || null;
       hasChanges = true;
     }
     // Price
@@ -761,7 +755,6 @@ function OrderDetailsDrawer({
       if (updated) {
         // Update local states to match saved data
         if (updated.status) setStatusDraft(updated.status);
-        if (updated.adminNotes !== undefined) setNotesDraft(updated.adminNotes ?? "");
         if (updated.price !== undefined) setPriceDraft(updated.price == null ? "" : String(updated.price));
         if (updated.delivery?.fee !== undefined) setFeeDraft(String(updated.delivery.fee));
       }
@@ -948,20 +941,6 @@ function OrderDetailsDrawer({
                 </div>
               )}
 </div>
-
-            {/* Admin Notes */}
-            <div>
-              <label className="mb-1.5 block text-[13px] font-medium text-dzb-muted">
-                Note pour le client
-              </label>
-              <textarea
-                value={notesDraft}
-                onChange={(e) => setNotesDraft(e.target.value)}
-                placeholder="Note visible par le client sur la page de suivi…"
-                rows={3}
-                className={cn(inputClass, "resize-y min-h-[80px]")}
-              />
-            </div>
 
             {order.delivery && (
               <div className="rounded-lg border border-dzb-creamline bg-dzb-cream/40 px-4 py-3 text-xs leading-relaxed text-dzb-muted">
