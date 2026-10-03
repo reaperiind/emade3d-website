@@ -155,6 +155,22 @@ export default function AdminOrdersPage() {
     }
   }
 
+  function refreshOrders() {
+    if (!token) return;
+    fetch("/api/orders", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (res) => {
+        if (res.status === 401) return null;
+        const json = await res.json();
+        return (json.orders ?? []) as Order[];
+      })
+      .then((data) => {
+        if (data) setOrders(data);
+      })
+      .catch(() => undefined);
+  }
+
   return (
     <OrdersPanel
       orders={orders}
@@ -167,6 +183,7 @@ export default function AdminOrdersPage() {
       onHistoryRemove={removeHistoryAt}
       onDelete={onDelete}
       onFilesChange={setFiles}
+      onSave={refreshOrders}
     />
   );
 }

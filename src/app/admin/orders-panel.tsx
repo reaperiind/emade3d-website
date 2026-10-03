@@ -194,6 +194,7 @@ export function OrdersPanel({
   onHistoryRemove,
   onDelete,
   onFilesChange,
+  onSave,
 }: {
   orders: Order[];
   loading: boolean;
@@ -205,6 +206,7 @@ export function OrdersPanel({
   onHistoryRemove: (code: string, index: number) => void;
   onDelete: (code: string) => void;
   onFilesChange: (code: string, files: Order["files"]) => void;
+  onSave: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState<OrderGroupId>("all");
@@ -617,6 +619,7 @@ export function OrdersPanel({
               onFilesChange={onFilesChange}
               onCopyCode={copyToClipboard}
               copiedCode={copiedCode}
+              onSave={onSave}
             />
           )}
         </>
@@ -637,6 +640,7 @@ function OrderDetailsDrawer({
   onDelete,
   onFilesChange,
   onCopyCode,
+  onSave,
   copiedCode,
 }: {
   order: Order;
@@ -650,6 +654,7 @@ function OrderDetailsDrawer({
   onDelete: (code: string) => void;
   onFilesChange: (code: string, files: Order["files"]) => void;
   onCopyCode: (code: string) => void;
+  onSave: () => void;
   copiedCode: string | null;
 }) {
   const options = statusesFor(order.serviceType);
@@ -763,6 +768,7 @@ function OrderDetailsDrawer({
         if (updated.productionProgress !== undefined) setProgressDraft(updated.productionProgress ?? "");
         if (updated.productionNotes !== undefined) setProductionNotes(updated.productionNotes ?? []);
       }
+      onSave();
     }
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2500);
