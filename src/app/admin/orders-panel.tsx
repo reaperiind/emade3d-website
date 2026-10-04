@@ -16,6 +16,7 @@ import {
   PlusIcon,
   PencilIcon,
 } from "@/components/ui/icons";
+import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import {
   inputClass,
   panelCard,
@@ -1120,17 +1121,16 @@ function OrderDetailsDrawer({
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <label className="text-xs text-dzb-muted">Date/Heure :</label>
-                                  <input
-                                    type="datetime-local"
-                                    value={note.at.slice(0, 16)}
-                                    onChange={(e) =>
+                                  <DateTimePicker
+                                    value={note.at}
+                                    onChange={(newAt) =>
                                       setProgressNotesDraft(
                                         progressNotesDraft.map((n) =>
-                                          n.id === note.id ? { ...n, at: new Date(e.target.value).toISOString() } : n
+                                          n.id === note.id ? { ...n, at: newAt } : n
                                         )
                                       )
                                     }
-                                    className={cn(inputClass, "w-auto min-w-[180px] text-sm")}
+                                    className="w-auto min-w-[200px]"
                                   />
                                 </div>
                               </div>
