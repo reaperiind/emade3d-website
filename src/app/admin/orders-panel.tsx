@@ -783,11 +783,10 @@ function OrderDetailsDrawer({
         if (updated.price !== undefined) setPriceDraft(updated.price == null ? "" : String(updated.price));
         if (updated.delivery?.fee !== undefined) setFeeDraft(String(updated.delivery.fee));
         if (updated.progressNotes !== undefined) {
-          if (updated.progressNotes !== undefined) {
           setProgressNotesDraft((updated.progressNotes ?? []).slice());
         }
-        }
       }
+      // Pass the updated order to parent for immediate state sync
       onSave(updated!);
     }
     setSavedFlash(true);

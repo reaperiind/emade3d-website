@@ -113,7 +113,11 @@ function normalizeOrder(raw: Order): Order {
     Array.isArray(raw.history) && raw.history.length > 0
       ? raw.history
       : [{ status, at: raw.createdAt }];
-  return { ...raw, status, history };
+  const progressNotes = Array.isArray(raw.progressNotes) ? raw.progressNotes : [];
+  const productionNotes = Array.isArray(raw.productionNotes) ? raw.productionNotes : [];
+  const productionProgress = typeof raw.productionProgress === "number" ? raw.productionProgress : undefined;
+  const adminNotes = typeof raw.adminNotes === "string" ? raw.adminNotes : undefined;
+  return { ...raw, status, history, progressNotes, productionNotes, productionProgress, adminNotes };
 }
 
 export async function createOrder(order: Order): Promise<void> {
