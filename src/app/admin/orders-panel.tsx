@@ -1130,7 +1130,7 @@ function OrderDetailsDrawer({
                                         )
                                       )
                                     }
-                                    className={cn(inputClass, "w-auto text-sm")}
+                                    className={cn(inputClass, "w-auto min-w-[180px] text-sm")}
                                   />
                                 </div>
                               </div>
